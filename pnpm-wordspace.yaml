@@ -1,0 +1,19 @@
+packages:
+  # Tất cả app chính (FE + BE)
+  - "apps/*"
+
+  # Thư viện dùng chung (nếu sau này bạn có utils hoặc SDK riêng)
+  - "packages/*"
+
+# Thiết lập workspace global cho toàn dự án
+link-workspace-packages: true
+shared-workspace-lockfile: true
+hoist-pattern:
+  - "*"
+
+# Giúp pnpm tự động chia sẻ node_modules giữa các app
+never-built-dependencies:
+  - fsevents
+
+# Tuỳ chọn — giúp pnpm hoạt động ổn định hơn trên Windows
+package-import-method: clone-or-copy
