@@ -1,0 +1,9 @@
+{
+  "name": "@smart-school-bus/types",
+  "version": "1.0.0",
+  "description": "Shared types for the Smart School Bus Tracking System",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "author": "",
+  "license": "MIT"
+}

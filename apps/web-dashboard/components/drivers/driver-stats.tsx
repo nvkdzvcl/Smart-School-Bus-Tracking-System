@@ -1,7 +1,7 @@
 import React from "react"
-import { Card, CardContent } from "../../ui/card"
+import { Card, CardContent } from "../../components/ui/card"
 import { Users, UserCheck, UserX, AlertTriangle } from "lucide-react"
-import { mockDrivers } from "../../../lib/mock-data"
+import { mockDrivers } from "../../lib/mock-data"
 
 export const DriverStats: React.FC = () => {
   const stats = {

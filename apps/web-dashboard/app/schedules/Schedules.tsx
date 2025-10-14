@@ -1,17 +1,15 @@
-"use client"
+import React, { useState } from "react";
+import { AppLayout } from "../../components/layout/app-layout";
+import { PERMISSIONS } from "../../lib/auth/permissions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { CalendarView } from "../../components/schedules/calendar-view";
+import { RouteList } from "../../components/schedules/route-list";
+import { RouteBuilder } from "../../components/schedules/route-builder";
+import { AssignmentGrid } from "../../components/schedules/assignment-grid";
 
-import { useState } from "react"
-import { AppLayout } from "@/components/layout/app-layout"
-import { PERMISSIONS } from "@/lib/auth/permissions"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarView } from "@/components/schedules/calendar-view"
-import { RouteList } from "@/components/schedules/route-list"
-import { RouteBuilder } from "@/components/schedules/route-builder"
-import { AssignmentGrid } from "@/components/schedules/assignment-grid"
-
-export default function SchedulesPage() {
-  const [showRouteBuilder, setShowRouteBuilder] = useState(false)
-  const [selectedRouteId, setSelectedRouteId] = useState<string>()
+const Schedules: React.FC = () => {
+  const [showRouteBuilder, setShowRouteBuilder] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | undefined>(undefined);
 
   return (
     <AppLayout
@@ -33,7 +31,10 @@ export default function SchedulesPage() {
         <TabsContent value="routes" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              <RouteList onSelectRoute={setSelectedRouteId} onCreateRoute={() => setShowRouteBuilder(true)} />
+              <RouteList
+                onSelectRoute={setSelectedRouteId}
+                onCreateRoute={() => setShowRouteBuilder(true)}
+              />
             </div>
 
             <div className="lg:col-span-8">
@@ -56,5 +57,7 @@ export default function SchedulesPage() {
         </TabsContent>
       </Tabs>
     </AppLayout>
-  )
-}
+  );
+};
+
+export default Schedules;

@@ -1,13 +1,13 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
-import { Button } from "../../ui/button"
-import { Badge } from "../../ui/badge"
-import { Input } from "../../ui/input"
-import { ScrollArea } from "../../ui/scroll-area"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Button } from "../../components/ui/button"
+import { Badge } from "../../components/ui/badge"
+import { Input } from "../../components/ui/input"
+import { ScrollArea } from "../../components/ui/scroll-area"
 import { Plus, Search, MapPin, Clock, Users } from "lucide-react"
-import { mockRoutes } from "../../../lib/mock-data"
-import { routeStatusLabels, routeStatusColors } from "../../../lib/utils/status"
-import { cn } from "../../../lib/utils"
+import { mockRoutes } from "../../lib/mock-data"
+import { routeStatusLabels, routeStatusColors } from "../../lib/utils/status"
+import { cn } from "../../lib/utils"
 
 interface RouteListProps {
   onSelectRoute: (routeId: string) => void

@@ -1,15 +1,16 @@
-import { AppLayout } from "@/components/layout/app-layout"
-import { PERMISSIONS } from "@/lib/auth/permissions"
-import { KPICard } from "@/components/dashboard/kpi-card"
-import { MiniMap } from "@/components/dashboard/mini-map"
-import { UpcomingStops } from "@/components/dashboard/upcoming-stops"
-import { RecentAlerts } from "@/components/dashboard/recent-alerts"
-import { QuickActions } from "@/components/dashboard/quick-actions"
-import { Bus, GraduationCap, AlertTriangle, TrendingUp, Activity } from "lucide-react"
-import { mockDashboardKPI } from "@/lib/mock-data"
+import React from "react";
+import { AppLayout } from "../../components/layout/app-layout";
+import { PERMISSIONS } from "../../lib/auth/permissions";
+import { KPICard } from "../../components/dashboard/kpi-card";
+import { MiniMap } from "../../components/dashboard/mini-map";
+import { UpcomingStops } from "../../components/dashboard/upcoming-stops";
+import { RecentAlerts } from "../../components/dashboard/recent-alerts";
+import { QuickActions } from "../../components/dashboard/quick-actions";
+import { Bus, GraduationCap, AlertTriangle, TrendingUp, Activity } from "lucide-react";
+import { mockDashboardKPI } from "../../lib/mock-data";
 
-export default function DashboardPage() {
-  const kpi = mockDashboardKPI
+const Dashboard: React.FC = () => {
+  const kpi = mockDashboardKPI;
 
   return (
     <AppLayout
@@ -72,5 +73,7 @@ export default function DashboardPage() {
         </div>
       </div>
     </AppLayout>
-  )
-}
+  );
+};
+
+export default Dashboard;

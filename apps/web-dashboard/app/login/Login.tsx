@@ -1,39 +1,35 @@
-"use client"
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../lib/auth/context";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Bus, AlertCircle } from "lucide-react";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth/context"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Bus, AlertCircle } from "lucide-react"
-
-export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
-  const router = useRouter()
+const Login: React.FC = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      await login(email, password)
-      router.push("/")
+      await login(email, password);
+      navigate("/"); // Thay router.push bằng navigate()
     } catch (err) {
-      setError("Email hoặc mật khẩu không đúng")
+      setError("Email hoặc mật khẩu không đúng");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -46,7 +42,9 @@ export default function LoginPage() {
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">SSB 1.0</CardTitle>
-            <CardDescription className="text-base mt-2">Hệ thống quản lý xe buýt trường học</CardDescription>
+            <CardDescription className="text-base mt-2">
+              Hệ thống quản lý xe buýt trường học
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
@@ -100,5 +98,7 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
+
+export default Login;

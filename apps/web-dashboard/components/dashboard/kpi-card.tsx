@@ -1,6 +1,6 @@
 import React from "react"
-import { Card, CardContent } from "../../ui/card"
-import { cn } from "../../../lib/utils"
+import { Card, CardContent } from "../../components/ui/card"
+import { cn } from "../../lib/utils"
 import { TrendingUp, TrendingDown } from "lucide-react"
 
 interface KPICardProps {

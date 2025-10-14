@@ -1,0 +1,8 @@
+{
+  "name": "@smart-school-bus/config",
+  "version": "1.0.0",
+  "description": "Configuration files for the Smart School Bus Tracking System",
+  "main": "index.js",
+  "author": "",
+  "license": "MIT"
+}

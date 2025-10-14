@@ -1,12 +1,12 @@
 import React, { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
-import { Button } from "../../ui/button"
-import { Input } from "../../ui/input"
-import { Label } from "../../ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
-import { Separator } from "../../ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Button } from "../../components/ui/button"
+import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { Separator } from "../../components/ui/separator"
 import { Plus, Trash2, Save, X, MapPin, Clock } from "lucide-react"
-import { mockStops } from "../../../lib/mock-data"
+import { mockStops } from "../../lib/mock-data"
 
 interface RouteStop {
   stopId: string

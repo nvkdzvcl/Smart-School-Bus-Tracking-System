@@ -1,6 +1,6 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
-import { Button } from "../../ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Button } from "../../components/ui/button"
 import { UserPlus, MessageSquare, MapPin, Calendar, FileText, Settings } from "lucide-react"
 
 const quickActions = [
