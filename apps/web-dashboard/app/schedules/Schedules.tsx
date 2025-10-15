@@ -9,7 +9,7 @@ import { AssignmentGrid } from "../../components/schedules/assignment-grid";
 
 const Schedules: React.FC = () => {
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);
-  const [selectedRouteId, setSelectedRouteId] = useState<string | undefined>(undefined);
+  const [, setSelectedRouteId] = useState<string | undefined>(undefined);
 
   return (
     <AppLayout

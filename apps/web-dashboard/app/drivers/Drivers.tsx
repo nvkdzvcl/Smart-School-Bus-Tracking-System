@@ -5,7 +5,7 @@ import { DriverStats } from "../../components/drivers/driver-stats";
 import { DriverTable } from "../../components/drivers/driver-table";
 
 const Drivers: React.FC = () => {
-  const [editingDriverId, setEditingDriverId] = useState<string | undefined>(undefined);
+  const [, setEditingDriverId] = useState<string | undefined>(undefined);
 
   return (
     <AppLayout

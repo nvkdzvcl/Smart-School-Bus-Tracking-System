@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "../../lib/utils";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "outline";
+  variant?: "default" | "outline" | "secondary";
 }
 
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
@@ -14,6 +14,7 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
           "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", 
           variant === "default" && "bg-primary text-primary-foreground",
           variant === "outline" && "border border-border text-foreground",
+          variant === "secondary" && "bg-secondary text-secondary-foreground",
           className
         )}
         {...props}

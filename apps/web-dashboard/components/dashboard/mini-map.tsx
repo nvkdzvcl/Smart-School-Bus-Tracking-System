@@ -12,7 +12,7 @@ export const MiniMap: React.FC = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Vị trí xe hiện tại</CardTitle>
-          <Badge variant="secondary" className="bg-primary/10 text-primary">
+          <Badge variant="default" className="bg-primary/10 text-primary">
             {activeVehicles.length} xe đang chạy
           </Badge>
         </div>

@@ -61,7 +61,7 @@ export const DriverTable: React.FC<DriverTableProps> = ({ onEdit, onCreate }) =>
                 <TableHead>Hết hạn</TableHead>
                 <TableHead>Điểm tín nhiệm</TableHead>
                 <TableHead>Trạng thái</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[50px]"><span className="sr-only">Thao tác</span></TableHead>
               </TableRow>
             </TableHeader>
 

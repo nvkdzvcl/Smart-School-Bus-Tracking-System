@@ -19,6 +19,11 @@ const Vehicles: React.FC = () => {
           onEdit={setEditingVehicleId}
           onCreate={() => console.log("Create vehicle")}
         />
+        {editingVehicleId && (
+          <div>
+            <p>Currently editing vehicle ID: {editingVehicleId}</p>
+          </div>
+        )}
       </div>
     </AppLayout>
   );

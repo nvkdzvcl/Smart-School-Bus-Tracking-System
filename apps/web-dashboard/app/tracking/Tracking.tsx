@@ -9,7 +9,7 @@ import type { FilterState } from "../../components/tracking/map-filters";
 
 const Tracking: React.FC = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);
-  const [filters, setFilters] = useState<FilterState>({});
+  const [, setFilters] = useState<FilterState>({});
 
   return (
     <AppLayout

@@ -1,6 +1,6 @@
 import React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { useAuth } from "../../lib/auth/context"
+import { useAuth } from "../../lib/auth/use-auth"
 import { PERMISSIONS } from "../../lib/auth/permissions"
 import type { Permission } from "../../lib/auth/permissions"
 import { cn } from "../../lib/utils"
@@ -106,7 +106,7 @@ export const AppSidebar: React.FC = () => {
       <div className="border-t border-border p-4">
         <div className="flex items-center gap-3 mb-3">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name} />
+            <AvatarImage src={user?.avatar ?? "/placeholder.svg"} alt={user?.name ?? "User"} />
             <AvatarFallback className="bg-primary/10 text-primary">
               {user?.name
                 ?.split(" ")
@@ -120,7 +120,7 @@ export const AppSidebar: React.FC = () => {
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="w-full bg-transparent" onClick={logout}>
+        <Button variant="ghost" size="default" className="w-full bg-transparent" onClick={logout}>
           <LogOut className="h-4 w-4 mr-2" />
           Đăng xuất
         </Button>

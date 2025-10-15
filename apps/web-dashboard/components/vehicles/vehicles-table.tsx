@@ -40,7 +40,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({ onEdit, onCreate }) 
                 className="pl-9 w-64 h-9"
               />
             </div>
-            <Button size="sm" onClick={onCreate}>
+            <Button onClick={onCreate}>
               <Plus className="h-4 w-4 mr-1" />
               Thêm xe
             </Button>
@@ -59,7 +59,7 @@ export const VehicleTable: React.FC<VehicleTableProps> = ({ onEdit, onCreate }) 
                 <TableHead>Trạng thái</TableHead>
                 <TableHead>Kiểm định</TableHead>
                 <TableHead>Bảo hiểm</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[50px]">&nbsp;</TableHead>
               </TableRow>
             </TableHeader>
 

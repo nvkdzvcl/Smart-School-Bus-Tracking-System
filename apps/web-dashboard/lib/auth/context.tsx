@@ -1,20 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import React, { useState, useEffect, type ReactNode } from "react"
 import type { User } from "../types"
 import type { Permission } from "./permissions"
 import { ROLE_PERMISSIONS } from "./permissions"
+import { AuthContext } from "./auth-context"
 
-interface AuthContextType {
-  user: User | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  hasPermission: (permission: Permission) => boolean
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-// Mock users for demo
+// Mock users cho demo SPA
 const MOCK_USERS: User[] = [
   {
     id: "u1",
@@ -42,29 +32,23 @@ const MOCK_USERS: User[] = [
   },
 ]
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check for stored session
     const storedUser = localStorage.getItem("ssb_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
+    if (storedUser) setUser(JSON.parse(storedUser))
     setIsLoading(false)
   }, [])
 
   const login = async (email: string, password: string) => {
-    // Mock login - in production, this would call an API
+    void password // mark as used to satisfy noUnusedParameters
     const foundUser = MOCK_USERS.find((u) => u.email === email)
-    if (foundUser) {
-      const userWithLogin = { ...foundUser, lastLogin: new Date().toISOString() }
-      setUser(userWithLogin)
-      localStorage.setItem("ssb_user", JSON.stringify(userWithLogin))
-    } else {
-      throw new Error("Invalid credentials")
-    }
+    if (!foundUser) throw new Error("Invalid credentials")
+    const userWithLogin = { ...foundUser, lastLogin: new Date().toISOString() }
+    setUser(userWithLogin)
+    localStorage.setItem("ssb_user", JSON.stringify(userWithLogin))
   }
 
   const logout = () => {
@@ -72,31 +56,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem("ssb_user")
   }
 
-  const hasPermission = (permission: Permission): boolean => {
+  const hasPermission = (permission: Permission) => {
     if (!user) return false
     return user.permissions.includes(permission)
   }
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login,
-        logout,
-        hasPermission,
-      }}
+      value={{ user, isAuthenticated: !!user, isLoading, login, logout, hasPermission }}
     >
       {children}
     </AuthContext.Provider>
   )
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
-  }
-  return context
 }

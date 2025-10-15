@@ -42,7 +42,7 @@ export const RouteBuilder: React.FC<RouteBuilderProps> = ({ onClose }) => {
     setStops(next)
   }
 
-  const updateStop = (index: number, field: keyof RouteStop, value: any) => {
+  const updateStop = <K extends keyof RouteStop>(index: number, field: K, value: RouteStop[K]) => {
     const next = [...stops]
     next[index] = { ...next[index], [field]: value }
     setStops(next)

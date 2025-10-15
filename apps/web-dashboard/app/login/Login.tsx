@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../lib/auth/context";
+import { useAuth } from "../../lib/auth/use-auth";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -24,7 +24,7 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate("/"); // Thay router.push bằng navigate()
-    } catch (err) {
+    } catch {
       setError("Email hoặc mật khẩu không đúng");
     } finally {
       setIsLoading(false);
