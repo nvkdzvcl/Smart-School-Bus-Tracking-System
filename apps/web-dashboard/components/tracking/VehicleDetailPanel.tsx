@@ -1,12 +1,12 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import { Button } from "../../components/ui/button"
-import { Separator } from "../../components/ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
+import { Badge } from "../ui/Badge"
+import { Button } from "../ui/Button"
+import { Separator } from "../ui/Separator"
 import { Bus, User, Clock, MessageSquare, Navigation, Gauge, Fuel, X } from "lucide-react"
-import { mockVehicles, mockDrivers, mockStudents, mockStops } from "../../lib/mock-data"
-import { vehicleStatusLabels, vehicleStatusColors } from "../../lib/utils/status"
-import { cn } from "../../lib/utils"
+import { mockVehicles, mockDrivers, mockStudents, mockStops } from "../../lib/MockData"
+import { vehicleStatusLabels, vehicleStatusColors } from "../../lib/utils/Status"
+import { cn } from "../../lib/Utils"
 
 interface VehicleDetailPanelProps {
   vehicleId: string

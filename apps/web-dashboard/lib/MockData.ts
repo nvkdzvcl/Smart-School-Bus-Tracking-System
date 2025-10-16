@@ -1,4 +1,4 @@
-import type { Vehicle, Driver, Student, Stop, Route, Incident, DashboardKPI } from "./types"
+import type { Vehicle, Driver, Student, Stop, Route, Incident, DashboardKPI } from "./Types"
 
 // Mock vehicles
 export const mockVehicles: Vehicle[] = [

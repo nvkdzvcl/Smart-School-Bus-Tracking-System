@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { AppLayout } from "../../components/layout/app-layout";
-import { PERMISSIONS } from "../../lib/auth/permissions";
-import { MapFilters } from "../../components/tracking/map-filters";
-import { VehicleList } from "../../components/tracking/vehicle-list";
-import { TrackingMap } from "../../components/tracking/tracking-map";
-import { VehicleDetailPanel } from "../../components/tracking/vehicle-detail-panel-";
-import type { FilterState } from "../../components/tracking/map-filters";
+import { AppLayout } from "../../components/layout/AppLayout";
+import { PERMISSIONS } from "../../lib/auth/Permissions";
+import { MapFilters } from "../../components/tracking/MapFilters";
+import { VehicleList } from "../../components/tracking/VehicleList";
+import { TrackingMap } from "../../components/tracking/TrackingMap";
+import { VehicleDetailPanel } from "../../components/tracking/VehicleDetailPanel";
+import type { FilterState } from "../../components/tracking/MapFilters";
 
 const Tracking: React.FC = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | undefined>(undefined);

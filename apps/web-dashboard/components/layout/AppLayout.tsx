@@ -1,8 +1,8 @@
 import React from "react"
-import { AppSidebar } from "./app-sidebar"
-import { AppHeader } from "./app-header"
-import { ProtectedRoute } from "../auth/protected-route"
-import type { Permission } from "../../lib/auth/permissions"
+import { AppSidebar } from "./AppSidebar"
+import { AppHeader } from "./AppHeader"
+import { ProtectedRoute } from "../auth/ProtectedRoute"
+import type { Permission } from "../../lib/auth/Permissions"
 
 interface AppLayoutProps {
   children: React.ReactNode

@@ -1,6 +1,6 @@
 // Status utility functions and mappings
 
-import type { VehicleStatus, DriverStatus, RouteStatus, IncidentSeverity } from "../types"
+import type { VehicleStatus, DriverStatus, RouteStatus, IncidentSeverity } from "../Types"
 
 export const vehicleStatusLabels: Record<VehicleStatus, string> = {
   active: "Đang hoạt động",

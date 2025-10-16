@@ -1,7 +1,7 @@
 import React from "react"
 import { Bell, Search } from "lucide-react"
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
+import { Button } from "../ui/Button"
+import { Input } from "../ui/Input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +9,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../components/ui/dropdown-menu"
-import { Badge } from "../../components/ui/badge"
+} from "../ui/DropdownMenu"
+import { Badge } from "../ui/Badge"
 
 interface AppHeaderProps {
   title: string

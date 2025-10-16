@@ -1,8 +1,8 @@
 import React, { useState } from "react"
-import { Card, CardContent } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../ui/Card"
+import { Button } from "../ui/Button"
 import { MapPin, Play, Maximize2 } from "lucide-react"
-import { mockVehicles } from "../../lib/mock-data"
+import { mockVehicles } from "../../lib/MockData"
 
 interface TrackingMapProps {
   selectedVehicleId?: string

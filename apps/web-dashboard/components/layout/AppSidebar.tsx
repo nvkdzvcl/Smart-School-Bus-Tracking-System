@@ -1,9 +1,9 @@
 import React from "react"
 import { Link, useLocation } from "react-router-dom"
-import { useAuth } from "../../lib/auth/use-auth"
-import { PERMISSIONS } from "../../lib/auth/permissions"
-import type { Permission } from "../../lib/auth/permissions"
-import { cn } from "../../lib/utils"
+import { useAuth } from "../../lib/auth/UseAuth"
+import { PERMISSIONS } from "../../lib/auth/Permissions"
+import type { Permission } from "../../lib/auth/Permissions"
+import { cn } from "../../lib/Utils"
 import {
   LayoutDashboard,
   Map,
@@ -21,9 +21,9 @@ import {
   FileText,
   LogOut,
 } from "lucide-react"
-import { Button } from "../../components/ui/button"
-import { ScrollArea } from "../../components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar"
+import { Button } from "../ui/Button"
+import { ScrollArea } from "../ui/ScrollArea"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar"
 
 interface NavItem {
   title: string

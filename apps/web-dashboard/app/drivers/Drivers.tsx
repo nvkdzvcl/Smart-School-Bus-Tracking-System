@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { AppLayout } from "../../components/layout/app-layout";
-import { PERMISSIONS } from "../../lib/auth/permissions";
-import { DriverStats } from "../../components/drivers/driver-stats";
-import { DriverTable } from "../../components/drivers/driver-table";
+import { AppLayout } from "../../components/layout/AppLayout";
+import { PERMISSIONS } from "../../lib/auth/Permissions";
+import { DriverStats } from "../../components/drivers/DriverStats";
+import { DriverTable } from "../../components/drivers/DriverTable";
 
 const Drivers: React.FC = () => {
   const [, setEditingDriverId] = useState<string | undefined>(undefined);

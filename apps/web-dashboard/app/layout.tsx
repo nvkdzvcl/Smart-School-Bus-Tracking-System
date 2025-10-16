@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import "./globals.css";
-import { AuthProvider } from "../lib/auth/context";
+import { AuthProvider } from "../lib/auth/Context";
 
 const RootLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (

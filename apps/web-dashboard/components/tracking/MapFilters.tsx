@@ -1,11 +1,11 @@
 import React, { useState } from "react"
-import { Card, CardContent } from "../../components/ui/card"
-import { Label } from "../../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import { Badge } from "../../components/ui/badge"
-import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../ui/Card"
+import { Label } from "../ui/Label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/Select"
+import { Badge } from "../ui/Badge"
+import { Button } from "../ui/Button"
 import { Filter, X } from "lucide-react"
-import type { VehicleStatus, ShiftType } from "../../lib/types"
+import type { VehicleStatus, ShiftType } from "../../lib/Types"
 
 interface MapFiltersProps {
   onFilterChange: (filters: FilterState) => void

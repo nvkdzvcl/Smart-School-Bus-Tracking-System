@@ -1,8 +1,8 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
+import { Badge } from "../ui/Badge"
 import { MapPin } from "lucide-react"
-import { mockVehicles } from "../../lib/mock-data"
+import { mockVehicles } from "../../lib/MockData"
 
 export const MiniMap: React.FC = () => {
   const activeVehicles = mockVehicles.filter((v) => v.status === "active" && v.currentLocation)

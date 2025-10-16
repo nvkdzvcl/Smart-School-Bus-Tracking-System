@@ -1,5 +1,5 @@
 // src/main.tsx
-import React from "react"
+import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
@@ -8,8 +8,8 @@ import RootLayout from "../app/Layout"
 import "../app/globals.css"
 
 // Auth
-import { AuthProvider } from "../lib/auth/context"
-import { ProtectedRoute } from "../components/auth/protected-route"
+import { AuthProvider } from "../lib/auth/Context"
+import { ProtectedRoute } from "../components/auth/ProtectedRoute"
 
 // Pages
 import Home from "../app/Home"
@@ -31,7 +31,7 @@ import Vehicles from "../app/vehicles/Vehicles"
 import Stops from "../app/stops/Stops"
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
+  <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
@@ -202,5 +202,5 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         </Routes>
       </AuthProvider>
     </BrowserRouter>
-  </React.StrictMode>
+  </StrictMode>
 )

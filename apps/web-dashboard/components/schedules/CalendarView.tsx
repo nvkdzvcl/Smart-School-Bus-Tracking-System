@@ -1,9 +1,9 @@
 import React, { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
-import { Badge } from "../../components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
+import { Button } from "../ui/Button"
+import { Badge } from "../ui/Badge"
 import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
-import { cn } from "../../lib/utils"
+import { cn } from "../../lib/Utils"
 
 interface CalendarEvent {
   id: string

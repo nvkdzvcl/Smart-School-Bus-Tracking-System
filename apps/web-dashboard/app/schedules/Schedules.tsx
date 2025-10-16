@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { AppLayout } from "../../components/layout/app-layout";
-import { PERMISSIONS } from "../../lib/auth/permissions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { CalendarView } from "../../components/schedules/calendar-view";
-import { RouteList } from "../../components/schedules/route-list";
-import { RouteBuilder } from "../../components/schedules/route-builder";
-import { AssignmentGrid } from "../../components/schedules/assignment-grid";
+import { AppLayout } from "../../components/layout/AppLayout";
+import { PERMISSIONS } from "../../lib/auth/Permissions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs";
+import { CalendarView } from "../../components/schedules/CalendarView";
+import { RouteList } from "../../components/schedules/RouteList";
+import { RouteBuilder } from "../../components/schedules/RouteBuilder";
+import { AssignmentGrid } from "../../components/schedules/AssignmentGrid";
 
 const Schedules: React.FC = () => {
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);

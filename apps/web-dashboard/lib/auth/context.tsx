@@ -1,8 +1,8 @@
-import React, { useState, useEffect, type ReactNode } from "react"
-import type { User } from "../types"
-import type { Permission } from "./permissions"
-import { ROLE_PERMISSIONS } from "./permissions"
-import { AuthContext } from "./auth-context"
+import { useState, useEffect, type ReactNode } from "react"
+import type { User } from "../Types"
+import type { Permission } from "./Permissions"
+import { ROLE_PERMISSIONS } from "./Permissions"
+import { AuthContext } from "./AuthContext"
 
 // Mock users cho demo SPA
 const MOCK_USERS: User[] = [

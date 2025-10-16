@@ -1,11 +1,11 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import { ScrollArea } from "../../components/ui/scroll-area"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
+import { Badge } from "../ui/Badge"
+import { ScrollArea } from "../ui/ScrollArea"
 import { Bus, Navigation, Gauge } from "lucide-react"
-import { mockVehicles, mockDrivers } from "../../lib/mock-data"
-import { vehicleStatusLabels, vehicleStatusColors } from "../../lib/utils/status"
-import { cn } from "../../lib/utils"
+import { mockVehicles, mockDrivers } from "../../lib/MockData"
+import { vehicleStatusLabels, vehicleStatusColors } from "../../lib/utils/Status"
+import { cn } from "../../lib/Utils"
 
 interface VehicleListProps {
   selectedVehicleId?: string

@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { AppLayout } from "../../components/layout/app-layout";
-import { PERMISSIONS } from "../../lib/auth/permissions";
-import { VehicleStats } from "../../components/vehicles/vehicles-stats";
-import { VehicleTable } from "../../components/vehicles/vehicles-table";
+import { AppLayout } from "../../components/layout/AppLayout";
+import { PERMISSIONS } from "../../lib/auth/Permissions";
+import { VehicleStats } from "../../components/vehicles/VehiclesStats";
+import { VehicleTable } from "../../components/vehicles/VehiclesTable";
 
 const Vehicles: React.FC = () => {
   const [editingVehicleId, setEditingVehicleId] = useState<string | undefined>(undefined);

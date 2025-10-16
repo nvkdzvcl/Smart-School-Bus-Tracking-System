@@ -1,7 +1,7 @@
 import React from "react"
-import { Card, CardContent } from "../../components/ui/card"
+import { Card, CardContent } from "../ui/Card"
 import { Bus, Wrench, WifiOff } from "lucide-react"
-import { mockVehicles } from "../../lib/mock-data"
+import { mockVehicles } from "../../lib/MockData"
 
 export const VehicleStats: React.FC = () => {
   const stats = {

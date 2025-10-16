@@ -1,13 +1,13 @@
 import React from "react";
-import { AppLayout } from "../../components/layout/app-layout";
-import { PERMISSIONS } from "../../lib/auth/permissions";
-import { KPICard } from "../../components/dashboard/kpi-card";
-import { MiniMap } from "../../components/dashboard/mini-map";
-import { UpcomingStops } from "../../components/dashboard/upcoming-stops";
-import { RecentAlerts } from "../../components/dashboard/recent-alerts";
-import { QuickActions } from "../../components/dashboard/quick-actions";
+import { AppLayout } from "../../components/layout/AppLayout";
+import { PERMISSIONS } from "../../lib/auth/Permissions";
+import { KPICard } from "../../components/dashboard/KpiCard";
+import { MiniMap } from "../../components/dashboard/MiniMap";
+import { UpcomingStops } from "../../components/dashboard/UpcomingStops";
+import { RecentAlerts } from "../../components/dashboard/RecentAlerts";
+import { QuickActions } from "../../components/dashboard/QuickActions";
 import { Bus, GraduationCap, AlertTriangle, TrendingUp, Activity } from "lucide-react";
-import { mockDashboardKPI } from "../../lib/mock-data";
+import { mockDashboardKPI } from "../../lib/MockData";
 
 const Dashboard: React.FC = () => {
   const kpi = mockDashboardKPI;

@@ -1,6 +1,6 @@
 import { createContext } from "react"
-import type { User } from "../types"
-import type { Permission } from "./permissions"
+import type { User } from "../Types"
+import type { Permission } from "./Permissions"
 
 export interface AuthContextType {
   user: User | null

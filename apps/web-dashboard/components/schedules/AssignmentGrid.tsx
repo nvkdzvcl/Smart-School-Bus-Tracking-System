@@ -1,10 +1,10 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
-import { Badge } from "../../components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
+import { Button } from "../ui/Button"
+import { Badge } from "../ui/Badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/Select"
 import { Plus, AlertCircle } from "lucide-react"
-import { mockRoutes, mockVehicles, mockDrivers } from "../../lib/mock-data"
+import { mockRoutes, mockVehicles, mockDrivers } from "../../lib/MockData"
 
 export const AssignmentGrid: React.FC = () => {
   const routes = mockRoutes.filter((r) => r.isActive)
