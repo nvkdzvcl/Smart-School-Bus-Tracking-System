@@ -1,12 +1,22 @@
-"use client"
-
 import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Bell, MessageSquare, Send, AlertCircle, CheckCircle2, MapPin, X } from "lucide-react"
+
+// Nếu bạn dùng alias "@", đổi các import bên dưới lại "@/components/..."
+import { Card, CardContent } from "../../components/ui/Card"
+import { Button } from "../../components/ui/Button"
+import { Input } from "../../components/ui/Input"
+import { Badge } from "../../components/ui/Badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs"
+import { ParentNav } from "../../components/ParentNav"
+
+import {
+  Bell,
+  MessageSquare,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  MapPin,
+  X,
+} from "lucide-react"
 
 export default function ParentMessagesPage() {
   const [selectedTab, setSelectedTab] = useState("notifications")
@@ -15,69 +25,15 @@ export default function ParentMessagesPage() {
 
   // Mock data
   const notifications = [
-    {
-      id: 1,
-      type: "arrival",
-      title: "Xe sắp đến",
-      message: "Xe cách điểm đón 500m - chuẩn bị ra nhé",
-      time: "2 phút trước",
-      unread: true,
-      icon: MapPin,
-      color: "text-blue-500",
-      bgColor: "bg-blue-50",
-    },
-    {
-      id: 2,
-      type: "pickup",
-      title: "Đã lên xe",
-      message: "Học sinh đã lên xe an toàn lúc 07:15",
-      time: "30 phút trước",
-      unread: false,
-      icon: CheckCircle2,
-      color: "text-green-500",
-      bgColor: "bg-green-50",
-    },
-    {
-      id: 3,
-      type: "delay",
-      title: "Xe bị trễ",
-      message: "Xe đang gặp kẹt xe, dự kiến trễ 10 phút",
-      time: "1 giờ trước",
-      unread: false,
-      icon: AlertCircle,
-      color: "text-orange-500",
-      bgColor: "bg-orange-50",
-    },
-    {
-      id: 4,
-      type: "arrival_school",
-      title: "Đã đến trường",
-      message: "Học sinh đã đến trường an toàn lúc 07:45",
-      time: "2 giờ trước",
-      unread: false,
-      icon: CheckCircle2,
-      color: "text-green-500",
-      bgColor: "bg-green-50",
-    },
+    { id: 1, type: "arrival", title: "Xe sắp đến", message: "Xe cách điểm đón 500m - chuẩn bị ra nhé", time: "2 phút trước", unread: true, icon: MapPin, color: "text-blue-500", bgColor: "bg-blue-50" },
+    { id: 2, type: "pickup", title: "Đã lên xe", message: "Học sinh đã lên xe an toàn lúc 07:15", time: "30 phút trước", unread: false, icon: CheckCircle2, color: "text-green-500", bgColor: "bg-green-50" },
+    { id: 3, type: "delay", title: "Xe bị trễ", message: "Xe đang gặp kẹt xe, dự kiến trễ 10 phút", time: "1 giờ trước", unread: false, icon: AlertCircle, color: "text-orange-500", bgColor: "bg-orange-50" },
+    { id: 4, type: "arrival_school", title: "Đã đến trường", message: "Học sinh đã đến trường an toàn lúc 07:45", time: "2 giờ trước", unread: false, icon: CheckCircle2, color: "text-green-500", bgColor: "bg-green-50" },
   ]
 
   const conversations = [
-    {
-      id: 1,
-      name: "Quản lý trường",
-      lastMessage: "Cảm ơn phụ huynh đã phản hồi",
-      time: "10:30",
-      unread: 0,
-      avatar: "Q",
-    },
-    {
-      id: 2,
-      name: "Tài xế Trần Văn Bình",
-      lastMessage: "Con đã lên xe an toàn",
-      time: "07:15",
-      unread: 1,
-      avatar: "T",
-    },
+    { id: 1, name: "Quản lý trường", lastMessage: "Cảm ơn phụ huynh đã phản hồi", time: "10:30", unread: 0, avatar: "Q" },
+    { id: 2, name: "Tài xế Trần Văn Bình", lastMessage: "Con đã lên xe an toàn", time: "07:15", unread: 1, avatar: "T" },
   ]
 
   const messages = [
@@ -90,7 +46,7 @@ export default function ParentMessagesPage() {
 
   const handleSendMessage = () => {
     if (messageInput.trim()) {
-      // Send message logic here
+      // TODO: send message api
       setMessageInput("")
     }
   }
@@ -105,7 +61,7 @@ export default function ParentMessagesPage() {
       </header>
 
       <main className="max-w-2xl mx-auto">
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v)}>
           <div className="sticky top-[73px] z-30 bg-card border-b border-border">
             <TabsList className="w-full rounded-none h-12">
               <TabsTrigger value="notifications" className="flex-1 gap-2">
@@ -140,16 +96,12 @@ export default function ParentMessagesPage() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div
-                        className={`w-10 h-10 ${notification.bgColor} rounded-full flex items-center justify-center flex-shrink-0`}
-                      >
+                      <div className={`w-10 h-10 ${notification.bgColor} rounded-full flex items-center justify-center flex-shrink-0`}>
                         <Icon className={`w-5 h-5 ${notification.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3
-                            className={`font-semibold ${notification.unread ? "text-foreground" : "text-muted-foreground"}`}
-                          >
+                          <h3 className={`font-semibold ${notification.unread ? "text-foreground" : "text-muted-foreground"}`}>
                             {notification.title}
                           </h3>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">{notification.time}</span>
@@ -224,10 +176,7 @@ export default function ParentMessagesPage() {
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                   {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender === "parent" ? "justify-end" : "justify-start"}`}
-                    >
+                    <div key={message.id} className={`flex ${message.sender === "parent" ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[75%] rounded-2xl px-4 py-2 ${
                           message.sender === "parent"
@@ -236,9 +185,7 @@ export default function ParentMessagesPage() {
                         }`}
                       >
                         <p className="text-sm">{message.text}</p>
-                        <p
-                          className={`text-xs mt-1 ${message.sender === "parent" ? "text-primary-foreground/70" : "text-muted-foreground"}`}
-                        >
+                        <p className={`text-xs mt-1 ${message.sender === "parent" ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                           {message.time}
                         </p>
                       </div>
@@ -270,7 +217,7 @@ export default function ParentMessagesPage() {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       placeholder="Nhập tin nhắn..."
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()} // dùng onKeyDown cho React 18
                       className="flex-1"
                     />
                     <Button onClick={handleSendMessage} size="icon" disabled={!messageInput.trim()}>
@@ -283,6 +230,9 @@ export default function ParentMessagesPage() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Gộp ParentNav từ Layout.tsx */}
+      <ParentNav />
     </div>
   )
 }
