@@ -1,13 +1,10 @@
-// src/pages/Route.tsx (React thuần - gộp Layout + Page, bỏ Next.js APIs)
-
 import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-// ⚠️ Điều chỉnh đường dẫn import cho đúng cấu trúc dự án của bạn
-import { MobileNav } from "../components/MobileNav"
-import { Card, CardContent } from "../components/ui/Card"
-import { Button } from "../components/ui/Button"
-import { Badge } from "../components/ui/Badge"
+import { MobileNav } from "../../components/MobileNav"
+import { Card, CardContent } from "../../components/ui/Card"
+import { Button } from "../../components/ui/Button"
+import { Badge } from "../../components/ui/Badge"
 
 interface Stop {
   id: number

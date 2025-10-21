@@ -1,59 +1,55 @@
-"use client"
+// src/components/LoginForm.tsx
+import React, { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "../components/ui/Button"
+import { Input } from "../components/ui/Input"
+import { Label } from "../components/ui/Label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/Tabs"
 
 export function LoginForm() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
   const [otp, setOtp] = useState("")
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate API call
+  const mockLogin = async () => {
+    // Giả lập API
     await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock successful login
+    // Lưu "đăng nhập thành công"
     localStorage.setItem("driver_authenticated", "true")
     localStorage.setItem("driver_name", "Nguyễn Văn A")
     localStorage.setItem("driver_phone", phone)
+  }
 
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    await mockLogin()
     setIsLoading(false)
-    router.push("/dashboard")
+    navigate("/dashboard")
+    // Nếu KHÔNG dùng react-router-dom:
+    // window.location.href = "/dashboard"
   }
 
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock successful login
-    localStorage.setItem("driver_authenticated", "true")
-    localStorage.setItem("driver_name", "Nguyễn Văn A")
-    localStorage.setItem("driver_phone", phone)
-
+    await mockLogin()
     setIsLoading(false)
-    router.push("/dashboard")
+    navigate("/dashboard")
+    // window.location.href = "/dashboard"
   }
 
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-foreground">Đăng nhập</CardTitle>
-        <CardDescription className="text-muted-foreground">Chọn phương thức đăng nhập của bạn</CardDescription>
+        <CardDescription className="text-muted-foreground">
+          Chọn phương thức đăng nhập của bạn
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="password" className="w-full">
@@ -65,9 +61,7 @@ export function LoginForm() {
           <TabsContent value="password">
             <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-foreground">
-                  Số điện thoại
-                </Label>
+                <Label htmlFor="phone" className="text-foreground">Số điện thoại</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -79,9 +73,7 @@ export function LoginForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">
-                  Mật khẩu
-                </Label>
+                <Label htmlFor="password" className="text-foreground">Mật khẩu</Label>
                 <Input
                   id="password"
                   type="password"
@@ -97,9 +89,7 @@ export function LoginForm() {
                   <input type="checkbox" className="rounded border-border" />
                   Ghi nhớ đăng nhập
                 </label>
-                <a href="#" className="text-primary hover:underline">
-                  Quên mật khẩu?
-                </a>
+                <a href="#" className="text-primary hover:underline">Quên mật khẩu?</a>
               </div>
               <Button
                 type="submit"
@@ -114,9 +104,7 @@ export function LoginForm() {
           <TabsContent value="otp">
             <form onSubmit={handleOtpLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone-otp" className="text-foreground">
-                  Số điện thoại
-                </Label>
+                <Label htmlFor="phone-otp" className="text-foreground">Số điện thoại</Label>
                 <Input
                   id="phone-otp"
                   type="tel"
@@ -136,9 +124,7 @@ export function LoginForm() {
                 Gửi mã OTP
               </Button>
               <div className="space-y-2">
-                <Label htmlFor="otp" className="text-foreground">
-                  Mã OTP
-                </Label>
+                <Label htmlFor="otp" className="text-foreground">Mã OTP</Label>
                 <Input
                   id="otp"
                   type="text"

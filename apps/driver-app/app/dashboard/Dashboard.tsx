@@ -1,13 +1,10 @@
-// src/pages/Dashboard.tsx (React thuần - đã gộp Layout + Page và bỏ Next.js APIs)
-
 import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-// ⚠️ Điều chỉnh lại đường dẫn import cho phù hợp cấu trúc của bạn:
-import { MobileNav } from "../components/MobileNav"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
-import { Button } from "../components/ui/Button"
-import { Badge } from "../components/ui/Badge"
+import { MobileNav } from "../../components/MobileNav"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card"
+import { Button } from "../../components/ui/Button"
+import { Badge } from "../../components/ui/Badge"
 
 interface ShiftData {
   shift: string

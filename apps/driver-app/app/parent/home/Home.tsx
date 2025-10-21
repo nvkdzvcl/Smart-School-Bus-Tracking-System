@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 
-// Nếu bạn đang dùng alias "@", đổi các import dưới lại "@/components/..."
-import { Card, CardContent } from "../../components/ui/Card"
-import { Button } from "../../components/ui/Button"
-import { Badge } from "../../components/ui/Badge"
-import { ParentNav } from "../../components/ParentNav"
+import { Card, CardContent } from "../../../components/ui/Card"
+import { Button } from "../../../components/ui/Button"
+import { Badge } from "../../../components/ui/Badge"
+import { ParentNav } from "../../../components/ParentNav"
 
 import {
   MapPin,

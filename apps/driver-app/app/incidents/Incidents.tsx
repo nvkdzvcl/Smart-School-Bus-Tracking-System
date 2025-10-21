@@ -1,15 +1,12 @@
-// src/pages/Incidents.tsx (React thuần - gộp Layout + Page, bỏ Next.js APIs)
-
 import React, { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-// ⚠️ Điều chỉnh đường dẫn import cho đúng cấu trúc của bạn
-import { MobileNav } from "../components/MobileNav"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
-import { Button } from "../components/ui/Button"
-import { Badge } from "../components/ui/Badge"
-import { Textarea } from "../components/ui/Textarea"
-import { Label } from "../components/ui/Label"
+import { MobileNav } from "../../components/MobileNav"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card"
+import { Button } from "../../components/ui/Button"
+import { Badge } from "../../components/ui/Badge"
+import { Textarea } from "../../components/ui/Textarea"
+import { Label } from "../../components/ui/Label"
 
 interface Incident {
   id: number

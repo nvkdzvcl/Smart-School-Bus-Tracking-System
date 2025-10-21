@@ -1,170 +1,88 @@
-"use client"
+// src/components/MobileNav.tsx
+import React from "react"
+import { NavLink } from "react-router-dom"
 
-import type React from "react"
+const navItems = [
+  {
+    href: "/dashboard",
+    label: "Trang chủ",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: "/route",
+    label: "Lộ trình",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: "/students",
+    label: "Học sinh",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: "/messages",
+    label: "Tin nhắn",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+        />
+      </svg>
+    ),
+  },
+  {
+    href: "/settings",
+    label: "Cài đặt",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      </svg>
+    ),
+  },
+]
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-export function LoginForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [phone, setPhone] = useState("")
-  const [password, setPassword] = useState("")
-  const [otp, setOtp] = useState("")
-
-  const handlePasswordLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock successful login
-    localStorage.setItem("driver_authenticated", "true")
-    localStorage.setItem("driver_name", "Nguyễn Văn A")
-    localStorage.setItem("driver_phone", phone)
-
-    setIsLoading(false)
-    router.push("/dashboard")
-  }
-
-  const handleOtpLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock successful login
-    localStorage.setItem("driver_authenticated", "true")
-    localStorage.setItem("driver_name", "Nguyễn Văn A")
-    localStorage.setItem("driver_phone", phone)
-
-    setIsLoading(false)
-    router.push("/dashboard")
-  }
-
+export function MobileNav() {
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="text-foreground">Đăng nhập</CardTitle>
-        <CardDescription className="text-muted-foreground">Chọn phương thức đăng nhập của bạn</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="password">Mật khẩu</TabsTrigger>
-            <TabsTrigger value="otp">OTP SMS</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="password">
-            <form onSubmit={handlePasswordLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="text-foreground">
-                  Số điện thoại
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="0912345678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="bg-background border-border text-foreground"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-foreground">
-                  Mật khẩu
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="bg-background border-border text-foreground"
-                />
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                  <input type="checkbox" className="rounded border-border" />
-                  Ghi nhớ đăng nhập
-                </label>
-                <a href="#" className="text-primary hover:underline">
-                  Quên mật khẩu?
-                </a>
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isLoading}
-              >
-                {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
-              </Button>
-            </form>
-          </TabsContent>
-
-          <TabsContent value="otp">
-            <form onSubmit={handleOtpLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone-otp" className="text-foreground">
-                  Số điện thoại
-                </Label>
-                <Input
-                  id="phone-otp"
-                  type="tel"
-                  placeholder="0912345678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="bg-background border-border text-foreground"
-                />
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full border-border text-foreground hover:bg-muted bg-transparent"
-                onClick={() => alert("Mã OTP đã được gửi đến số điện thoại của bạn")}
-              >
-                Gửi mã OTP
-              </Button>
-              <div className="space-y-2">
-                <Label htmlFor="otp" className="text-foreground">
-                  Mã OTP
-                </Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                  maxLength={6}
-                  className="bg-background border-border text-foreground"
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                disabled={isLoading}
-              >
-                {isLoading ? "Đang xác thực..." : "Xác thực OTP"}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
-
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Hỗ trợ: Tiếng Việt / English</p>
-        </div>
-      </CardContent>
-    </Card>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border/50 backdrop-blur-lg">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.href}
+            to={item.href}
+            className={({ isActive }) =>
+              [
+                "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[60px]",
+                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              ].join(" ")
+            }
+          >
+            {item.icon}
+            <span className="text-xs font-medium">{item.label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </nav>
   )
 }

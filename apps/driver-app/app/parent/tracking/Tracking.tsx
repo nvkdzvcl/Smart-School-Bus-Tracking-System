@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react"
 
-// Nếu bạn dùng alias "@", đổi các import dưới về "@/components/..."
-import { Card, CardContent } from "../../components/ui/Card"
-import { Button } from "../../components/ui/Button"
-import { Badge } from "../../components/ui/Badge"
-import { ParentNav } from "../../components/ParentNav"
+import { Card, CardContent } from "../../../components/ui/Card"
+import { Button } from "../../../components/ui/Button"
+import { Badge } from "../../../components/ui/Badge"
+import { ParentNav } from "../../../components/ParentNav"
 
 import {
   MapPin,

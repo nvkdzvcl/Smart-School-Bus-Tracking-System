@@ -1,12 +1,11 @@
 import { useState } from "react"
 
-// Nếu bạn dùng alias "@", đổi các import bên dưới lại "@/components/..."
-import { Card, CardContent } from "../../components/ui/Card"
-import { Button } from "../../components/ui/Button"
-import { Input } from "../../components/ui/Input"
-import { Badge } from "../../components/ui/Badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Tabs"
-import { ParentNav } from "../../components/ParentNav"
+import { Card, CardContent } from "../../../components/ui/Card"
+import { Button } from "../../../components/ui/Button"
+import { Input } from "../../../components/ui/Input"
+import { Badge } from "../../../components/ui/Badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/Tabs"
+import { ParentNav } from "../../../components/ParentNav"
 
 import {
   Bell,

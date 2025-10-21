@@ -1,13 +1,12 @@
 import { useState } from "react"
 
-// Nếu bạn dùng alias "@", đổi các import bên dưới lại "@/components/..."
-import { Card, CardContent } from "../../components/ui/Card"
-import { Button } from "../../components/ui/Button"
-import { Input } from "../../components/ui/Input"
-import { Label } from "../../components/ui/Label"
-import { Switch } from "../../components/ui/Switch"
-import { Textarea } from "../../components/ui/Textarea"
-import { ParentNav } from "../../components/ParentNav"
+import { Card, CardContent } from "../../../components/ui/Card"
+import { Button } from "../../../components/ui/Button"
+import { Input } from "../../../components/ui/Input"
+import { Label } from "../../../components/ui/Label"
+import { Switch } from "../../../components/ui/Switch"
+import { Textarea } from "../../../components/ui/Textarea"
+import { ParentNav } from "../../../components/ParentNav"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../components/ui/dialog"
+} from "../../../components/ui/Dialog.tsx"
 
 import {
   User,
