@@ -1,11 +1,11 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { BusStatusCard } from "../../components/BusStatusCard"
-import { StudentCard } from "../../components/StudentCard"
-import { QuickActions } from "../../components/QuickActions"
-import { UpcomingTrips } from "../../components/UpcomingTrips"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import BusStatusCard from "../../components/BusStatusCard"
+import StudentCard from "../../components/StudentCard"
+import QuickActions from "../../components/QuickActions"
+import UpcomingTrips from "../../components/UpcomingTrips"
 
-export default function HomePage() {
+export default function Home() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <TopBar title="Home" showNotifications notificationCount={2} />

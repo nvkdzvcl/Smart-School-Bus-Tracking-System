@@ -68,7 +68,7 @@ export default function TripHistory() {
         return (
           <Card key={trip.id} className={isDelayed ? "border-warning/30 bg-warning/5" : ""}>
             <CardContent className="p-4">
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                     trip.type.includes("Morning") ? "bg-primary/10" : "bg-accent/10"
@@ -78,7 +78,7 @@ export default function TripHistory() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center justify-between gap-2 mb-2">
                     <div>
                       <h4 className="text-sm font-semibold">{trip.type}</h4>
                       <p className="text-xs text-muted-foreground">{trip.date}</p>

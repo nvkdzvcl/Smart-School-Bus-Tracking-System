@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar"
 import { Card, CardContent } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
 import { Button } from "../components/ui/Button"
+import { ChevronDown } from "lucide-react"
 
 export default function StudentCard() {
   return (
@@ -25,9 +26,10 @@ export default function StudentCard() {
           </div>
 
           <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            {/* <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <polyline points="6 9 12 15 18 9" />
-            </svg>
+            </svg> */}
+            <ChevronDown className="w-4 h-4" />
           </Button>
         </div>
       </CardContent>

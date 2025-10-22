@@ -1,7 +1,7 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { LiveMap } from "../../components/LiveMap"
-import { BusInfoPanel } from "../../components/BusInfoPanel"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import LiveMap from "../../components/LiveMap"
+import BusInfoPanel from "../../components/BusInfoPanel"
 
 export default function TrackingPage() {
   return (

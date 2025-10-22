@@ -34,7 +34,7 @@ const actions = [
   },
 ]
 
-export default function Qcomponents/uickActions() {
+export default function QuickActions() {
   return (
     <div className="grid grid-cols-4 gap-3">
       {actions.map((action) => {

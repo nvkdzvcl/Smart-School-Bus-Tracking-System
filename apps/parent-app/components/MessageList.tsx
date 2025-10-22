@@ -47,7 +47,8 @@ const messages = [
 
 export default function MessageList() {
   return (
-    <div className="divide-y divide-border">
+    // <div className="divide-y divide-border">
+    <div className="space-y-3 max-w-2xl mx-auto p-4">
       {messages.map((message) => {
         const Icon = message.icon
         const bgColor =
@@ -56,15 +57,16 @@ export default function MessageList() {
           message.color === "warning" ? "text-warning" : message.color === "accent" ? "text-accent" : "text-primary"
 
         return (
-          <Card key={message.id} className="rounded-none border-0 border-b last:border-b-0">
+          // <Card key={message.id} className="rounded-none border-0 border-b last:border-b-0">
+          <Card key={message.id}>
             <CardContent className={`p-4 ${message.unread ? "bg-muted/30" : ""}`}>
-              <div className="flex items-start gap-3">
+              <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-lg ${bgColor} flex items-center justify-center shrink-0`}>
                   <Icon className={`w-5 h-5 ${textColor}`} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex items-center justify-between gap-2 mb-1">
                     <h4 className="text-sm font-semibold">{message.title}</h4>
                     <div className="flex items-center gap-2 shrink-0">
                       {message.unread && <div className="w-2 h-2 rounded-full bg-primary" />}

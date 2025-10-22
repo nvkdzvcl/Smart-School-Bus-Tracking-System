@@ -24,7 +24,6 @@ export default function LoginForm() {
     <Card className="w-full max-w-md shadow-xl">
       <CardHeader className="space-y-4 text-center">
         <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
-          {/* @ts-expect-error lucide-react JSX typing mismatch in this workspace */}
           <Bus className="w-8 h-8 text-primary-foreground" />
         </div>
         <div>
@@ -46,7 +45,6 @@ export default function LoginForm() {
                   Phone Number
                 </Label>
                 <div className="relative">
-                  {/* @ts-expect-error lucide-react JSX typing mismatch in this workspace */}
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="phone"
@@ -62,7 +60,6 @@ export default function LoginForm() {
                   Password
                 </Label>
                 <div className="relative">
-                  {/* @ts-expect-error lucide-react JSX typing mismatch in this workspace */}
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="password-phone"
@@ -86,7 +83,6 @@ export default function LoginForm() {
                   Email
                 </Label>
                 <div className="relative">
-                  {/* @ts-expect-error lucide-react JSX typing mismatch in this workspace */}
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="email"
@@ -102,7 +98,6 @@ export default function LoginForm() {
                   Password
                 </Label>
                 <div className="relative">
-                  {/* @ts-expect-error lucide-react JSX typing mismatch in this workspace */}
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     id="password-email"

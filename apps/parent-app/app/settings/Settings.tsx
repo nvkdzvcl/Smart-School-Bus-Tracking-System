@@ -1,7 +1,7 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { WeeklySchedule } from "../../components/WeeklySchedule"
-import { AbsenceRequest } from "../../components/AbsenceRequest"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import WeeklySchedule from "../../components/WeeklySchedule"
+import AbsenceRequest from "../../components/AbsenceRequest"
 
 export default function SchedulePage() {
   return (
