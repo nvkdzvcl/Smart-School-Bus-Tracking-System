@@ -1,14 +1,15 @@
-import React from "react";
-import { cn } from "../../lib/Utils";
+import * as React from "react";
+import { cn } from "../../lib/Utils"; // <- lưu ý: utils (chữ thường)
 
 export type LabelProps = React.LabelHTMLAttributes<HTMLLabelElement>;
 
-const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
+export const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
   ({ className, ...props }, ref) => (
     <label
       ref={ref}
       className={cn(
-        "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+        "text-sm font-medium leading-none",
+        "peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
         className
       )}
       {...props}
@@ -16,5 +17,3 @@ const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
   )
 );
 Label.displayName = "Label";
-
-export { Label };

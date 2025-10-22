@@ -1,4 +1,3 @@
-/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -25,6 +24,7 @@
     --border: oklch(0.9 0 0);
     --input: oklch(0.9 0 0);
     --ring: oklch(0.55 0.22 252);
+    --ring-offset-background: var(--background);
   }
 
   .dark {
@@ -47,11 +47,26 @@
     --border: oklch(0.22 0 0);
     --input: oklch(0.22 0 0);
     --ring: oklch(0.6 0.24 252);
+    --ring-offset-background: var(--background);
   }
 
-  /* đặt màu viền mặc định cho toàn bộ elements */
-  *, ::before, ::after { border-color: var(--border); }
+  /* Reset mặc định + màu viền + chữ nền */
+  *, ::before, ::after {
+    @apply border-border;
+  }
 
-  /* nền + chữ dựa trên biến */
-  body { @apply bg-background text-foreground; }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Highlight khi focus hoặc select text */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px var(--ring-offset-background);
+  }
+
+  ::selection {
+    background: var(--primary);
+    color: var(--primary-foreground);
+  }
 }
