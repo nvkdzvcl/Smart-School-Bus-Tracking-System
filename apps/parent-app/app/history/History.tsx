@@ -1,7 +1,7 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { TripHistory } from "../../components/TripHistory"
-import { HistoryFilters } from "../../components/HistoryFilters"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import TripHistory from "../../components/TripHistory"
+import HistoryFilters from "../../components/HistoryFilters"
 
 export default function HistoryPage() {
   return (

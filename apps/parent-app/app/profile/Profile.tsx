@@ -1,8 +1,8 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { StudentProfile } from "../../components/StudentProfile"
-import { AttendanceHistory } from "../../components/AttendanceHistory"
-import { EmergencyContacts } from "../../components/EmergencyContacts"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import StudentProfile from "../../components/StudentProfile"
+import AttendanceHistory from "../../components/AttendanceHistory"
+import EmergencyContacts from "../../components/EmergencyContacts"
 
 export default function ProfilePage() {
   return (

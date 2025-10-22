@@ -1,6 +1,6 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { MessageList } from "../../components/MessageList"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import MessageList from "../../components/MessageList"
 
 export default function MessagesPage() {
   return (

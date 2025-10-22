@@ -6,10 +6,11 @@ import { Bus, MapPin, Clock, Phone, Navigation } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export default function BusStatusCard() {
-  const status = "on-route" // "on-route" | "arrived" | "delayed" | "idle"
+  type BusStatus = "on-route" | "arrived" | "delayed" | "idle"
+  //const status = "on-route" // "on-route" | "arrived" | "delayed" | "idle"
   const eta = "5 minutes"
 
-  const getStatusConfig = () => {
+  const getStatusConfig = (status: BusStatus) => {
     switch (status) {
       case "on-route":
         return {
@@ -42,7 +43,8 @@ export default function BusStatusCard() {
     }
   }
 
-  const config = getStatusConfig()
+  const currentStatus: BusStatus = "on-route"
+  const config = getStatusConfig(currentStatus)
 
   return (
     <Card className={config.bgColor}>

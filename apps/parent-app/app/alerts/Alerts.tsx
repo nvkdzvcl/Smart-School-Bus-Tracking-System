@@ -1,6 +1,6 @@
-import { TopBar } from "../../components/TopBar"
-import { BottomNav } from "../../components/BottomNav"
-import { AlertList } from "../../components/AlertList"
+import TopBar from "../../components/TopBar"
+import BottomNav from "../../components/BottomNav"
+import AlertList from "../../components/AlertList"
 
 export default function AlertsPage() {
   return (

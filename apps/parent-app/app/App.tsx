@@ -1,5 +1,14 @@
-import { redirect } from "next/navigation"
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function RootPage() {
-  redirect("/login")
-}
+const App: React.FC = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate("/login"); // tương đương redirect("/login") trong Next.js
+  }, [navigate]);
+
+  return null;
+};
+
+export default App;
