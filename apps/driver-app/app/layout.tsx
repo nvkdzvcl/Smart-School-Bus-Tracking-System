@@ -1,28 +1,23 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { GeistSans } from "geist/font/sans"
-import { GeistMono } from "geist/font/mono"
-import { Analytics } from "@vercel/analytics/next"
-import { Suspense } from "react"
-import "./globals.css"
+import React, { Suspense } from "react";
+import "./globals.css"; // Giữ lại việc import CSS toàn cục
 
-export const metadata: Metadata = {
-  title: "Driver App - School Bus Management",
-  description: "Mobile app for school bus drivers",
-  generator: "v0.app",
-}
-
-export default function RootLayout({
+function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+}: {
+  children: React.ReactNode; // Định nghĩa type cho children trong React thuần
+}) {
+  // Thay thế các class font đặc thù bằng class chung nếu cần
+  const bodyClassName = "font-sans"; // Giữ lại font-sans, loại bỏ Geist font variables
+
   return (
-    <html lang="vi" className="dark">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <Suspense fallback={null}>{children}</Suspense>
-        <Analytics />
-      </body>
-    </html>
-  )
+    // Trong React thuần, ta thường chỉ render nội dung bên trong <body>
+    <div className={bodyClassName}>
+      <Suspense fallback={null}>
+        {children}
+      </Suspense>
+      {/* Vercel Analytics đã được loại bỏ */}
+    </div>
+  );
 }
+
+export default RootLayout;
