@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import "./globals.css"; // Giữ lại việc import CSS toàn cục
 
 function RootLayout({
   children,
@@ -12,9 +11,7 @@ function RootLayout({
   return (
     // Trong React thuần, ta thường chỉ render nội dung bên trong <body>
     <div className={bodyClassName}>
-      <Suspense fallback={null}>
-        {children}
-      </Suspense>
+      <Suspense fallback={null}>{children}</Suspense>
       {/* Vercel Analytics đã được loại bỏ */}
     </div>
   );
