@@ -79,7 +79,7 @@ export default function SettingsPage() {
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Profile */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Thông tin cá nhân</CardTitle>
           </CardHeader>
@@ -98,7 +98,7 @@ export default function SettingsPage() {
             </div>
             <Button
               variant="outline"
-              className="w-full border-border text-foreground hover:bg-muted bg-transparent"
+              className="w-full border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
               onClick={() => alert("Chỉnh sửa thông tin")}
             >
               Chỉnh sửa thông tin
@@ -107,12 +107,12 @@ export default function SettingsPage() {
         </Card>
 
         {/* Notifications */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Thông báo</CardTitle>
             <CardDescription className="text-muted-foreground">Quản lý cài đặt thông báo</CardDescription>
           </CardHeader>
-        <CardContent className="space-y-4">
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label className="text-foreground">Âm thanh</Label>
@@ -131,7 +131,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Appearance */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Giao diện</CardTitle>
             <CardDescription className="text-muted-foreground">Tùy chỉnh giao diện ứng dụng</CardDescription>
@@ -148,14 +148,14 @@ export default function SettingsPage() {
         </Card>
 
         {/* Support */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Hỗ trợ</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <Button
               variant="outline"
-              className="w-full justify-start border-border text-foreground hover:bg-muted bg-transparent"
+              className="w-full justify-start border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
               onClick={() => navigate("/history")}
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,7 +165,7 @@ export default function SettingsPage() {
             </Button>
             <Button
               variant="outline"
-              className="w-full justify-start border-border text-foreground hover:bg-muted bg-transparent"
+              className="w-full justify-start border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
               onClick={() => alert("Liên hệ hỗ trợ")}
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,7 +175,7 @@ export default function SettingsPage() {
             </Button>
             <Button
               variant="outline"
-              className="w-full justify-start border-border text-foreground hover:bg-muted bg-transparent"
+              className="w-full justify-start border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
               onClick={() => alert("Phản hồi")}
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +187,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* About */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardContent className="p-4 text-center text-sm text-muted-foreground">
             <p>Driver App v1.0.0</p>
             <p className="mt-1">© 2025 School Bus Management System</p>
@@ -198,7 +198,7 @@ export default function SettingsPage() {
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="w-full border-destructive text-destructive hover:bg-destructive/10 bg-transparent"
+          className="w-full border-destructive text-destructive hover:bg-destructive/10 bg-transparent rounded-lg"
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

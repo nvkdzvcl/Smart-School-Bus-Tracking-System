@@ -6,6 +6,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { Button } from "../../components/ui/Button"
 import { Badge } from "../../components/ui/Badge"
 
+// Map percent -> Tailwind width classes so JIT keeps them
+const widthPercentClasses: Record<number, string> = {
+  0: "w-[0%]",
+  10: "w-[10%]",
+  20: "w-[20%]",
+  30: "w-[30%]",
+  40: "w-[40%]",
+  50: "w-[50%]",
+  60: "w-[60%]",
+  70: "w-[70%]",
+  80: "w-[80%]",
+  90: "w-[90%]",
+  100: "w-[100%]",
+}
+
 interface ShiftData {
   shift: string
   route: string
@@ -56,6 +71,11 @@ export default function DashboardPage() {
     navigate("/incidents")
   }
 
+  // Compute width class for progress bar (no inline styles)
+  const progressPct = Math.max(0, Math.min(100, Math.round((shiftData.pickedUp / shiftData.totalStudents) * 100)))
+  const rounded10 = Math.round(progressPct / 10) * 10
+  const widthClass = widthPercentClasses[rounded10] ?? "w-[0%]"
+
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
@@ -80,11 +100,11 @@ export default function DashboardPage() {
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Current Shift Card */}
-        <Card className="border-primary/20 bg-gradient-to-br from-card to-secondary/10">
+        <Card className="border-primary/20 bg-gradient-to-br from-card to-secondary/10 rounded-lg">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between ">
               <CardTitle className="text-foreground">Ca làm việc hôm nay</CardTitle>
-              <Badge className="bg-primary text-primary-foreground">{shiftData.shift}</Badge>
+              <Badge className="bg-primary text-primary-foreground rounded-lg">{shiftData.shift}</Badge>
             </div>
             <CardDescription className="text-muted-foreground">Thông tin chuyến đi</CardDescription>
           </CardHeader>
@@ -112,10 +132,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${(shiftData.pickedUp / shiftData.totalStudents) * 100}%` }}
-                />
+                <div className={`h-full bg-primary transition-all duration-300 ${widthClass}`} />
               </div>
             </div>
           </CardContent>
@@ -123,19 +140,19 @@ export default function DashboardPage() {
 
         {/* Student Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <Card className="border-border/50">
+          <Card className="border-border/50 rounded-lg">
             <CardContent className="pt-6 text-center">
               <div className="text-2xl font-bold text-foreground">{shiftData.totalStudents}</div>
               <div className="text-xs text-muted-foreground mt-1">Tổng số</div>
             </CardContent>
           </Card>
-          <Card className="border-border/50">
+          <Card className="border-border/50 rounded-lg">
             <CardContent className="pt-6 text-center">
               <div className="text-2xl font-bold text-primary">{shiftData.pickedUp}</div>
               <div className="text-xs text-muted-foreground mt-1">Đã đón</div>
             </CardContent>
           </Card>
-          <Card className="border-border/50">
+          <Card className="border-border/50 rounded-lg">
             <CardContent className="pt-6 text-center">
               <div className="text-2xl font-bold text-accent">{shiftData.remaining}</div>
               <div className="text-xs text-muted-foreground mt-1">Còn lại</div>
@@ -144,16 +161,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Thao tác nhanh</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
               onClick={handleStartTrip}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-base"
+              className="w-full bg-primary text-primary-foreground h-12 text-base rounded-lg transition-all duration-200 shadow-sm hover:bg-primary/90 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -174,7 +191,7 @@ export default function DashboardPage() {
               <Button
                 onClick={handleViewStudents}
                 variant="outline"
-                className="h-12 border-border text-foreground hover:bg-muted bg-transparent"
+                className="h-12 border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -190,7 +207,7 @@ export default function DashboardPage() {
               <Button
                 onClick={handleReportIncident}
                 variant="outline"
-                className="h-12 border-destructive/50 text-destructive hover:bg-destructive/10 bg-transparent"
+                className="h-12 border-destructive/50 text-destructive hover:bg-destructive/10 bg-transparent rounded-lg hover:bg-red-900/40 transition-colors duration-300 cursor-pointer"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -207,12 +224,12 @@ export default function DashboardPage() {
         </Card>
 
         {/* Notifications */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Thông báo</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/20">
+            <div className="group flex items-start gap-3 p-3 rounded-lg bg-accent/15 border border-accent/30 shadow-sm transition-colors duration-200 hover:bg-accent/20 hover:border-accent/40 cursor-pointer">
               <div className="w-2 h-2 rounded-full bg-accent mt-2 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">Nhắc nhở ca làm việc</p>
@@ -223,8 +240,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <div className="w-2 h-2 rounded-full bg-muted-foreground mt-2 flex-shrink-0" />
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/15 border border-accent/30 shadow-sm transition-colors duration-200 hover:bg-accent/20 hover:border-accent/40 cursor-pointer">
+              <div className="w-2 h-2 rounded-full bg-accent mt-2 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">Cập nhật tuyến đường</p>
                 <p className="text-xs text-muted-foreground mt-1">Tuyến A có thay đổi nhỏ. Vui lòng kiểm tra bản đồ.</p>

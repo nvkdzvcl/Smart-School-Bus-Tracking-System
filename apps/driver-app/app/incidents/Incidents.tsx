@@ -129,7 +129,7 @@ export default function IncidentsPage() {
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Report Form */}
         {showReportForm && (
-          <Card className="border-destructive/30 bg-gradient-to-br from-card to-destructive/5">
+          <Card className="border-destructive/30 bg-gradient-to-br from-card to-destructive/5 rounded-lg">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base text-foreground">Báo cáo sự cố mới</CardTitle>
@@ -154,11 +154,10 @@ export default function IncidentsPage() {
                       key={type.id}
                       variant="outline"
                       onClick={() => setSelectedType(type.id)}
-                      className={`h-auto py-3 flex flex-col items-center gap-2 ${
-                        selectedType === type.id
-                          ? "border-destructive bg-destructive/10 text-destructive"
-                          : "border-border text-foreground hover:bg-muted bg-transparent"
-                      }`}
+                      className={`h-auto py-3 flex flex-col items-center gap-2 ${selectedType === type.id
+                        ? "border-destructive bg-destructive/10 text-destructive"
+                        : "border-border text-foreground hover:bg-muted bg-transparent"
+                        } rounded-lg`}
                     >
                       <span className="text-2xl">{type.icon}</span>
                       <span className="text-sm">{type.label}</span>
@@ -185,7 +184,7 @@ export default function IncidentsPage() {
                 <Label className="text-foreground">Đính kèm ảnh (tùy chọn)</Label>
                 <Button
                   variant="outline"
-                  className="w-full border-border text-foreground hover:bg-muted bg-transparent"
+                  className="w-full border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                   onClick={() => alert("Chức năng chụp ảnh")}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -210,14 +209,14 @@ export default function IncidentsPage() {
                 <Button
                   variant="outline"
                   onClick={() => setShowReportForm(false)}
-                  className="flex-1 border-border text-foreground hover:bg-muted bg-transparent"
+                  className="flex-1 border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                 >
                   Hủy
                 </Button>
                 <Button
                   onClick={handleSubmitIncident}
                   disabled={isSubmitting}
-                  className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg"
                 >
                   {isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
                 </Button>
@@ -228,7 +227,7 @@ export default function IncidentsPage() {
 
         {/* Quick Report Buttons */}
         {!showReportForm && (
-          <Card className="border-border/50">
+          <Card className="border-border/50 rounded-lg">
             <CardHeader>
               <CardTitle className="text-base text-foreground">Báo cáo nhanh</CardTitle>
             </CardHeader>
@@ -242,7 +241,7 @@ export default function IncidentsPage() {
                       setSelectedType(type.id)
                       setShowReportForm(true)
                     }}
-                    className="h-auto py-3 flex flex-col items-center gap-2 border-border text-foreground hover:bg-muted bg-transparent"
+                    className="h-auto py-3 flex flex-col items-center gap-2 border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                   >
                     <span className="text-2xl">{type.icon}</span>
                     <span className="text-sm">{type.label}</span>
@@ -254,7 +253,7 @@ export default function IncidentsPage() {
         )}
 
         {/* Incidents List */}
-        <Card className="border-border/50">
+        <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Lịch sử sự cố</CardTitle>
           </CardHeader>
@@ -271,7 +270,7 @@ export default function IncidentsPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M9 12l2 2 4-4m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
                 <p className="text-muted-foreground">Chưa có sự cố nào được báo cáo</p>
@@ -339,7 +338,7 @@ export default function IncidentsPage() {
         </Card>
 
         {/* Safety Tips */}
-        <Card className="border-border/50 bg-gradient-to-br from-card to-accent/5">
+        <Card className="border-border/50 bg-gradient-to-br from-card to-accent/5 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Lưu ý an toàn</CardTitle>
           </CardHeader>

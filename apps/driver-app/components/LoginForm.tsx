@@ -44,7 +44,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+    <Card className="border-border/50 bg-card/50 backdrop-blur-sm rounded-2xl rounded-lg">
       <CardHeader>
         <CardTitle className="text-foreground">Đăng nhập</CardTitle>
         <CardDescription className="text-muted-foreground">
@@ -53,14 +53,14 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="password" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="password">Mật khẩu</TabsTrigger>
-            <TabsTrigger value="otp">OTP SMS</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-6 rounded-lg overflow-hidden ">
+            <TabsTrigger value="password" className="rounded-lg">Mật khẩu</TabsTrigger>
+            <TabsTrigger value="otp" className="rounded-lg">OTP SMS</TabsTrigger>
           </TabsList>
 
           <TabsContent value="password">
             <form onSubmit={handlePasswordLogin} className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-2 rounded-lg">
                 <Label htmlFor="phone" className="text-foreground">Số điện thoại</Label>
                 <Input
                   id="phone"
@@ -69,10 +69,10 @@ export function LoginForm() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="bg-background border-border text-foreground"
+                  className="bg-background border-border text-foreground rounded-lg"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 ">
                 <Label htmlFor="password" className="text-foreground">Mật khẩu</Label>
                 <Input
                   id="password"
@@ -81,7 +81,7 @@ export function LoginForm() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="bg-background border-border text-foreground"
+                  className="bg-background border-border text-foreground rounded-lg"
                 />
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -93,7 +93,7 @@ export function LoginForm() {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
                 disabled={isLoading}
               >
                 {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
@@ -112,13 +112,13 @@ export function LoginForm() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="bg-background border-border text-foreground"
+                  className="bg-background border-border text-foreground rounded-lg"
                 />
               </div>
               <Button
                 type="button"
                 variant="outline"
-                className="w-full border-border text-foreground hover:bg-muted bg-transparent"
+                className="w-full border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                 onClick={() => alert("Mã OTP đã được gửi đến số điện thoại của bạn")}
               >
                 Gửi mã OTP
@@ -133,12 +133,12 @@ export function LoginForm() {
                   onChange={(e) => setOtp(e.target.value)}
                   required
                   maxLength={6}
-                  className="bg-background border-border text-foreground"
+                  className="bg-background border-border text-foreground rounded-lg"
                 />
               </div>
               <Button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
                 disabled={isLoading}
               >
                 {isLoading ? "Đang xác thực..." : "Xác thực OTP"}

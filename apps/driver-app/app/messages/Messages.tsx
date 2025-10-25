@@ -155,19 +155,19 @@ export default function MessagesPage() {
 
       <main className="max-w-lg mx-auto px-4 py-4">
         <Tabs defaultValue="notifications" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="notifications" className="relative">
+          <TabsList className="grid w-full grid-cols-2 mb-4 rounded-lg overflow-hidden border border-border/50">
+            <TabsTrigger value="notifications" className="relative rounded-lg">
               Thông báo
               {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs rounded-full">
                   {unreadCount}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="conversations" className="relative">
+            <TabsTrigger value="conversations" className="relative rounded-lg">
               Hội thoại
               {conversations.reduce((acc, c) => acc + c.unread, 0) > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs rounded-full">
                   {conversations.reduce((acc, c) => acc + c.unread, 0)}
                 </Badge>
               )}
@@ -179,20 +179,18 @@ export default function MessagesPage() {
             {messages.map((message) => (
               <Card
                 key={message.id}
-                className={`border-border/50 cursor-pointer hover:border-primary/50 transition-colors ${
-                  !message.read ? "bg-gradient-to-br from-card to-primary/5" : ""
-                }`}
+                className={`border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors ${!message.read ? "bg-gradient-to-br from-card to-primary/5" : ""
+                  }`}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-4 px-4 pt-4">
                   <div className="flex items-start gap-3">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        message.type === "broadcast"
-                          ? "bg-primary/20 text-primary"
-                          : message.type === "system"
+                      className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${message.type === "broadcast"
+                        ? "bg-primary/20 text-primary"
+                        : message.type === "system"
                           ? "bg-accent/20 text-accent"
                           : "bg-secondary text-secondary-foreground"
-                      }`}
+                        }`}
                     >
                       {message.type === "broadcast" ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,7 +232,9 @@ export default function MessagesPage() {
                           <p className="text-sm font-medium text-foreground">{message.subject}</p>
                         </div>
                         {message.priority === "high" && (
-                          <Badge className="bg-destructive text-destructive-foreground flex-shrink-0">Quan trọng</Badge>
+                          <Badge className="bg-destructive text-destructive-foreground rounded-full px-2 py-0.5 flex-shrink-0">
+                            Quan trọng
+                          </Badge>
                         )}
                       </div>
 
@@ -246,7 +246,7 @@ export default function MessagesPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs border-border text-foreground hover:bg-muted bg-transparent"
+                            className="h-7 text-xs border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                             onClick={(e) => {
                               e.stopPropagation()
                               setSelectedConversation(message.id)
@@ -266,7 +266,7 @@ export default function MessagesPage() {
           {/* Conversations Tab */}
           <TabsContent value="conversations" className="space-y-3 mt-0">
             {selectedConversation ? (
-              <Card className="border-border/50">
+              <Card className="border-border/50 rounded-lg overflow-hidden">
                 <CardContent className="p-0">
                   {/* Chat Header */}
                   <div className="p-4 border-b border-border/50 flex items-center gap-3">
@@ -306,7 +306,7 @@ export default function MessagesPage() {
                   </div>
 
                   {/* Quick Replies */}
-                  <div className="p-3 border-t border-border/50 bg-muted/30">
+                  <div className="p-3 border-t border-border/50 bg-muted/30 rounded-lg">
                     <p className="text-xs text-muted-foreground mb-2">Phản hồi nhanh:</p>
                     <div className="flex gap-2 flex-wrap">
                       {quickReplies.map((reply) => (
@@ -315,7 +315,7 @@ export default function MessagesPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleQuickReply(reply)}
-                          className="h-7 text-xs border-border text-foreground hover:bg-muted bg-transparent"
+                          className="h-7 text-xs border-border text-foreground hover:bg-muted bg-transparent rounded-lg p-4"
                         >
                           {reply}
                         </Button>
@@ -331,12 +331,12 @@ export default function MessagesPage() {
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                      className="flex-1 bg-background border-border text-foreground"
+                      className="flex-1 bg-background border-border text-foreground rounded-lg"
                     />
                     <Button
                       onClick={handleSendMessage}
                       size="icon"
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -349,7 +349,7 @@ export default function MessagesPage() {
               conversations.map((conversation) => (
                 <Card
                   key={conversation.id}
-                  className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                  className="border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
                   onClick={() => setSelectedConversation(conversation.id)}
                 >
                   <CardContent className="p-4">

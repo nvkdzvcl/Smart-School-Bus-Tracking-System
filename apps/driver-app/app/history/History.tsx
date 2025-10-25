@@ -127,7 +127,7 @@ export default function HistoryPage() {
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Summary Stats */}
-        <Card className="border-border/50 bg-gradient-to-br from-card to-primary/5">
+        <Card className="border-border/50 bg-gradient-to-br from-card to-primary/5 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Tổng quan tháng này</CardTitle>
           </CardHeader>
@@ -158,7 +158,7 @@ export default function HistoryPage() {
           {trips.map((trip) => (
             <Card
               key={trip.id}
-              className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+              className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors rounded-lg"
               onClick={() => setSelectedTrip(selectedTrip?.id === trip.id ? null : trip)}
             >
               <CardContent className="p-4">
@@ -169,8 +169,8 @@ export default function HistoryPage() {
                       <Badge
                         className={
                           trip.status === "completed"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-destructive text-destructive-foreground"
+                            ? "bg-primary text-primary-foreground rounded-lg"
+                            : "bg-destructive text-destructive-foreground rounded-lg"
                         }
                       >
                         {trip.shift}
@@ -181,7 +181,8 @@ export default function HistoryPage() {
                   <Badge
                     variant="outline"
                     className={
-                      trip.status === "completed" ? "border-accent text-accent" : "border-destructive text-destructive"
+                      (trip.status === "completed" ? "border-accent text-accent" : "border-destructive text-destructive") +
+                      " rounded-full px-2 py-0.5"
                     }
                   >
                     {trip.status === "completed" ? "Hoàn thành" : "Chưa hoàn thành"}
@@ -286,7 +287,7 @@ export default function HistoryPage() {
 
                     <Button
                       variant="outline"
-                      className="w-full border-border text-foreground hover:bg-muted bg-transparent"
+                      className="w-full border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                       onClick={(e) => {
                         e.stopPropagation()
                         alert("Xuất báo cáo PDF")

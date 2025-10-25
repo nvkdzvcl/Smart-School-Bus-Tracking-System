@@ -123,7 +123,7 @@ export default function RoutePage() {
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate("/dashboard")}
-                className="text-foreground hover:bg-muted"
+                className="text-foreground hover:bg-muted/70"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -136,11 +136,13 @@ export default function RoutePage() {
             </div>
             <Badge
               className={
-                tripStatus === "active"
-                  ? "bg-primary text-primary-foreground"
-                  : tripStatus === "paused"
-                  ? "bg-destructive text-destructive-foreground"
-                  : "bg-muted text-muted-foreground"
+                (
+                  tripStatus === "active"
+                    ? "bg-primary text-primary-foreground"
+                    : tripStatus === "paused"
+                      ? "bg-destructive text-destructive-foreground"
+                      : "bg-secondary text-secondary-foreground border border-border/50"
+                ) + " rounded-full px-3 py-0.5"
               }
             >
               {tripStatus === "active" ? "Đang chạy" : tripStatus === "paused" ? "Tạm dừng" : "Chưa bắt đầu"}
@@ -151,7 +153,7 @@ export default function RoutePage() {
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Map Placeholder */}
-        <Card className="border-border/50 overflow-hidden">
+        <Card className="border-border/50 overflow-hidden rounded-lg">
           <div className="relative h-64 bg-gradient-to-br from-secondary to-accent/20">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center space-y-2">
@@ -193,7 +195,7 @@ export default function RoutePage() {
               {tripStatus === "not-started" && (
                 <Button
                   onClick={handleStartTrip}
-                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
                 >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -213,7 +215,7 @@ export default function RoutePage() {
                   <Button
                     onClick={handlePauseTrip}
                     variant="outline"
-                    className="flex-1 border-border text-foreground hover:bg-muted bg-transparent"
+                    className="flex-1 border-border text-foreground hover:bg-muted/70 bg-transparent rounded-lg transition-colors duration-200"
                   >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -225,7 +227,10 @@ export default function RoutePage() {
                     </svg>
                     Tạm dừng
                   </Button>
-                  <Button onClick={handleNavigate} className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Button
+                    onClick={handleNavigate}
+                    className="flex-1 bg-accent hover:bg-accent/80 text-accent-foreground rounded-lg transition-colors duration-200"
+                  >
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
@@ -240,7 +245,10 @@ export default function RoutePage() {
               )}
 
               {tripStatus === "paused" && (
-                <Button onClick={handleResumeTrip} className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button
+                  onClick={handleResumeTrip}
+                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
+                >
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -258,12 +266,12 @@ export default function RoutePage() {
         </Card>
 
         {/* Current Stop Info */}
-        <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5">
-          <CardContent className="p-4">
+        <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5 rounded-lg">
+          <CardContent className="px-4 pt-6 p-4">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <Badge className="bg-primary text-primary-foreground">Điểm hiện tại</Badge>
+                  <Badge className="bg-primary text-primary-foreground rounded-lg">Điểm hiện tại</Badge>
                   <span className="text-xs text-muted-foreground">ETA: {stops[currentStopIndex].eta}</span>
                 </div>
                 <h3 className="font-semibold text-foreground">{stops[currentStopIndex].name}</h3>
@@ -286,7 +294,7 @@ export default function RoutePage() {
                 onClick={handleNextStop}
                 size="sm"
                 disabled={currentStopIndex === stops.length - 1}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
               >
                 Điểm tiếp theo
               </Button>
@@ -295,26 +303,25 @@ export default function RoutePage() {
         </Card>
 
         {/* Route Progress */}
-        <Card className="border-border/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
+        <Card className="border-border/50 rounded-lg">
+          <CardContent className="px-4 pt-6 pb-4">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground">Tiến độ tuyến</h3>
               <span className="text-sm text-muted-foreground">
                 {currentStopIndex + 1}/{stops.length}
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="mt-4 space-y-3">
               {stops.map((stop, index) => (
                 <div key={stop.id} className="flex items-start gap-3">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                        index < currentStopIndex
-                          ? "bg-primary border-primary text-primary-foreground"
-                          : index === currentStopIndex
+                      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${index < currentStopIndex
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : index === currentStopIndex
                           ? "bg-accent border-accent text-accent-foreground"
                           : "bg-muted border-border text-muted-foreground"
-                      }`}
+                        }`}
                     >
                       {index < currentStopIndex ? (
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,9 +338,8 @@ export default function RoutePage() {
                   <div className="flex-1 pb-2">
                     <div className="flex items-center justify-between">
                       <p
-                        className={`text-sm font-medium ${
-                          index === currentStopIndex ? "text-foreground" : "text-muted-foreground"
-                        }`}
+                        className={`text-sm font-medium ${index === currentStopIndex ? "text-foreground" : "text-muted-foreground"
+                          }`}
                       >
                         {stop.name}
                       </p>
@@ -347,9 +353,9 @@ export default function RoutePage() {
             </div>
           </CardContent>
         </Card>
-      </main>
+      </main >
 
       <MobileNav />
-    </div>
+    </div >
   )
 }

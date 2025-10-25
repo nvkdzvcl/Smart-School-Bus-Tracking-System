@@ -25,6 +25,7 @@ export function Tabs({
   defaultValue,
   onValueChange,
   className,
+  children,
   ...props
 }: TabsProps) {
   const isControlled = value !== undefined
@@ -47,15 +48,18 @@ export function Tabs({
 
   return (
     <TabsCtx.Provider value={ctx}>
-      <div className={cn("w-full", className)} {...props} />
+      <div className={cn("w-full", className)} {...props}>
+        {children}
+      </div>
     </TabsCtx.Provider>
   )
 }
 
 /* -------------------- TabsList -------------------- */
 
-interface TabsListProps extends React.HTMLAttributes<HTMLDivElement> {}
-export function TabsList({ className, ...props }: TabsListProps) {
+// Replace empty interface with a type alias to satisfy lint rules
+export type TabsListProps = React.HTMLAttributes<HTMLDivElement>
+export function TabsList({ className, children, ...props }: TabsListProps) {
   const ctx = React.useContext(TabsCtx)
   if (!ctx) throw new Error("TabsList must be used within <Tabs>")
 
@@ -100,14 +104,15 @@ export function TabsList({ className, ...props }: TabsListProps) {
 
   return (
     <div
-      role="tablist"
       onKeyDown={onKeyDown}
       className={cn(
         "inline-flex items-center justify-center rounded-[var(--radius-lg)] border border-border bg-muted p-1 text-foreground",
         className
       )}
       {...props}
-    />
+    >
+      {children}
+    </div>
   )
 }
 
@@ -119,20 +124,15 @@ interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
 export function TabsTrigger({ value, className, ...props }: TabsTriggerProps) {
   const ctx = React.useContext(TabsCtx)
   if (!ctx) throw new Error("TabsTrigger must be used within <Tabs>")
-  const { value: current, setValue, baseId, registerTrigger } = ctx
+  const { value: current, setValue, registerTrigger } = ctx
   const isActive = current === value
-  const tabId = `${baseId}-tab-${value}`
-  const panelId = `${baseId}-panel-${value}`
 
   return (
     <button
       ref={registerTrigger}
       type="button"
-      role="tab"
-      id={tabId}
-      aria-selected={isActive}
-      aria-controls={panelId}
       data-value={value}
+      data-state={isActive ? "active" : "inactive"}
       onClick={() => setValue(value)}
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium",
@@ -157,20 +157,11 @@ interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
 export function TabsContent({ value, className, children, ...props }: TabsContentProps) {
   const ctx = React.useContext(TabsCtx)
   if (!ctx) throw new Error("TabsContent must be used within <Tabs>")
-  const { value: current, baseId } = ctx
+  const { value: current } = ctx
   const isActive = current === value
-  const tabId = `${baseId}-tab-${value}`
-  const panelId = `${baseId}-panel-${value}`
 
   return (
-    <div
-      role="tabpanel"
-      id={panelId}
-      aria-labelledby={tabId}
-      hidden={!isActive}
-      className={cn(isActive ? "animate-in fade-in-0" : "", className)}
-      {...props}
-    >
+    <div hidden={!isActive} className={cn(isActive ? "animate-in fade-in-0" : "", className)} {...props}>
       {isActive ? children : null}
     </div>
   )

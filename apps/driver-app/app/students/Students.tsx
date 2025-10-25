@@ -113,7 +113,7 @@ export default function StudentsPage() {
               placeholder="Tìm kiếm học sinh..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-background border-border text-foreground"
+              className="pl-10 bg-background border-border text-foreground rounded-lg"
             />
           </div>
         </div>
@@ -122,26 +122,26 @@ export default function StudentsPage() {
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-4 gap-2">
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
+          <Card className="border-border/ rounded-lg">
+            <CardContent className="px-5 pt-5 p-3 text-center">
               <div className="text-xl font-bold text-foreground">{stats.total}</div>
               <div className="text-xs text-muted-foreground mt-0.5">Tổng</div>
             </CardContent>
           </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
+          <Card className="border-border/50 rounded-lg">
+            <CardContent className="px-5 pt-5 p-3 text-center">
               <div className="text-xl font-bold text-primary">{stats.pickedUp}</div>
               <div className="text-xs text-muted-foreground mt-0.5">Đã đón</div>
             </CardContent>
           </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
+          <Card className="border-border/ rounded-lg">
+            <CardContent className="px-5 pt-5 p-3 text-center">
               <div className="text-xl font-bold text-accent">{stats.droppedOff}</div>
               <div className="text-xs text-muted-foreground mt-0.5">Đã trả</div>
             </CardContent>
           </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-3 text-center">
+          <Card className="border-border/50 rounded-lg">
+            <CardContent className="px-5 pt-5 p-3 text-center">
               <div className="text-xl font-bold text-muted-foreground">{stats.remaining}</div>
               <div className="text-xs text-muted-foreground mt-0.5">Còn lại</div>
             </CardContent>
@@ -150,15 +150,15 @@ export default function StudentsPage() {
 
         {/* Shift Selector */}
         <Tabs value={shift} onValueChange={(v) => setShift(v as "morning" | "afternoon")} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="morning">Ca sáng</TabsTrigger>
-            <TabsTrigger value="afternoon">Ca chiều</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 rounded-lg">
+            <TabsTrigger className="rounded-lg" value="morning">Ca sáng</TabsTrigger>
+            <TabsTrigger className="rounded-lg" value="afternoon">Ca chiều</TabsTrigger>
           </TabsList>
 
           <TabsContent value="morning" className="space-y-3 mt-4">
             {filteredStudents.map((student) => (
-              <Card key={student.id} className="border-border/50">
-                <CardContent className="p-4">
+              <Card key={student.id} className="border-border/50 rounded-lg">
+                <CardContent className="p-4 px-5 pt-5">
                   <div className="flex items-start gap-3">
                     {/* Avatar */}
                     <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
@@ -166,7 +166,7 @@ export default function StudentsPage() {
                     </div>
 
                     {/* Student Info */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-05">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-foreground">{student.name}</h3>
@@ -174,11 +174,13 @@ export default function StudentsPage() {
                         </div>
                         <Badge
                           className={
-                            student.status === "picked-up"
-                              ? "bg-primary text-primary-foreground"
-                              : student.status === "dropped-off"
-                              ? "bg-accent text-accent-foreground"
-                              : "bg-muted text-muted-foreground"
+                            (
+                              student.status === "picked-up"
+                                ? "bg-primary text-primary-foreground"
+                                : student.status === "dropped-off"
+                                  ? "bg-accent text-accent-foreground"
+                                  : "bg-muted text-muted-foreground"
+                            ) + " rounded-full px-3 py-0.5"
                           }
                         >
                           {student.status === "picked-up" ? "Đã đón" : student.status === "dropped-off" ? "Đã trả" : "Chưa đón"}
@@ -204,10 +206,10 @@ export default function StudentsPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 px-4 pt-4">
                         {student.status === "not-picked" && (
-                          <Button onClick={() => handleCheckIn(student.id)} size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <Button onClick={() => handleCheckIn(student.id)} size="sm" className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg">
+                            <svg className="w-4 h-4 mr-1 " fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                             Đã đón
@@ -253,7 +255,7 @@ export default function StudentsPage() {
           </TabsContent>
 
           <TabsContent value="afternoon" className="space-y-3 mt-4">
-            <Card className="border-border/50">
+            <Card className="border-border/50 rounded-lg">
               <CardContent className="p-8 text-center">
                 <svg className="w-12 h-12 mx-auto text-muted-foreground mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -266,6 +268,6 @@ export default function StudentsPage() {
       </main>
 
       <MobileNav />
-    </div>
+    </div >
   )
 }
