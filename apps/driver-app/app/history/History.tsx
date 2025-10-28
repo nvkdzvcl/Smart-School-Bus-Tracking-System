@@ -161,7 +161,7 @@ export default function HistoryPage() {
               className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors rounded-lg"
               onClick={() => setSelectedTrip(selectedTrip?.id === trip.id ? null : trip)}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-4 pt-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
