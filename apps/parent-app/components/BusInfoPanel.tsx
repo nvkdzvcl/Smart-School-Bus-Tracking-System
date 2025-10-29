@@ -67,7 +67,7 @@ export default function BusInfoPanel() {
                   <p className="font-medium pl-6">123 Nguyen Van Linh St.</p>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                {/* <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1 bg-transparent">
                     <Phone className="w-4 h-4 mr-2" />
                     Call Driver
@@ -76,7 +76,7 @@ export default function BusInfoPanel() {
                     <Phone className="w-4 h-4 mr-2" />
                     Call Support
                   </Button>
-                </div>
+                </div> */}
 
                 {/* Route Progress */}
                 <div className="space-y-2 pt-2 border-t">

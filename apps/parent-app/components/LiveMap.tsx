@@ -11,9 +11,9 @@ export default function LiveMap() {
     setTimeout(() => setIsRefreshing(false), 1000)
   }
 
-  const handleRecenter = () => {
-    // Recenter map logic
-  }
+  // const handleRecenter = () => {
+  //   Recenter map logic
+  // }
 
   return (
     <div className="relative w-full h-full">
@@ -66,9 +66,9 @@ export default function LiveMap() {
         >
           <RefreshCw className={`w-5 h-5 ${isRefreshing ? "animate-spin" : ""}`} />
         </Button>
-        <Button size="icon" variant="secondary" className="w-10 h-10 bg-card shadow-lg" onClick={handleRecenter}>
+        {/* <Button size="icon" variant="secondary" className="w-10 h-10 bg-card shadow-lg" onClick={handleRecenter}>
           <Navigation className="w-5 h-5" />
-        </Button>
+        </Button> */}
       </div>
 
       {/* ETA Banner */}

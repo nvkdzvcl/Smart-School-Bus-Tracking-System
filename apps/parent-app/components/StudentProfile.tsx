@@ -11,10 +11,10 @@ export default function StudentProfile() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Student Information</CardTitle>
-          <Button variant="ghost" size="sm">
+          {/* <Button variant="ghost" size="sm">
             <Edit className="w-4 h-4 mr-2" />
             Edit
-          </Button>
+          </Button> */}
         </div>
       </CardHeader>
 

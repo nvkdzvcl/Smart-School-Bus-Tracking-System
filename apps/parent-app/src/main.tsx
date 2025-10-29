@@ -13,7 +13,6 @@ import History from "../app/history/History"
 import Messages from "../app/messages/Messages"
 import Profile from "../app/profile/Profile"
 import Schedule from "../app/schedule/Schedule"
-import Settings from "../app/settings/Settings"
 import Tracking from "../app/tracking/Tracking"
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
@@ -68,14 +67,6 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     element={
                             <RootLayout>
                                 <Messages />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/settings"
-                    element={
-                            <RootLayout>
-                                <Settings />
                             </RootLayout>
                     }
                 />

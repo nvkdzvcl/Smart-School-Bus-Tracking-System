@@ -4,8 +4,8 @@ import { Button } from "../components/ui/Button"
 import { Input } from "../components/ui/Input"
 import { Label } from "../components/ui/Label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/Tabs"
-import { Bus, Phone, Mail, Lock } from "lucide-react"
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/Tabs"
+import { Bus, Lock, Text } from "lucide-react"
 
 export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
@@ -16,7 +16,7 @@ export default function LoginForm() {
     setIsLoading(true)
     setTimeout(() => {
       setIsLoading(false)
-      navigate("/home")
+      navigate("/")
     }, 1000)
   }
 
@@ -32,24 +32,24 @@ export default function LoginForm() {
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="phone" className="w-full">
+        {/* <Tabs defaultValue="phone" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="phone">Phone</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-          </TabsList>
+            {/* <TabsTrigger value="email">Email</TabsTrigger> }
+          </TabsList> */}
 
-          <TabsContent value="phone">
+          {/* <TabsContent value="phone"> */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="text-base">
-                  Phone Number
+                <Label htmlFor="username" className="text-base">
+                  Username
                 </Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Text className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+84 123 456 789"
+                    id="username"
+                    type="text"
+                    placeholder="nguyenvana"
                     className="pl-10 h-12 text-base"
                     required
                   />
@@ -74,9 +74,9 @@ export default function LoginForm() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-          </TabsContent>
+          {/* </TabsContent> */}
 
-          <TabsContent value="email">
+          {/* <TabsContent value="email">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-base">
@@ -112,10 +112,10 @@ export default function LoginForm() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-          </TabsContent>
-        </Tabs>
+          </TabsContent> */}
+        {/* </Tabs> */}
 
-        <div className="mt-6 space-y-3">
+        {/* <div className="mt-6 space-y-3">
           <Button variant="outline" className="w-full h-12 text-base bg-transparent">
             Sign in with OTP
           </Button>
@@ -124,7 +124,7 @@ export default function LoginForm() {
               Forgot password?
             </Button>
           </div>
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   )

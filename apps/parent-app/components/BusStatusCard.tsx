@@ -99,10 +99,10 @@ export default function BusStatusCard() {
               Track Bus
             </Link>
           </Button>
-          <Button variant="outline" size="lg" className="flex-1 bg-transparent">
+          {/* <Button variant="outline" size="lg" className="flex-1 bg-transparent">
             <Phone className="w-4 h-4 mr-2" />
             Call Support
-          </Button>
+          </Button> */}
         </div>
       </CardContent>
     </Card>
