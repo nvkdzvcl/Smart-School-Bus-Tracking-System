@@ -2,7 +2,7 @@ import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
 import { Button } from "../components/ui/Button"
-import { Bus, MapPin, Clock, Phone, Navigation } from "lucide-react"
+import { Bus, MapPin, Clock, User, Navigation } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export default function BusStatusCard() {
@@ -86,7 +86,7 @@ export default function BusStatusCard() {
           </div>
 
           <div className="flex items-center gap-3 text-sm">
-            <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+            <User className="w-4 h-4 text-muted-foreground shrink-0" />
             <span className="text-muted-foreground">Driver:</span>
             <span className="font-medium">Mr. Tran Van A</span>
           </div>

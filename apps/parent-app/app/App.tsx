@@ -5,7 +5,7 @@ const App: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate("/login"); // tương đương redirect("/login") trong Next.js
+    navigate("/login");
   }, [navigate]);
 
   return null;

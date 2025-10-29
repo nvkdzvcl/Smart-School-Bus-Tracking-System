@@ -1,8 +1,7 @@
 import React, { useState } from "react"
 import { Card, CardContent } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
-import { Button } from "../components/ui/Button"
-import { Bus, User, Phone, MapPin, Clock, ChevronUp, ChevronDown } from "lucide-react"
+import { Bus, User, MapPin, Clock, ChevronUp, ChevronDown } from "lucide-react"
 
 export default function BusInfoPanel() {
   const [isExpanded, setIsExpanded] = useState(false)
