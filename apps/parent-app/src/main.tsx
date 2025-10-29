@@ -23,7 +23,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 
                 {/* Protected routes (chỉ truy cập khi đã đăng nhập) */}
                 <Route
-                    path="/home"
+                    path="/"
                     element={
                             <RootLayout>
                                 <Home />

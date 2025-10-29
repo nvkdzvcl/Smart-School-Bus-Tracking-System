@@ -4,7 +4,7 @@ import { Home, Map, Calendar, MessageSquare, User } from "lucide-react"
 import { cn } from "../lib/utils/Utils"
 
 const navItems = [
-  { href: "/home", icon: Home, label: "Home" },
+  { href: "/", icon: Home, label: "Home" },
   { href: "/tracking", icon: Map, label: "Map" },
   { href: "/schedule", icon: Calendar, label: "Schedule" },
   { href: "/messages", icon: MessageSquare, label: "Messages" },
