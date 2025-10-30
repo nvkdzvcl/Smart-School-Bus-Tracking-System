@@ -8,7 +8,6 @@ import "../app/globals.css"
 // Pages
 import Home from "../app/home/Home"
 import Login from "../app/login/Login"
-import Alerts from "../app/alerts/Alerts"
 import History from "../app/history/History"
 import Messages from "../app/messages/Messages"
 import Profile from "../app/profile/Profile"
@@ -27,14 +26,6 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     element={
                             <RootLayout>
                                 <Home />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/alerts"
-                    element={
-                            <RootLayout>
-                                <Alerts />
                             </RootLayout>
                     }
                 />

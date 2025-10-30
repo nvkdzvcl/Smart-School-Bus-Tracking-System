@@ -52,6 +52,9 @@ export default function TopBar({
             </Button>
           )}
         </div> */}
+        <Button variant="destructive" className="h-8 w-24">
+            Logout
+        </Button>
       </div>
     </header>
   )

@@ -2,6 +2,7 @@ import React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar"
 import { Card, CardContent } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
+import { Button } from "../components/ui/Button"
 
 export default function StudentCard() {
   return (

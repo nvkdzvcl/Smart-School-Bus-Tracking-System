@@ -2,13 +2,13 @@ import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
 import { Button } from "../components/ui/Button"
-import { Bus, MapPin, Clock, User, Navigation } from "lucide-react"
+import { Bus, MapPin, User, Navigation } from "lucide-react"
 import { Link } from "react-router-dom"
 
 export default function BusStatusCard() {
   type BusStatus = "on-route" | "arrived" | "delayed" | "idle"
   //const status = "on-route" // "on-route" | "arrived" | "delayed" | "idle"
-  const eta = "5 minutes"
+  // const eta = "5 minutes"
 
   const getStatusConfig = (status: BusStatus) => {
     switch (status) {
@@ -67,11 +67,11 @@ export default function BusStatusCard() {
         <p className="text-sm font-medium">{config.message}</p>
 
         <div className="space-y-3">
-          <div className="flex items-center gap-3 text-sm">
+          {/* <div className="flex items-center gap-3 text-sm">
             <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
             <span className="text-muted-foreground">ETA:</span>
             <span className="font-semibold text-accent">{eta}</span>
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-3 text-sm">
             <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />

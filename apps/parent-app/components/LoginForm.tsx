@@ -27,7 +27,7 @@ export default function LoginForm() {
           <Bus className="w-8 h-8 text-primary-foreground" />
         </div>
         <div>
-          <CardTitle className="text-2xl font-bold">SSB Parent</CardTitle>
+          <CardTitle className="text-2xl font-bold">SSB Parent 1.0</CardTitle>
           <CardDescription className="text-base mt-2">Track your child's school bus safely</CardDescription>
         </div>
       </CardHeader>
@@ -41,15 +41,15 @@ export default function LoginForm() {
           {/* <TabsContent value="phone"> */}
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username" className="text-base">
-                  Username
+                <Label htmlFor="mshs" className="text-base">
+                  Student ID
                 </Label>
                 <div className="relative">
                   <Text className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
-                    id="username"
+                    id="mshs"
                     type="text"
-                    placeholder="nguyenvana"
+                    placeholder="3123560000"
                     className="pl-10 h-12 text-base"
                     required
                   />

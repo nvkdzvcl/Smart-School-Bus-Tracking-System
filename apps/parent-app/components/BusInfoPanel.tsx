@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { Card, CardContent } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
-import { Bus, User, MapPin, Clock, ChevronUp, ChevronDown } from "lucide-react"
+import { Bus, User, ChevronUp, ChevronDown } from "lucide-react"
 
 export default function BusInfoPanel() {
   const [isExpanded, setIsExpanded] = useState(false)
@@ -49,22 +49,22 @@ export default function BusInfoPanel() {
                     <p className="font-medium pl-6">Mr. Tran Van A</p>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="w-4 h-4 text-muted-foreground" />
                       <span className="text-muted-foreground">ETA:</span>
                     </div>
                     <p className="font-semibold text-accent pl-6">5 minutes</p>
-                  </div>
+                  </div> */}
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Next Stop:</span>
                   </div>
                   <p className="font-medium pl-6">123 Nguyen Van Linh St.</p>
-                </div>
+                </div> */}
 
                 {/* <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1 bg-transparent">
@@ -88,7 +88,7 @@ export default function BusInfoPanel() {
                       </div>
                       <div className="flex-1 pb-2">
                         <p className="text-sm font-medium">School Departure</p>
-                        <p className="text-xs text-muted-foreground">Completed at 3:45 PM</p>
+                        {/* <p className="text-xs text-muted-foreground">Completed at 3:45 PM</p> */}
                       </div>
                     </div>
 
@@ -99,7 +99,7 @@ export default function BusInfoPanel() {
                       </div>
                       <div className="flex-1 pb-2">
                         <p className="text-sm font-medium">Your Stop</p>
-                        <p className="text-xs text-accent font-semibold">Arriving in 5 minutes</p>
+                        {/* <p className="text-xs text-accent font-semibold">Arriving in 5 minutes</p> */}
                       </div>
                     </div>
 
@@ -109,7 +109,7 @@ export default function BusInfoPanel() {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-muted-foreground">Final Stop</p>
-                        <p className="text-xs text-muted-foreground">Est. 4:30 PM</p>
+                        {/* <p className="text-xs text-muted-foreground">Est. 4:30 PM</p> */}
                       </div>
                     </div>
                   </div>
