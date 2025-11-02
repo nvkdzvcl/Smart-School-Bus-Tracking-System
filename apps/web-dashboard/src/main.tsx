@@ -16,19 +16,19 @@ import Home from "../app/Home"
 import Login from "../app/login/Login"
 import Dashboard from "../app/dashboard/Dashboard"
 import Assignments from "../app/assignments/Assignments"
-import Students from "../app/students/Students"
+// import Students from "../app/students/Students"
 import Drivers from "../app/drivers/Drivers"
-import Incidents from "../app/incidents/Incidents"
+// import Incidents from "../app/incidents/Incidents"
 import Messages from "../app/messages/Messages"
 import Schedules from "../app/schedules/Schedules"
-import Settings from "../app/settings/Settings"
-import Reports from "../app/reports/Reports"
-import AuditLogs from "../app/audit-logs/AuditLogs"
-import Attendance from "../app/attendance/Attendance"
+// import Settings from "../app/settings/Settings"
+// import Reports from "../app/reports/Reports"
+// import AuditLogs from "../app/audit-logs/AuditLogs"
+// import Attendance from "../app/attendance/Attendance"
 import Tracking from "../app/tracking/Tracking"
-import Users from "../app/users/Users"
+// import Users from "../app/users/Users"
 import Vehicles from "../app/vehicles/Vehicles"
-import Stops from "../app/stops/Stops"
+// import Stops from "../app/stops/Stops"
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <StrictMode>
@@ -69,7 +69,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/students"
             element={
               <ProtectedRoute>
@@ -78,7 +78,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="/drivers"
             element={
@@ -89,7 +89,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/incidents"
             element={
               <ProtectedRoute>
@@ -98,7 +98,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="/messages"
             element={
@@ -119,7 +119,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/settings"
             element={
               <ProtectedRoute>
@@ -128,8 +128,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
-          <Route
+          /> */}
+          {/* <Route
             path="/reports"
             element={
               <ProtectedRoute>
@@ -138,8 +138,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
-          <Route
+          /> */}
+          {/* <Route
             path="/audit-logs"
             element={
               <ProtectedRoute>
@@ -148,8 +148,8 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
-          <Route
+          /> */}
+          {/* <Route
             path="/attendance"
             element={
               <ProtectedRoute>
@@ -158,7 +158,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="/tracking"
             element={
@@ -169,7 +169,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/users"
             element={
               <ProtectedRoute>
@@ -178,7 +178,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
+          /> */}
           <Route
             path="/vehicles"
             element={
@@ -189,7 +189,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/stops"
             element={
               <ProtectedRoute>
@@ -198,7 +198,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                 </RootLayout>
               </ProtectedRoute>
             }
-          />
+          /> */}
         </Routes>
       </AuthProvider>
     </BrowserRouter>

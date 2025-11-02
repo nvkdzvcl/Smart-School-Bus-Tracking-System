@@ -10,15 +10,15 @@ import {
   Calendar,
   Bus,
   Users,
-  GraduationCap,
-  MapPin,
+  // GraduationCap,
+  // MapPin,
   ClipboardList,
-  UserCheck,
-  AlertTriangle,
+  // UserCheck,
+  // AlertTriangle,
   MessageSquare,
-  BarChart3,
-  Settings,
-  FileText,
+  // BarChart3,
+  // Settings,
+  // FileText,
   LogOut,
 } from "lucide-react"
 import { Button } from "../ui/Button"
@@ -39,16 +39,16 @@ const navItems: NavItem[] = [
   { title: "Lịch & Tuyến", href: "/schedules", icon: Calendar, permission: PERMISSIONS.VIEW_ROUTES },
   { title: "Xe buýt", href: "/vehicles", icon: Bus, permission: PERMISSIONS.VIEW_VEHICLES },
   { title: "Tài xế", href: "/drivers", icon: Users, permission: PERMISSIONS.VIEW_DRIVERS },
-  { title: "Học sinh & PH", href: "/students", icon: GraduationCap, permission: PERMISSIONS.VIEW_STUDENTS },
-  { title: "Điểm dừng", href: "/stops", icon: MapPin, permission: PERMISSIONS.VIEW_ROUTES },
+  // { title: "Học sinh & PH", href: "/students", icon: GraduationCap, permission: PERMISSIONS.VIEW_STUDENTS },
+  // { title: "Điểm dừng", href: "/stops", icon: MapPin, permission: PERMISSIONS.VIEW_ROUTES },
   { title: "Phân công", href: "/assignments", icon: ClipboardList, permission: PERMISSIONS.VIEW_ASSIGNMENTS },
-  { title: "Điểm danh", href: "/attendance", icon: UserCheck, permission: PERMISSIONS.VIEW_DASHBOARD },
-  { title: "Sự cố", href: "/incidents", icon: AlertTriangle, permission: PERMISSIONS.VIEW_INCIDENTS, badge: 2 },
+  // { title: "Điểm danh", href: "/attendance", icon: UserCheck, permission: PERMISSIONS.VIEW_DASHBOARD },
+  // { title: "Sự cố", href: "/incidents", icon: AlertTriangle, permission: PERMISSIONS.VIEW_INCIDENTS, badge: 2 },
   { title: "Tin nhắn", href: "/messages", icon: MessageSquare, permission: PERMISSIONS.VIEW_MESSAGES },
-  { title: "Báo cáo", href: "/reports", icon: BarChart3, permission: PERMISSIONS.VIEW_REPORTS },
-  { title: "Người dùng", href: "/users", icon: Users, permission: PERMISSIONS.VIEW_USERS },
-  { title: "Cấu hình", href: "/settings", icon: Settings, permission: PERMISSIONS.VIEW_SETTINGS },
-  { title: "Nhật ký", href: "/audit-logs", icon: FileText, permission: PERMISSIONS.VIEW_AUDIT_LOGS },
+  // { title: "Báo cáo", href: "/reports", icon: BarChart3, permission: PERMISSIONS.VIEW_REPORTS },
+  // { title: "Người dùng", href: "/users", icon: Users, permission: PERMISSIONS.VIEW_USERS },
+  // { title: "Cấu hình", href: "/settings", icon: Settings, permission: PERMISSIONS.VIEW_SETTINGS },
+  // { title: "Nhật ký", href: "/audit-logs", icon: FileText, permission: PERMISSIONS.VIEW_AUDIT_LOGS },
 ]
 
 export const AppSidebar: React.FC = () => {
@@ -62,7 +62,7 @@ export const AppSidebar: React.FC = () => {
     <div className="flex h-screen w-64 flex-col border-r border-border bg-card">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+        <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
           <Bus className="h-6 w-6 text-primary" />
         </div>
         <div>

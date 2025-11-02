@@ -17,7 +17,7 @@ export const DriverStats: React.FC = () => {
       <Card className="border-border">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-primary/10 p-3">
+            <div className="rounded-lg bg-blue-500/10 p-3">
               <Users className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -62,7 +62,7 @@ export const DriverStats: React.FC = () => {
       <Card className="border-border">
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-secondary/10 p-3">
+            <div className="rounded-lg bg-orange-500/10 p-3">
               <AlertTriangle className="h-6 w-6 text-secondary" />
             </div>
             <div>
