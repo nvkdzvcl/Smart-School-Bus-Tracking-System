@@ -222,14 +222,14 @@ export default function StudentsPage() {
                               onClick={() => handleUndoCheckIn(student.id)}
                               size="sm"
                               variant="outline"
-                              className="flex-1 border-border text-foreground hover:bg-muted bg-transparent"
+                              className="flex-1 border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                               </svg>
                               Hoàn tác
                             </Button>
-                            <Button onClick={() => handleCheckOut(student.id)} size="sm" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground">
+                            <Button onClick={() => handleCheckOut(student.id)} size="sm" className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground rounded-lg">
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
