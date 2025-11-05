@@ -1,8 +1,7 @@
 import React from "react"
 import { useNavigate } from "react-router-dom"
-import { Bell, ChevronLeft, Settings } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 import { Button } from "../components/ui/Button"
-import { Badge } from "../components/ui/Badge"
 
 interface TopBarProps {
   title: string
@@ -15,9 +14,9 @@ interface TopBarProps {
 export default function TopBar({
   title,
   showBack = false,
-  showNotifications = true,
-  showSettings = false,
-  notificationCount = 0,
+  // showNotifications = true,
+  // showSettings = false,
+  // notificationCount = 0,
 }: TopBarProps) {
   const navigate = useNavigate()
 
@@ -33,7 +32,7 @@ export default function TopBar({
           <h1 className="text-lg font-semibold dark:text-white">{title}</h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           {showNotifications && (
             <Button variant="ghost" size="icon" className="relative w-9 h-9">
               <Bell className="w-5 h-5 dark:text-white" />
@@ -52,7 +51,10 @@ export default function TopBar({
               <Settings className="w-5 h-5" />
             </Button>
           )}
-        </div>
+        </div> */}
+        <Button variant="destructive" className="h-8 w-24">
+            Logout
+        </Button>
       </div>
     </header>
   )

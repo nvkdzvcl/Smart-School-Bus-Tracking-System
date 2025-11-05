@@ -2,8 +2,7 @@ import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar"
 import { Badge } from "../components/ui/Badge"
-import { Button } from "../components/ui/Button"
-import { User, MapPin, Bus, Phone, Edit } from "lucide-react"
+import { User, MapPin, Bus, Phone } from "lucide-react"
 
 export default function StudentProfile() {
   return (
@@ -11,10 +10,10 @@ export default function StudentProfile() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">Student Information</CardTitle>
-          <Button variant="ghost" size="sm">
+          {/* <Button variant="ghost" size="sm">
             <Edit className="w-4 h-4 mr-2" />
             Edit
-          </Button>
+          </Button> */}
         </div>
       </CardHeader>
 
@@ -71,10 +70,10 @@ export default function StudentProfile() {
         </div>
 
         {/* Special Notes */}
-        <div className="p-3 rounded-lg bg-muted/50 border">
+        {/* <div className="p-3 rounded-lg bg-muted/50 border">
           <p className="text-xs font-medium text-muted-foreground mb-1">Special Notes</p>
           <p className="text-sm">Child may experience motion sickness. Please ensure proper ventilation.</p>
-        </div>
+        </div> */}
       </CardContent>
     </Card>
   )

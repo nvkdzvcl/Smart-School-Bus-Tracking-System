@@ -1,22 +1,29 @@
 import React from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent } from "../components/ui/Card"
-import { Calendar, History, MessageSquare, AlertCircle } from "lucide-react"
+import { Calendar, Map, MessageSquare, User } from "lucide-react"
 
 const actions = [
   {
     icon: Calendar,
     label: "Schedule",
     href: "/schedule",
-    color: "text-primary",
-    bg: "bg-primary/10",
+    color: "text-success",
+    bg: "bg-success/10",
   },
+  // {
+  //   icon: History,
+  //   label: "History",
+  //   href: "/history",
+  //   color: "text-accent",
+  //   bg: "bg-accent/10",
+  // },
   {
-    icon: History,
-    label: "History",
-    href: "/history",
-    color: "text-accent",
-    bg: "bg-accent/10",
+    icon: Map,
+    label: "Map",
+    href: "/map",
+    color: "text-success",
+    bg: "bg-success/10",
   },
   {
     icon: MessageSquare,
@@ -25,12 +32,19 @@ const actions = [
     color: "text-success",
     bg: "bg-success/10",
   },
+  // {
+  //   icon: AlertCircle,
+  //   label: "Alerts",
+  //   href: "/alerts",
+  //   color: "text-warning",
+  //   bg: "bg-warning/10",
+  // },
   {
-    icon: AlertCircle,
-    label: "Alerts",
-    href: "/alerts",
-    color: "text-warning",
-    bg: "bg-warning/10",
+    icon: User,
+    label: "Profile",
+    href: "/profile",
+    color: "text-success",
+    bg: "bg-success/10",
   },
 ]
 
