@@ -8,21 +8,29 @@ import RouteManagement from './pages/RouteManagement'
 import RealTimeTracking from './pages/RealTimeTracking'
 import ScheduleManagement from './pages/ScheduleManagement'
 import Messages from './pages/Messages'
+import Login from './pages/Login'
+import { RequireAuth } from './lib/RequireAuth'
 
 function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/buses" element={<BusManagement />} />
-        <Route path="/drivers" element={<DriverManagement />} />
-        <Route path="/students" element={<StudentManagement />} />
-        <Route path="/routes" element={<RouteManagement />} />
-        <Route path="/tracking" element={<RealTimeTracking />} />
-        <Route path="/schedules" element={<ScheduleManagement />} />
-        <Route path="/messages" element={<Messages />} />
-      </Routes>
-    </Layout>
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+
+      {/* Private routes */}
+      <Route element={<RequireAuth />}> 
+        <Route element={<Layout />}> 
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/buses" element={<BusManagement />} />
+          <Route path="/drivers" element={<DriverManagement />} />
+          <Route path="/students" element={<StudentManagement />} />
+          <Route path="/routes" element={<RouteManagement />} />
+          <Route path="/tracking" element={<RealTimeTracking />} />
+          <Route path="/schedules" element={<ScheduleManagement />} />
+          <Route path="/messages" element={<Messages />} />
+        </Route>
+      </Route>
+    </Routes>
   )
 }
 

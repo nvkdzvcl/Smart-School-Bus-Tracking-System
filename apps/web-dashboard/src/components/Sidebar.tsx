@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { 
   LayoutDashboard, 
   Bus, 
@@ -10,6 +10,7 @@ import {
   MessageCircle,
   LogOut
 } from 'lucide-react'
+import { logout } from '../lib/auth'
 
 const menuItems = [
   {
@@ -56,6 +57,11 @@ const menuItems = [
 ]
 
 export default function Sidebar() {
+  const navigate = useNavigate()
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
   return (
     <div className="bg-white w-64 shadow-sm border-r border-gray-200">
       <div className="p-6">
@@ -90,7 +96,7 @@ export default function Sidebar() {
       </nav>
       
       <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
-        <button className="sidebar-item w-full text-red-600 hover:bg-red-50 hover:text-red-700">
+        <button onClick={handleLogout} className="sidebar-item w-full text-red-600 hover:bg-red-50 hover:text-red-700">
           <LogOut className="w-5 h-5 mr-3" />
           Đăng xuất
         </button>
