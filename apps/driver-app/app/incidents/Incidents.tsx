@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react"
+// apps/driver-app/src/routes/IncidentsPage.tsx (Tên file của bạn)
+
+import { useEffect, useState, useCallback } from "react" // <-- Thêm useCallback
 import { useNavigate } from "react-router-dom"
+import axios from "axios" // <-- THÊM axios
 
 import { MobileNav } from "../../components/MobileNav"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card"
@@ -8,89 +11,238 @@ import { Badge } from "../../components/ui/Badge"
 import { Textarea } from "../../components/ui/Textarea"
 import { Label } from "../../components/ui/Label"
 
-interface Incident {
-  id: number
-  type: string
-  description: string
-  timestamp: string
-  status: "pending" | "resolved"
-  location?: string
-  photos?: string[]
+// --- THÊM 2 DÒNG NÀY ---
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
+// Enum này phải khớp với 'report.enums.ts' của BE
+enum ReportTypeBE {
+  STUDENT_ABSENT = 'student_absent',
+  INCIDENT = 'incident',
+  COMPLAINT = 'complaint',
+  OTHER = 'other',
 }
 
+// --- SỬA LẠI INTERFACE NÀY ---
+// Để khớp với 'report.entity.ts' (BE trả về)
+interface Incident {
+  id: string // BE trả về uuid
+  type: ReportTypeBE | string // Kiểu BE
+  title: string // BE có 'title'
+  content: string // FE gọi là 'description', BE gọi là 'content'
+  createdAt: string // BE trả về 'createdAt'
+  status: "pending" | "resolved"
+}
+
+// --- SỬA LẠI ID CỦA FE ---
+// Để chúng ta có thể "dịch" sang enum của BE
 const incidentTypes = [
-  { id: "traffic", label: "Kẹt xe", icon: "🚦" },
-  { id: "absent", label: "Học sinh vắng", icon: "👤" },
-  { id: "vehicle", label: "Xe hỏng", icon: "🔧" },
-  { id: "accident", label: "Tai nạn nhẹ", icon: "⚠️" },
+  { id: "incident_traffic", label: "Kẹt xe", icon: "🚦" },
+  { id: "student_absent", label: "Học sinh vắng", icon: "👤" },
+  { id: "incident_vehicle", label: "Xe hỏng", icon: "🔧" },
+  { id: "incident_accident", label: "Tai nạn nhẹ", icon: "⚠️" },
   { id: "other", label: "Khác", icon: "📝" },
 ]
+
+// --- HÀM HỖ TRỢ: Dịch 'type' từ FE sang BE ---
+const translateFeTypeToBeType = (feType: string): ReportTypeBE => {
+  if (feType === "student_absent") return ReportTypeBE.STUDENT_ABSENT
+  if (feType === "other") return ReportTypeBE.OTHER
+  // Tất cả các loại 'incident_' khác đều là 'incident'
+  if (feType.startsWith("incident_")) return ReportTypeBE.INCIDENT
+  return ReportTypeBE.OTHER // Mặc định
+}
 
 export default function IncidentsPage() {
   const navigate = useNavigate()
   const [showReportForm, setShowReportForm] = useState(false)
-  const [selectedType, setSelectedType] = useState("")
-  const [description, setDescription] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedType, setSelectedType] = useState("") // (Giữ nguyên)
+  const [description, setDescription] = useState("") // (Giữ nguyên)
+  const [isSubmitting, setIsSubmitting] = useState(false) // (Giữ nguyên)
 
-  const [incidents, setIncidents] = useState<Incident[]>([
-    {
-      id: 1,
-      type: "Kẹt xe",
-      description: "Kẹt xe nghiêm trọng trên đường Lê Lợi, dự kiến trễ 10 phút",
-      timestamp: "2025-01-12 15:45",
-      status: "resolved",
-      location: "Đường Lê Lợi, Quận 1",
-    },
-    {
-      id: 2,
-      type: "Học sinh vắng",
-      description: "Học sinh Nguyễn Văn A không có mặt tại điểm đón",
-      timestamp: "2025-01-11 06:35",
-      status: "resolved",
-      location: "123 Đường Lê Lợi, Quận 1",
-    },
-  ])
+  // --- SỬA LẠI STATE NÀY ---
+  const [incidents, setIncidents] = useState<Incident[]>([]) // Bắt đầu rỗng
+  const [isLoading, setIsLoading] = useState(true) // Thêm state loading
+  const [error, setError] = useState<string | null>(null)
 
+  // --- HÀM MỚI: Tải lịch sử báo cáo từ BE ---
+  const fetchIncidents = useCallback(async () => {
+    const token = localStorage.getItem("access_token")
+    if (!token) return navigate("/")
+
+    setIsLoading(true)
+    try {
+      const response = await axios.get(`${API_URL}/reports`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      // Map lại dữ liệu (vì BE trả về 'content' và 'createdAt')
+      const mappedIncidents = response.data.map((report: any) => ({
+        ...report,
+        description: report.content, // Đổi tên 'content' -> 'description'
+        timestamp: new Date(report.createdAt).toLocaleString("vi-VN"), // Format lại
+      }))
+      setIncidents(mappedIncidents)
+      setError(null)
+    } catch (err) {
+      console.error("Lỗi khi tải lịch sử báo cáo:", err)
+      setError("Không thể tải lịch sử báo cáo.")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [navigate])
+
+
+  // --- SỬA LẠI useEffect ---
   useEffect(() => {
     const authenticated = localStorage.getItem("driver_authenticated")
     if (!authenticated) {
       navigate("/")
+    } else {
+      fetchIncidents() // Gọi hàm tải dữ liệu khi load trang
     }
-  }, [navigate])
+  }, [navigate, fetchIncidents]) // Thêm fetchIncidents
 
+  
+  // --- SỬA LẠI HOÀN TOÀN HÀM NÀY ---
   const handleSubmitIncident = async () => {
+    const token = localStorage.getItem("access_token")
+    if (!token) return navigate("/")
+    
     if (!selectedType || !description.trim()) {
       alert("Vui lòng chọn loại sự cố và nhập mô tả")
       return
     }
 
-    setIsSubmitting(true)
-
-    // Giả lập API
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const newIncident: Incident = {
-      id: incidents.length + 1,
-      type: incidentTypes.find((t) => t.id === selectedType)?.label || selectedType,
-      description: description.trim(),
-      timestamp: new Date().toLocaleString("vi-VN"),
-      status: "pending",
-      location: "Vị trí hiện tại",
+    // 1. Lấy thông tin từ FE
+    const feTypeInfo = incidentTypes.find((t) => t.id === selectedType)
+    if (!feTypeInfo) {
+      alert("Loại sự cố không hợp lệ")
+      return
     }
 
-    setIncidents([newIncident, ...incidents])
-    setSelectedType("")
-    setDescription("")
-    setShowReportForm(false)
-    setIsSubmitting(false)
+    // 2. Dịch sang DTO của BE
+    const reportDto = {
+      title: feTypeInfo.label, // Tự động lấy "Kẹt xe", "Xe hỏng"...
+      content: description.trim(),
+      type: translateFeTypeToBeType(feTypeInfo.id), // Dịch sang enum BE
+      // studentId: (nếu cần, bạn có thể thêm logic chọn học sinh)
+    }
 
-    alert("Báo cáo sự cố đã được gửi thành công!")
+    setIsSubmitting(true)
+
+    // 3. Gọi API thật
+    try {
+      await axios.post(`${API_URL}/reports`, reportDto, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      // 4. Thành công
+      alert("Báo cáo sự cố đã được gửi thành công!")
+      
+      // Reset form
+      setSelectedType("")
+      setDescription("")
+      setShowReportForm(false)
+      
+      // Tải lại danh sách (để thấy báo cáo mới)
+      await fetchIncidents() 
+      
+    } catch (err: any) {
+      console.error("Lỗi khi gửi báo cáo:", err)
+      if (axios.isAxiosError(err) && err.response) {
+        alert(err.response.data.message || "Không thể gửi báo cáo.")
+      } else {
+        alert("Không thể gửi báo cáo. Vui lòng thử lại.")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
+  
+  // --- HÀM MỚI: Hiển thị danh sách sự cố ---
+  const renderIncidentList = () => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Đang tải lịch sử sự cố...</p>
+        </div>
+      )
+    }
+    
+    if (error) {
+       return (
+        <div className="text-center py-8">
+          <p className="text-destructive">{error}</p>
+        </div>
+      )
+    }
+
+    if (incidents.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <svg
+            className="w-12 h-12 mx-auto text-muted-foreground mb-3"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p className="text-muted-foreground">Chưa có sự cố nào được báo cáo</p>
+        </div>
+      )
+    }
+
+    return incidents.map((incident) => (
+      <div
+        key={incident.id}
+        className="p-4 rounded-lg border border-border/50 bg-gradient-to-br from-card to-muted/20"
+      >
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-foreground">{incident.title}</h3>
+              <Badge
+                className={
+                  incident.status === "resolved"
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-destructive text-destructive-foreground"
+                }
+              >
+                {incident.status === "resolved" ? "Đã xử lý" : "Đang xử lý"}
+              </Badge>
+            </div>
+            {/* SỬA: Dùng 'content' thay vì 'description' (vì 'description' không có trong object BE) */}
+            <p className="text-sm text-muted-foreground">{incident.content}</p>
+          </div>
+        </div>
+
+        <div className="space-y-1 text-xs text-muted-foreground mt-3">
+          {/* (Phần location có thể bỏ nếu BE không trả về) */}
+          <div className="flex items-center gap-2">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            {/* SỬA: Dùng 'createdAt' (từ BE) thay vì 'timestamp' (từ FE) */}
+            <span>{new Date(incident.createdAt).toLocaleString("vi-VN")}</span>
+          </div>
+        </div>
+      </div>
+    ))
+  }
+
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
+      {/* Header (Giữ nguyên) */}
       <header className="bg-card border-b border-border/50 sticky top-0 z-40 backdrop-blur-lg">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -127,7 +279,7 @@ export default function IncidentsPage() {
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Report Form */}
+        {/* Report Form (Giữ nguyên) */}
         {showReportForm && (
           <Card className="border-destructive/30 bg-gradient-to-br from-card to-destructive/5 rounded-lg">
             <CardHeader>
@@ -225,7 +377,7 @@ export default function IncidentsPage() {
           </Card>
         )}
 
-        {/* Quick Report Buttons */}
+        {/* Quick Report Buttons (Giữ nguyên) */}
         {!showReportForm && (
           <Card className="border-border/50 rounded-lg">
             <CardHeader>
@@ -252,92 +404,19 @@ export default function IncidentsPage() {
           </Card>
         )}
 
-        {/* Incidents List */}
+        {/* Incidents List (Sửa lại) */}
         <Card className="border-border/50 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Lịch sử sự cố</CardTitle>
           </CardHeader>
+          {/* --- SỬA LỖI Ở ĐÂY --- */}
           <CardContent className="space-y-3">
-            {incidents.length === 0 ? (
-              <div className="text-center py-8">
-                <svg
-                  className="w-12 h-12 mx-auto text-muted-foreground mb-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <p className="text-muted-foreground">Chưa có sự cố nào được báo cáo</p>
-              </div>
-            ) : (
-              incidents.map((incident) => (
-                <div
-                  key={incident.id}
-                  className="p-4 rounded-lg border border-border/50 bg-gradient-to-br from-card to-muted/20"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground">{incident.type}</h3>
-                        <Badge
-                          className={
-                            incident.status === "resolved"
-                              ? "bg-accent text-accent-foreground"
-                              : "bg-destructive text-destructive-foreground"
-                          }
-                        >
-                          {incident.status === "resolved" ? "Đã xử lý" : "Đang xử lý"}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{incident.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 text-xs text-muted-foreground mt-3">
-                    {incident.location && (
-                      <div className="flex items-center gap-2">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        <span>{incident.location}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span>{incident.timestamp}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
+            {renderIncidentList()}
+          </CardContent> 
+          {/* --- SỬA </Same> THÀNH </CardContent> --- */}
         </Card>
 
-        {/* Safety Tips */}
+        {/* Safety Tips (Giữ nguyên) */}
         <Card className="border-border/50 bg-gradient-to-br from-card to-accent/5 rounded-lg">
           <CardHeader>
             <CardTitle className="text-base text-foreground">Lưu ý an toàn</CardTitle>

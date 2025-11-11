@@ -1,0 +1,48 @@
+// apps/driver-api/src/user/user.entity.ts
+
+import { Exclude } from 'class-transformer';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { UserRole } from './user.roles.enum'; // Import cái Enum vừa tạo
+
+@Entity('Users') // Dùng dấu ngoặc kép vì tên bảng có chữ "U" hoa
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string; // Đổi sang 'string' vì nó là UUID
+
+  @Column({ name: 'full_name', nullable: true })
+  fullName: string;
+
+  @Column({ unique: true })
+  phone: string; // 'phone' là SĐT, sẽ dùng để đăng nhập
+
+  @Column({ unique: true, nullable: true })
+  email: string;
+
+  @Column({ name: 'password_hash' }) // Map với cột 'password_hash'
+  @Exclude() // Tự động giấu trường này khi trả về JSON
+  passwordHash: string;
+
+  @Column({
+    type: 'enum',
+    enum: UserRole, // Dùng kiểu 'enum'
+    name: 'role',
+  })
+  role: UserRole;
+
+  @Column({ name: 'fcm_token', nullable: true })
+  fcmToken: string;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+
+  // Tạm thời bỏ qua các quan hệ (relations)
+}
