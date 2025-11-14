@@ -36,16 +36,20 @@ interface Notification {
 
 // “Chế độ xem”: auto = để BE tự suy luận | morning | afternoon
 type ViewMode = "morning" | "afternoon";
-const getDefaultViewMode = (): ViewMode => {
-  // Logic này giống hệt BE: 12h trưa là mốc
-  const hourVN = Number(
-    new Intl.DateTimeFormat('vi-VN', { 
-      hour: '2-digit', 
-      hour12: false, 
-      timeZone: 'Asia/Ho_Chi_Minh' 
-    }).format(new Date()),
-  );
-  return hourVN < 12 ? "morning" : "afternoon";
+  // const getDefaultViewMode = (): ViewMode => {
+  //   // Logic này giống hệt BE: 12h trưa là mốc
+  //   const hourVN = Number(
+  //     new Intl.DateTimeFormat('vi-VN', { 
+  //       hour: '2-digit', 
+  //       hour12: false, 
+  //       timeZone: 'Asia/Ho_Chi_Minh' 
+  //     }).format(new Date()),
+  //   );
+  //   return hourVN < 12 ? "morning" : "afternoon";
+  // };
+  const getDefaultViewMode = (): ViewMode => {
+  const hourLocal = new Date().getHours();   // giờ theo timezone hiện tại của máy
+  return hourLocal < 12 ? "morning" : "afternoon";
 };
 // util: time ago
 function timeAgo(dateString: string): string {
@@ -200,7 +204,7 @@ export default function DashboardPage() {
                 {currentTime.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
               </div>
               <div className="text-xs text-muted-foreground">
-                {currentTime.toLocaleTimeString("vi-VN", { second: "2-digit" })}
+                {/* {currentTime.toLocaleTimeString("vi-VN", { second: "2-digit" })} */}
               </div>
             </div>
           </div>
