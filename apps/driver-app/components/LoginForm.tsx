@@ -41,7 +41,8 @@ export function LoginForm() {
       localStorage.setItem("access_token", access_token)
       localStorage.setItem("driver_authenticated", "true")
       localStorage.setItem("driver_name", driver.name)
-      localStorage.setItem("driver_phone", driver.phone) // Lưu "phone"
+      localStorage.setItem("driver_phone", driver.phone)
+      localStorage.setItem("driver_email", driver.email);
 
       setIsLoading(false)
       navigate("/dashboard")
