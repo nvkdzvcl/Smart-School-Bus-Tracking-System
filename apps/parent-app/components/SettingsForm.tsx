@@ -11,7 +11,7 @@ export default function SettingsForm() {
   return (
     <div className="space-y-4">
       {/* Notifications */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -61,7 +61,7 @@ export default function SettingsForm() {
             <Switch id="eta-alerts" defaultChecked />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Preferences */}
       <Card>
@@ -102,13 +102,13 @@ export default function SettingsForm() {
 
           <Separator />
 
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="large-text">Large Text</Label>
               <p className="text-xs text-muted-foreground">Increase font size for better readability</p>
             </div>
             <Switch id="large-text" />
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
@@ -125,13 +125,13 @@ export default function SettingsForm() {
           <CardDescription>Improve ETA accuracy</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="location-access">Location Access</Label>
               <p className="text-xs text-muted-foreground">Allow app to access your location</p>
             </div>
             <Switch id="location-access" defaultChecked />
-          </div>
+          </div> */}
 
           <Separator />
 
@@ -154,7 +154,7 @@ export default function SettingsForm() {
           <Button variant="outline" className="w-full justify-start bg-transparent">
             Change Password
           </Button>
-          <Button variant="outline" className="w-full justify-start bg-transparent">
+          {/* <Button variant="outline" className="w-full justify-start bg-transparent">
             Privacy Policy
           </Button>
           <Button variant="outline" className="w-full justify-start bg-transparent">
@@ -162,7 +162,7 @@ export default function SettingsForm() {
           </Button>
           <Button variant="outline" className="w-full justify-start bg-transparent">
             Help & Support
-          </Button>
+          </Button> */}
 
           <Separator />
 

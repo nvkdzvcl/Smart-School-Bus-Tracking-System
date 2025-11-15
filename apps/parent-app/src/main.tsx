@@ -13,6 +13,7 @@ import Messages from "../app/messages/Messages"
 import Profile from "../app/profile/Profile"
 import Schedule from "../app/schedule/Schedule"
 import Tracking from "../app/tracking/Tracking"
+import Settings from "../app/settings/Settings"
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <BrowserRouter>
@@ -66,6 +67,14 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                     element={
                             <RootLayout>
                                 <Tracking />
+                            </RootLayout>
+                    }
+                />
+                <Route
+                    path="/settings"
+                    element={
+                            <RootLayout>
+                                <Settings />
                             </RootLayout>
                     }
                 />
