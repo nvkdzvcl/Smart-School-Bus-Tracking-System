@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 // Layout + global styles
-import RootLayout from "../app/layout"
+import RootLayout from "../app/layout" // <-- (Xem Sửa 2)
 import "../app/globals.css"
 
 // Pages
@@ -20,21 +20,27 @@ const rootEl = document.getElementById("root") as HTMLElement | null
 if (!rootEl) throw new Error('Root element with id "root" not found in index.html')
 
 ReactDOM.createRoot(rootEl).render(
-    <React.StrictMode>
-        <BrowserRouter>
-            <Routes>
-                {/* Public route: Login/Home */}
-                <Route path="/" element={<Home />} />
+  <React.StrictMode>
+    <BrowserRouter>
+      <Routes>
+        {/* Public route: Login/Home */}
+        <Route path="/" element={<Home />} />
 
-                {/* Protected routes */}
-                <Route path="/dashboard" element={<RootLayout><Dashboard /></RootLayout>} />
-                <Route path="/history" element={<RootLayout><History /></RootLayout>} />
-                <Route path="/incidents" element={<RootLayout><Incidents /></RootLayout>} />
-                <Route path="/messages" element={<RootLayout><Messages /></RootLayout>} />
-                <Route path="/route" element={<RootLayout><RoutePage /></RootLayout>} />
-                <Route path="/settings" element={<RootLayout><Settings /></RootLayout>} />
-                <Route path="/students" element={<RootLayout><Students /></RootLayout>} />
-            </Routes>
-        </BrowserRouter>
-    </React.StrictMode>
+        {/* --- SỬA LẠI TỪ ĐÂY --- */}
+        {/* 1. Tạo 1 Route cha cho RootLayout */}
+        <Route element={<RootLayout />}>
+          {/* 2. Đặt các trang con vào bên trong */}
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/incidents" element={<Incidents />} />
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/route" element={<RoutePage />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/students" element={<Students />} />
+        </Route>
+        {/* --- HẾT PHẦN SỬA --- */}
+
+      </Routes>
+    </BrowserRouter>
+  </React.StrictMode>
 )

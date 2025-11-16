@@ -44,6 +44,8 @@ export function LoginForm() {
       localStorage.setItem("driver_phone", driver.phone)
       localStorage.setItem("driver_email", driver.email);
 
+      localStorage.setItem("driver_id", driver.id);
+
       setIsLoading(false)
       navigate("/dashboard")
 

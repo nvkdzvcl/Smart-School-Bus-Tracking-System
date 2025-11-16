@@ -28,14 +28,17 @@ type TripStatusFE = TripStatusBE | "paused";
 type TabKey = "morning" | "afternoon"; // UI
 type ShiftKey = "pickup" | "dropoff";   // BE
 
-
+const getDefaultTab = (): TabKey => {
+  const hourLocal = new Date().getHours(); // Lấy giờ hiện tại của máy
+  return hourLocal < 12 ? "morning" : "afternoon";
+};
 
 export default function RoutePage() {
   const navigate = useNavigate();
   const location = useLocation();
 
     // NEW: state chọn ca
-  const [tab, setTab] = useState<TabKey>("morning");
+  const [tab, setTab] = useState<TabKey>(getDefaultTab);
   const apiShift: ShiftKey = tab === "morning" ? "pickup" : "dropoff";
 
   const [currentSpeed, setCurrentSpeed] = useState(0);
@@ -106,7 +109,7 @@ const fetchRouteDetails = useCallback(async (token: string) => {
       navigate("/");
       return;
     }
-    setIsLoading(true);
+    // setIsLoading(true);
     fetchRouteDetails(token);
   }, [navigate, fetchRouteDetails, location.key]);
 
@@ -442,7 +445,7 @@ const getBadgeClass = () => {
               </span>
             </div>
 
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-0">
               {stops.map((stop, index) => {
                 const isDone = stop.status === "completed";
                 const isCurrent = stop.status === "current";
@@ -467,7 +470,7 @@ const getBadgeClass = () => {
                         )}
                       </div>
                       {index < stops.length - 1 && (
-                        <div className={`w-0.5 h-8 ${stop.status !== "pending" ? "bg-primary" : "bg-border"}`} />
+                        <div className={`w-0.5 h-9 ${stop.status !== "pending" ? "bg-primary" : "bg-border"}`} />
                       )}
                     </div>
 

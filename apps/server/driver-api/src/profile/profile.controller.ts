@@ -17,6 +17,12 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
+@Get('chat-contacts')
+  async getChatContacts(@Req() req: any) {
+    const driverId = req.user.userId;
+    return this.profileService.getChatContacts(driverId);
+  }
+
   @Get('me')
   async getMe(@Req() req: any) {
     const userId = req.user.userId; // từ JwtStrategy: { userId, phone, name, role }

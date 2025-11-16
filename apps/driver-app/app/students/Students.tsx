@@ -31,10 +31,15 @@ type TabKey = "morning" | "afternoon"; // UI
 type ShiftKey = "pickup" | "dropoff";   // BE
 type TripStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | string;
 
+const getDefaultTab = (): TabKey => {
+  const hourLocal = new Date().getHours(); // Lấy giờ hiện tại của máy
+  return hourLocal < 12 ? "morning" : "afternoon";
+};
+
 export default function StudentsPage() {
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState<TabKey>("morning");
+  const [tab, setTab] = useState<TabKey>(getDefaultTab);
   const apiShift: ShiftKey = tab === "morning" ? "pickup" : "dropoff";
   const isPickupShift = apiShift === "pickup";
 

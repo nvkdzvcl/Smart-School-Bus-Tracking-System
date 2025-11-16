@@ -18,7 +18,9 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
 // Enum này phải khớp với 'report.enums.ts' của BE
 enum ReportTypeBE {
   STUDENT_ABSENT = 'student_absent',
-  INCIDENT = 'incident',
+  INCIDENT_TRAFFIC = 'incident_traffic',
+  INCIDENT_VEHICLE = 'incident_vehicle',
+  INCIDENT_ACCIDENT = 'incident_accident',
   COMPLAINT = 'complaint',
   OTHER = 'other',
 }
@@ -68,8 +70,10 @@ const basenameFromUrl = (u?: string) => {
 const translateFeTypeToBeType = (feType: string): ReportTypeBE => {
   if (feType === "student_absent") return ReportTypeBE.STUDENT_ABSENT
   if (feType === "other") return ReportTypeBE.OTHER
-  if (feType.startsWith("incident_")) return ReportTypeBE.INCIDENT
-  return ReportTypeBE.OTHER
+  if (feType === "incident_traffic") return ReportTypeBE.INCIDENT_TRAFFIC
+  if (feType === "incident_vehicle") return ReportTypeBE.INCIDENT_VEHICLE
+  if (feType === "incident_accident") return ReportTypeBE.INCIDENT_ACCIDENT
+  return ReportTypeBE.OTHER // Mặc định
 }
 
 export default function IncidentsPage() {
@@ -239,7 +243,8 @@ export default function IncidentsPage() {
     }
 
     return incidents.map((incident) => {
-      const feType = incidentTypes.find(t => translateFeTypeToBeType(t.id) === incident.type)
+      // const feType = incidentTypes.find(t => translateFeTypeToBeType(t.id) === incident.type)
+      const feType = incidentTypes.find(t => t.label === incident.title)
       const icon = feType ? feType.icon : '📝'
       const imgSrc = toImgSrc(incident.imageUrl)
 
