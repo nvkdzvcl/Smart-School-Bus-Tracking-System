@@ -15,69 +15,25 @@ import Schedule from "../app/schedule/Schedule"
 import Tracking from "../app/tracking/Tracking"
 import Settings from "../app/settings/Settings"
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+const rootElement = document.getElementById("root") as HTMLElement | null
+if(!rootElement) throw new Error('Root element with id "root" not found in index.html')
+
+ReactDOM.createRoot(rootElement).render(
     <BrowserRouter>
             <Routes>
                 {/* Public routes */}
                 <Route path="/login" element={<Login />} />
 
-                {/* Protected routes (chỉ truy cập khi đã đăng nhập) */}
-                <Route
-                    path="/"
-                    element={
-                            <RootLayout>
-                                <Home />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/history"
-                    element={
-                            <RootLayout>
-                                <History />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/profile"
-                    element={
-                            <RootLayout>
-                                <Profile />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/schedule"
-                    element={
-                            <RootLayout>
-                                <Schedule />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/messages"
-                    element={
-                            <RootLayout>
-                                <Messages />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/tracking"
-                    element={
-                            <RootLayout>
-                                <Tracking />
-                            </RootLayout>
-                    }
-                />
-                <Route
-                    path="/settings"
-                    element={
-                            <RootLayout>
-                                <Settings />
-                            </RootLayout>
-                    }
-                />
+                {/* Private routes (chỉ truy cập khi đã đăng nhập) */}
+                <Route element={<RootLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/history" element={<History />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/schedule" element={<Schedule />} />
+                    <Route path="/messages" element={<Messages />} />
+                    <Route path="/tracking" element={<Tracking />} />
+                    <Route path="/settings" element={<Settings />} />
+                </Route>
             </Routes>
     </BrowserRouter>
 )

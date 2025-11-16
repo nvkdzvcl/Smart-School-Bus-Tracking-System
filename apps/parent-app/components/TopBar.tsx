@@ -64,7 +64,7 @@ export default function TopBar({
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5 dark:text-white" />
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                  3
+                  5
                 </Badge>
               </Button>
             </DropdownMenuTrigger>
@@ -96,6 +96,22 @@ export default function TopBar({
                 </div>
                 <span className="text-xs text-muted-foreground ml-4">1 giờ trước</span>
               </DropdownMenuItem>
+
+                <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
+                    <div className="flex items-center gap-2 w-full">
+                        <div className="h-2 w-2 rounded-full bg-muted" />
+                        <span className="text-sm font-medium">Báo cáo tuần đã sẵn sàng</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground ml-4">1 giờ trước</span>
+                </DropdownMenuItem>
+
+                <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
+                    <div className="flex items-center gap-2 w-full">
+                        <div className="h-2 w-2 rounded-full bg-muted" />
+                        <span className="text-sm font-medium">Báo cáo tuần đã sẵn sàng</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground ml-4">1 giờ trước</span>
+                </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           {showSettings && (

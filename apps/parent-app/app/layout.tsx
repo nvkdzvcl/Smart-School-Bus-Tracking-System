@@ -1,4 +1,6 @@
 import type React from "react"
+import { Outlet } from "react-router-dom"
+
 // import type { Metadata } from "next"
 // import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
@@ -10,15 +12,13 @@ import "./globals.css"
 //   generator: "v0.app",
 // }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout() {
+    const bodyClassName = "dark font-sans"
   return (
-    <div lang="vi" className="dark font-sans">
-      <Suspense fallback={null}>{children}</Suspense>
-      {/* <Analytics /> */}
+    <div lang="vi" className={bodyClassName}>
+      <Suspense fallback={null}>
+          <Outlet />
+      </Suspense>
     </div>
   )
 }

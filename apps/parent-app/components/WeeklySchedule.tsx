@@ -2,35 +2,44 @@ import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Badge } from "../components/ui/Badge"
 import { Button } from "../components/ui/Button"
-import { ChevronLeft, ChevronRight, Sunrise, Sunset, Clock, MapPin } from "lucide-react"
+import {
+    ChevronLeft,
+    ChevronRight,
+    Sunrise,
+    Sunset,
+    Clock,
+    MapPin,
+    CheckCircle2,
+    XCircle
+} from "lucide-react"
 
 const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri"]
 
 const scheduleData = [
   {
     day: "Monday",
-    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
-    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
+    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: true },
+    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: true },
   },
   {
     day: "Tuesday",
-    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
-    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
+    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: true },
+    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: true },
   },
   {
     day: "Wednesday",
-    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
-    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
+    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: false },
+    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: false },
   },
   {
     day: "Thursday",
-    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
-    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
+    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: true },
+    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: false },
   },
   {
     day: "Friday",
-    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
-    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled" },
+    morning: { time: "07:00 AM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: false },
+    afternoon: { time: "04:30 PM", pickup: "123 Nguyen Van Linh St.", status: "scheduled", isPresent: true },
   },
 ]
 
@@ -80,6 +89,19 @@ export default function WeeklySchedule() {
                     <MapPin className="w-3 h-3" />
                     <span className="truncate">{schedule.morning.pickup}</span>
                   </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {schedule.morning.isPresent ? (
+                          <>
+                              <CheckCircle2 className="w-3 h-3 text-success" />
+                              <span className="truncate">Present</span>
+                          </>
+                      ) : (
+                          <>
+                              <XCircle className="w-3 h-3 text-destructive" />
+                              <span className="truncate">Absent</span>
+                          </>
+                          )}
+                  </div>
                 </div>
               </div>
 
@@ -98,6 +120,19 @@ export default function WeeklySchedule() {
                     <MapPin className="w-3 h-3" />
                     <span className="truncate">{schedule.afternoon.pickup}</span>
                   </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {schedule.afternoon.isPresent ? (
+                            <>
+                                <CheckCircle2 className="w-3 h-3 text-success" />
+                                <span className="truncate">Present</span>
+                            </>
+                        ) : (
+                            <>
+                                <XCircle className="w-3 h-3 text-destructive" />
+                                <span className="truncate">Absent</span>
+                            </>
+                        )}
+                    </div>
                 </div>
               </div>
             </div>
