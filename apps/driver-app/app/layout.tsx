@@ -1,18 +1,16 @@
 import React, { Suspense } from "react";
+import { Outlet } from "react-router-dom"; // <-- BƯỚC 1: IMPORT OUTLET
 
-function RootLayout({
-  children,
-}: {
-  children: React.ReactNode; // Định nghĩa type cho children trong React thuần
-}) {
-  // Thay thế các class font đặc thù bằng class chung nếu cần
-  const bodyClassName = "font-sans"; // Giữ lại font-sans, loại bỏ Geist font variables
+// BƯỚC 2: Bỏ 'children' ra khỏi props
+function RootLayout() {
+  const bodyClassName = "font-sans";
 
   return (
-    // Trong React thuần, ta thường chỉ render nội dung bên trong <body>
     <div className={bodyClassName}>
-      <Suspense fallback={null}>{children}</Suspense>
-      {/* Vercel Analytics đã được loại bỏ */}
+      {/* BƯỚC 3: Thay thế {children} bằng <Outlet /> */}
+      <Suspense fallback={null}>
+        <Outlet />
+      </Suspense>
     </div>
   );
 }

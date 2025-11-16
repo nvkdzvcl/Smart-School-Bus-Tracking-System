@@ -41,7 +41,7 @@ export class AuthService {
     }
 
     // 3. (Quan trọng) Chỉ cho phép 'driver' đăng nhập
-    if (user.role !== UserRole.DRIVER) {
+    if (user.role !== UserRole.DRIVER && user.role !== UserRole.MANAGER) {
       throw new UnauthorizedException('Tài khoản không phải là tài xế');
     }
 
@@ -104,5 +104,25 @@ export class AuthService {
       fullName: newDriver.fullName,
       email: newDriver.email,
     };
+  }
+
+  // --- THÊM HÀM NÀY ĐỂ XÁC THỰC TOKEN ---
+  async verifyToken(token: string): Promise<any> {
+    try {
+      // Dùng jwtService (đã được inject) để xác thực
+      // Nó sẽ tự kiểm tra chữ ký và hạn (expired)
+      const payload = await this.jwtService.verifyAsync(token);
+      
+      // Nếu bạn muốn cẩn thận hơn, kiểm tra xem user còn tồn tại không
+      // const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      // if (!user) {
+      //   throw new UnauthorizedException('User không còn tồn tại');
+      // }
+      
+      return payload; // Trả về payload (chứa sub, phone, v.v.)
+    } catch (e) {
+      // Token hết hạn (expired) hoặc không hợp lệ
+      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
+    }
   }
 }

@@ -11,6 +11,7 @@ import { NotificationModule } from './notification/notification.module';
 import { ReportsModule } from './reports/reports.module';
 import { TripModule } from './trip/trip.module';
 import { ProfileModule } from './profile/profile.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ProfileModule } from './profile/profile.module';
     ReportsModule,
     TripModule,
     ProfileModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

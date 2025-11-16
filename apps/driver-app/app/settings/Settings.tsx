@@ -365,17 +365,17 @@ export default function SettingsPage() {
 
         {/* About */}
         <Card className="border-border/50 rounded-lg">
-          <CardHeader>
+          <div className="p-3">
   <CardContent
     className="py-1 text-center
                flex flex-col items-center justify-center gap-0.5"
   >
-    <p className="">Driver App v1.0.0</p>
-    <p className="">
+    <p className="font-bold">Driver App v1.0.0</p>
+    <p className="font-medium text-sm">
       © 2025 School Bus Management System
     </p>
   </CardContent>
-          </CardHeader>
+          </div>
         </Card>
 
         {/* Logout */}
