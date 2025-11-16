@@ -7,13 +7,15 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../user/user.entity';
 import { Trip } from '../../trip/trip.entity';
 import { Student } from '../../student/student.entity';
 import { ReportType, ReportStatus } from '../report.enums';
 
-@Entity({ name: 'Reports' }) // Tên bảng trong DB
+@Index('idx_reports_sender_created', ['senderId', 'createdAt'])
+@Entity({ name: 'Reports' }) // trùng table "Reports" trong DB
 export class Report {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -34,17 +36,25 @@ export class Report {
   content: string;
 
   @Column({
+    name: 'type',
     type: 'enum',
     enum: ReportType,
+    enumName: 'report_type',     // 👈 map đúng PostgreSQL enum
   })
   type: ReportType;
 
   @Column({
+    name: 'status',
     type: 'enum',
     enum: ReportStatus,
+    enumName: 'report_status',   // 👈 map đúng PostgreSQL enum
     default: ReportStatus.PENDING,
   })
   status: ReportStatus;
+
+  // Giữ 255 để khớp DB hiện tại (nếu muốn 512 thì ALTER TABLE ở DB)
+  @Column({ name: 'image_url', length: 255, nullable: true })
+  imageUrl?: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
@@ -53,16 +63,15 @@ export class Report {
   updatedAt: Date;
 
   // --- Quan hệ ---
-
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'sender_id' })
   sender: User;
 
-  @ManyToOne(() => Trip)
+  @ManyToOne(() => Trip, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'trip_id' })
   trip: Trip;
 
-  @ManyToOne(() => Student)
+  @ManyToOne(() => Student, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'student_id' })
   student: Student;
 }

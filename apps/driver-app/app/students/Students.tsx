@@ -17,6 +17,7 @@ interface StudentBE {
   fullName: string;
   address: string;
   status: "pending" | "attended" | "absent" | string;
+  attendedAt?: string | null;
 }
 
 interface StatsBE {
@@ -35,6 +36,7 @@ export default function StudentsPage() {
 
   const [tab, setTab] = useState<TabKey>("morning");
   const apiShift: ShiftKey = tab === "morning" ? "pickup" : "dropoff";
+  const isPickupShift = apiShift === "pickup";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [students, setStudents] = useState<StudentBE[]>([]);
@@ -135,6 +137,7 @@ export default function StudentsPage() {
         { headers: { Authorization: `Bearer ${token}` }, params: { shift: apiShift } }
       );
       await fetchStudents();
+      window.dispatchEvent(new Event('trip-status-updated'));
     } catch (err: any) {
       console.error("Lỗi hoàn thành ca:", err);
       alert(err.response?.data?.message || "Không thể hoàn thành ca.");
@@ -216,8 +219,8 @@ export default function StudentsPage() {
   );
 
   const renderStudentList = () => {
-    if (isLoading) return renderLoading();
-    if (error) return renderError();
+  if (isLoading && students.length === 0) return renderLoading();
+  if (error && students.length === 0) return renderError();
     if (filteredStudents.length === 0) {
       return (
         <Card className="border-border/50 rounded-lg">
@@ -232,6 +235,14 @@ export default function StudentsPage() {
 
     return filteredStudents.map((student) => {
       const isBusy = busyIds.current.has(student.id);
+      const isPickup = apiShift === "pickup";
+        const attendedTime =
+    student.status === "attended" && student.attendedAt
+      ? new Date(student.attendedAt).toLocaleTimeString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
       return (
         <Card key={student.id} className="border-border/50 rounded-lg">
           <CardContent className="p-4 px-5 pt-5">
@@ -274,6 +285,28 @@ export default function StudentsPage() {
                     </svg>
                     <span className="flex-1">{student.address}</span>
                   </div>
+                  {attendedTime && (
+    <div className="flex items-center gap-2 text-xs text-emerald-600">
+      <svg
+        className="w-4 h-4 flex-shrink-0"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 8v4l2.5 2.5M12 22a10 10 0 100-20 10 10 0 000 20z"
+        />
+      </svg>
+      <span>
+        {isPickup
+          ? `Đã đón lúc ${attendedTime}`
+          : `Đã trả lúc ${attendedTime}`}
+      </span>
+    </div>
+  )}
                 </div>
 
                 <div className="flex gap-2 px-4 pt-4">
@@ -379,32 +412,69 @@ export default function StudentsPage() {
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-2">
-          <Card className="border-border/50 rounded-lg">
-            <CardContent className="px-5 pt-5 p-3 text-center">
-              <div className="text-xl font-bold text-foreground">{stats.total}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Tổng</div>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50 rounded-lg">
-            <CardContent className="px-5 pt-5 p-3 text-center">
-              <div className="text-xl font-bold text-primary">{stats.pickedUp}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Đã đón</div>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50 rounded-lg">
-            <CardContent className="px-5 pt-5 p-3 text-center">
-              <div className="text-xl font-bold text-accent">{stats.droppedOff}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Đã trả</div>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50 rounded-lg">
-            <CardContent className="px-5 pt-5 p-3 text-center">
-              <div className="text-xl font-bold text-muted-foreground">{stats.remaining}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">Còn lại</div>
-            </CardContent>
-          </Card>
-        </div>
+{/* Stats */}
+<div className="grid grid-cols-3 gap-3">
+  {/* Tổng */}
+  <Card className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 shadow-sm">
+    <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
+      <div className="text-xs font-medium text-slate-500">Tổng</div>
+      <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
+    </CardContent>
+  </Card>
+
+  {/* Đã đón (ca sáng) / Đã trả (ca chiều) */}
+  <Card
+    className={`rounded-lg border shadow-sm bg-gradient-to-br ${
+      isPickupShift
+        ? "border-sky-200 from-sky-50 to-sky-100"
+        : "border-emerald-200 from-emerald-50 to-emerald-100"
+    }`}
+  >
+    <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
+      <div
+        className={`text-xs font-medium ${
+          isPickupShift ? "text-sky-600" : "text-emerald-600"
+        }`}
+      >
+        {isPickupShift ? "Đã đón" : "Đã trả"}
+      </div>
+      <div
+        className={`text-2xl font-bold ${
+          isPickupShift ? "text-sky-700" : "text-emerald-700"
+        }`}
+      >
+        {isPickupShift ? stats.pickedUp : stats.droppedOff}
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Còn lại */}
+  <Card
+    className={`rounded-lg border shadow-sm bg-gradient-to-br ${
+      stats.remaining > 0
+        ? "border-amber-200 from-amber-50 to-amber-100"
+        : "border-zinc-200 from-zinc-50 to-zinc-100"
+    }`}
+  >
+    <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
+      <div
+        className={`text-xs font-medium ${
+          stats.remaining > 0 ? "text-amber-600" : "text-zinc-500"
+        }`}
+      >
+        Còn lại
+      </div>
+      <div
+        className={`text-2xl font-bold ${
+          stats.remaining > 0 ? "text-amber-700" : "text-zinc-700"
+        }`}
+      >
+        {stats.remaining}
+      </div>
+    </CardContent>
+  </Card>
+</div>
+
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">

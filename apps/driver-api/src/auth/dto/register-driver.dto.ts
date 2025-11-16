@@ -1,5 +1,5 @@
 // apps/driver-api/src/auth/dto/register-driver.dto.ts
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, MinLength, IsEmail } from 'class-validator';
 
 export class RegisterDriverDto {
   @IsString()
@@ -9,6 +9,9 @@ export class RegisterDriverDto {
   @IsString()
   @MinLength(6, { message: 'Password phải có ít nhất 6 ký tự' })
   password: string;
+
+  @IsEmail()
+  email: string; 
 
   @IsString()
   @IsNotEmpty()

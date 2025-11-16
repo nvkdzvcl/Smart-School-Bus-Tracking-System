@@ -9,6 +9,8 @@ import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from './schedule/schedule.module'; // <-- Đã thêm
 import { NotificationModule } from './notification/notification.module';
 import { ReportsModule } from './reports/reports.module';
+import { TripModule } from './trip/trip.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -34,7 +36,9 @@ import { ReportsModule } from './reports/reports.module';
     AuthModule,
     ScheduleModule,
     NotificationModule,
-    ReportsModule, // <-- Đã thêm
+    ReportsModule,
+    TripModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

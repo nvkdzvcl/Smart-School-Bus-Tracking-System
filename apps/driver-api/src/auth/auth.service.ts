@@ -67,18 +67,19 @@ export class AuthService {
         id: user.id,
         name: user.fullName,
         phone: user.phone,
+        email: user.email,
       },
     };
   }
 
   // --- VIẾT LẠI HÀM REGISTER ---
-  async registerDriver(dto: RegisterDriverDto) {
+  async registerDriver(dto: RegisterDriverDto) {  
     // 1. Check xem SĐT (phone) đã tồn tại chưa
-    const existingUser = await this.userRepository.findOneBy({
-      phone: dto.phone,
-    });
+    const existingUser = await this.userRepository.findOne({
+      where: [{ phone: dto.phone }, { email: dto.email }],
+  });
     if (existingUser) {
-      throw new ConflictException('Số điện thoại đã được đăng ký');
+      throw new ConflictException('Số điện thoại hoặc email đã được đăng ký');
     }
 
     // 2. Hash mật khẩu
@@ -89,6 +90,7 @@ export class AuthService {
     const newDriver = this.userRepository.create({
       phone: dto.phone,
       fullName: dto.fullName,
+      email: dto.email,
       passwordHash: hashedPassword, // Lưu vào cột 'password_hash'
       role: UserRole.DRIVER, // Gán cứng là tài xế
     });
@@ -100,6 +102,7 @@ export class AuthService {
       message: 'Tạo tài khoản tài xế thành công',
       phone: newDriver.phone,
       fullName: newDriver.fullName,
+      email: newDriver.email,
     };
   }
 }

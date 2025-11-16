@@ -1,5 +1,4 @@
 // apps/driver-api/src/reports/dto/create-report.dto.ts
-
 import {
   IsString,
   IsNotEmpty,
@@ -27,6 +26,7 @@ export class CreateReportDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000) // cho phép dài hơn 1 chút
   content: string;
 
   @ApiProperty({
