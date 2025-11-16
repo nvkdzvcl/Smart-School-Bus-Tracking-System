@@ -2,7 +2,9 @@
 
 export enum ReportType {
   STUDENT_ABSENT = 'student_absent',
-  INCIDENT = 'incident',
+  INCIDENT_TRAFFIC = 'incident_traffic',
+  INCIDENT_VEHICLE = 'incident_vehicle',
+  INCIDENT_ACCIDENT = 'incident_accident',
   COMPLAINT = 'complaint',
   OTHER = 'other',
 }
