@@ -1,13 +1,12 @@
-import React from "react"
 import { NavLink } from "react-router-dom"
-import { Home, Map, Calendar, MessageSquare, User } from "lucide-react"
-import { cn } from "../lib/utils/Utils"
+import {Home, Map, Calendar, User, Bell} from "lucide-react"
+import { cn } from "../../lib/utils/Utils.ts"
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/tracking", icon: Map, label: "Map" },
   { href: "/schedule", icon: Calendar, label: "Schedule" },
-  { href: "/messages", icon: MessageSquare, label: "Messages" },
+  { href: "/notifications", icon: Bell, label: "Notifications" },
   { href: "/profile", icon: User, label: "Profile" },
 ]
 

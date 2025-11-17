@@ -1,7 +1,7 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
-import { Badge } from "../components/ui/Badge"
-import { Button } from "../components/ui/Button"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.tsx"
+import { Badge } from "../ui/Badge.tsx"
+import { Button } from "../ui/Button.tsx"
 import { AlertTriangle, Clock, MapPin, Phone } from "lucide-react"
 
 const alerts = [

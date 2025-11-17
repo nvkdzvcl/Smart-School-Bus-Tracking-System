@@ -1,4 +1,3 @@
-import type React from "react"
 import { Outlet } from "react-router-dom"
 
 // import type { Metadata } from "next"

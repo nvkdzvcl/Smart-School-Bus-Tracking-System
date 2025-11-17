@@ -1,6 +1,6 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
-import { Badge } from "../components/ui/Badge"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.tsx"
+import { Badge } from "../ui/Badge.tsx"
 import { Clock, MapPin, Sunrise, Sunset } from "lucide-react"
 
 const trips = [

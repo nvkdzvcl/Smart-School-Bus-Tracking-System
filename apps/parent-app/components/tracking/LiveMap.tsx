@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react"
-import { Button } from "../components/ui/Button"
-import { Navigation, RefreshCw } from "lucide-react"
+import { useRef, useState } from "react"
+import { Button } from "../ui/Button.tsx"
+import { RefreshCw } from "lucide-react"
 
 export default function LiveMap() {
   const mapRef = useRef<HTMLDivElement>(null)

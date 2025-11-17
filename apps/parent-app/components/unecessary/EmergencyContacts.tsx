@@ -1,6 +1,6 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
-import { Button } from "../components/ui/Button"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.tsx"
+import { Button } from "../ui/Button.tsx"
 import { Phone, UserPlus } from "lucide-react"
 
 const contacts = [

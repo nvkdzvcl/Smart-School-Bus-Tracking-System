@@ -1,8 +1,6 @@
-import React from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar"
-import { Card, CardContent } from "../components/ui/Card"
-import { Badge } from "../components/ui/Badge"
-import { Button } from "../components/ui/Button"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar.tsx"
+import { Card, CardContent } from "../ui/Card.tsx"
+import { Badge } from "../ui/Badge.tsx"
 
 export default function StudentCard() {
   return (

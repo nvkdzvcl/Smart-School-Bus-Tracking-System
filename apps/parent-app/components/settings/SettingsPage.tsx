@@ -2,16 +2,16 @@ import React, {useEffect, useState} from "react"
 import {useNavigate} from "react-router-dom"
 import axios from "axios"
 
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./ui/Card"
-import {Label} from "./ui/Label"
-import {Switch} from "./ui/Switch"
-import {Button} from "./ui/Button"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "./ui/Select"
-import {Separator} from "./ui/Separator"
-import {Input} from "./ui/Input"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/Card.tsx"
+import {Label} from "../ui/Label.tsx"
+import {Switch} from "../ui/Switch.tsx"
+import {Button} from "../ui/Button.tsx"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "../ui/Select.tsx"
+import {Separator} from "../ui/Separator.tsx"
+import {Input} from "../ui/Input.tsx"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
-export default function SettingsForm() {
+export default function SettingsPage() {
     const navigate = useNavigate()
 
     const [parentName, setParentName] = useState("")

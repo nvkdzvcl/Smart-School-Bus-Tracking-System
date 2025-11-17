@@ -1,6 +1,6 @@
-import React, { useState } from "react"
-import { Card, CardContent } from "../components/ui/Card"
-import { Badge } from "../components/ui/Badge"
+import { useState } from "react"
+import { Card, CardContent } from "../ui/Card.tsx"
+import { Badge } from "../ui/Badge.tsx"
 import { Bus, User, ChevronUp, ChevronDown } from "lucide-react"
 
 export default function BusInfoPanel() {

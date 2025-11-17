@@ -1,6 +1,6 @@
 import React from "react"
 import { Link } from "react-router-dom"
-import { Card, CardContent } from "../components/ui/Card"
+import { Card, CardContent } from "../ui/Card.tsx"
 import { Calendar, Map, MessageSquare, User } from "lucide-react"
 
 const actions = [

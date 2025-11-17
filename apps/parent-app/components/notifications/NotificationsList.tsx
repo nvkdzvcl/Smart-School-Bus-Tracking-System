@@ -1,28 +1,20 @@
-import {useEffect, useState, useRef} from "react"
+import {useEffect, useState} from "react"
 import {useNavigate} from "react-router-dom"
-import {Card, CardContent} from "./ui/Card"
+import {Card, CardContent} from "../ui/Card.tsx"
 import {Badge} from "lucide-react"
 import {io, Socket} from "socket.io-client"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
 
-interface SocketMessage {
-    id: string
-    sender_id: string
-    recipient_id: string
-    content: string
-    created_at: string
-    sender?: {
-        id: string
-        full_name: string
-    }
+type NotificationsListProps = {
+    parentID: string | null
 }
 
 interface Notification {
     id: string
     title: string
     message: string
-    type: "alert" | "arrival" | "message" | "incident"
+    type: "alert" | "notification" | "message"
     isRead: boolean
     createdAt: string
 }
@@ -92,31 +84,15 @@ function timeAgo(dateString: string): string {
 //     },
 // ]
 
-export default function MessageList() {
+export default function NotificationsList({ parentID }: NotificationsListProps) {
     const navigate = useNavigate()
 
     const [socket, setSocket] = useState<Socket | null>(null)
-    const [parentID, setParentID] = useState<string | null>(null)
-    const [chatHistory, setChatHistory] = useState<SocketMessage[]>([])
-    const chatEndRef = useRef<HTMLDivElement>(null)
 
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
 
     const [error, setError] = useState<string | null>(null)
-
-    useEffect(() => {
-        const authenticated = localStorage.getItem("parent_authenticated")
-        const token = localStorage.getItem("access_token")
-        const myID = localStorage.getItem("parent_id")
-
-        if (!authenticated || !token || !myID) {
-            console.error("Chưa đăng nhập hoặc thiếu thông tin")
-            navigate("/login")
-        } else {
-            setParentID(myID)
-        }
-    }, [navigate])
 
     useEffect(() => {
         if (!parentID) return
@@ -167,14 +143,6 @@ export default function MessageList() {
             if (typeof error === "string" && error.includes("hết hạn")) navigate("/login")
         })
 
-        newSocket.on("messageSent", (sentMessage: SocketMessage) => {
-            setChatHistory((prev) => [...prev, sentMessage])
-        })
-
-        newSocket.on("history", (history: SocketMessage[]) => {
-            setChatHistory(history)
-        })
-
         return () => {
             newSocket.disconnect()
         }
@@ -182,19 +150,15 @@ export default function MessageList() {
 
     useEffect(() => {
         if (!socket) return
-        const handleNewMessage = (receivedMessage: SocketMessage) => {
-            setChatHistory((prev) => [...prev, receivedMessage])
+        const handleNewNotification = (receivedNotification: Notification) => {
+            setNotifications((prev) => [...prev, receivedNotification])
         }
 
-        socket.on("newMessage", handleNewMessage)
+        socket.on("newNotification", handleNewNotification)
         return () => {
-            socket.off("newMessage", handleNewMessage)
+            socket.off("newNotification", handleNewNotification)
         }
     }, [socket]);
-
-    useEffect(() => {
-        chatEndRef.current?.scrollIntoView({behavior: "smooth"})
-    }, [chatHistory]);
 
     const handleNotificationClick = async (notificationId: string) => {
         const notification = notifications.find((notif) => notif.id === notificationId)
@@ -250,6 +214,7 @@ export default function MessageList() {
                     <p>{error}</p>
                 </div>
             )}
+
             <div className="space-y-3 max-w-2xl mx-auto p-4">
                 {isLoadingNotifications ? (
                     <p className="text-muted-foreground text-center">Đang tải thông báo...</p>
@@ -268,7 +233,7 @@ export default function MessageList() {
                                 <div className="flex items-start gap-3">
                                     <div
                                         className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary/20 text-primary">
-                                        {n.type === "alert" ? "!" : n.type === "arrival" ? "B" : "M"}
+                                        {n.type === "alert" ? "!" : n.type === "notification" ? "B" : "M"}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2 mb-1">
@@ -289,7 +254,7 @@ export default function MessageList() {
                             </CardContent>
                         </Card>
                     ))
-                    )}
+                )}
             </div>
         </>
     )

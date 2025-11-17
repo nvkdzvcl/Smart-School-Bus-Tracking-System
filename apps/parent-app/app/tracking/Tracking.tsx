@@ -1,12 +1,12 @@
-import TopBar from "../../components/TopBar"
-import BottomNav from "../../components/BottomNav"
-import LiveMap from "../../components/LiveMap"
-import BusInfoPanel from "../../components/BusInfoPanel"
+import Header from "../../components/layout/Header.tsx"
+import BottomNav from "../../components/layout/BottomNav.tsx"
+import LiveMap from "../../components/tracking/LiveMap.tsx"
+import BusInfoPanel from "../../components/tracking/BusInfoPanel.tsx"
 
 export default function TrackingPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
-      <TopBar title="Live Tracking" showBack showNotifications notificationCount={2} />
+      <Header title="Live Tracking" showBack showNotifications notificationCount={2} />
 
       <main className="relative h-[calc(100vh-8rem)]">
         <LiveMap />

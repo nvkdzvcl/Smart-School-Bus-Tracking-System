@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { ChevronLeft } from "lucide-react"
-import { Button } from "./ui/Button"
+import { Button } from "../ui/Button.tsx"
 import { Settings } from "lucide-react"
 
 interface TopBarProps {
@@ -11,7 +11,7 @@ interface TopBarProps {
   notificationCount?: number
 }
 
-export default function TopBar({
+export default function Header({
   title,
   showBack = false,
   // showNotifications = true,
@@ -33,19 +33,22 @@ export default function TopBar({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* {showNotifications && (
-            <Button variant="ghost" size="icon" className="relative w-9 h-9">
-              <Bell className="w-5 h-5 dark:text-white" />
-              {notificationCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"
-                >
-                  {notificationCount}
-                </Badge>
-              )}
-            </Button>
-          )} */}
+          {/*{showNotifications && (*/}
+          {/*  <Button variant="ghost" size="icon" className="relative w-9 h-9">*/}
+          {/*    <Bell*/}
+          {/*        className="w-5 h-5 dark:text-white"*/}
+          {/*        onClick={() => navigate("/notifications")}*/}
+          {/*    />*/}
+          {/*    {notificationCount > 0 && (*/}
+          {/*      <Badge*/}
+          {/*        variant="destructive"*/}
+          {/*        className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-xs"*/}
+          {/*      >*/}
+          {/*        {notificationCount}*/}
+          {/*      </Badge>*/}
+          {/*    )}*/}
+          {/*  </Button>*/}
+          {/*)}*/}
           {/* Notifications */}
           {/*<DropdownMenu>*/}
           {/*  <DropdownMenuTrigger asChild>*/}

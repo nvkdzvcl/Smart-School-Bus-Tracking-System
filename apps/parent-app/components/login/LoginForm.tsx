@@ -1,9 +1,9 @@
 import React, {useState} from "react"
 import {useNavigate} from "react-router-dom"
-import {Button} from "./ui/Button"
-import {Input} from "./ui/Input"
-import {Label} from "./ui/Label"
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "./ui/Card"
+import {Button} from "../ui/Button.tsx"
+import {Input} from "../ui/Input.tsx"
+import {Label} from "../ui/Label.tsx"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "../ui/Card.tsx"
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/Tabs"
 import {Bus, Lock, Text} from "lucide-react"
 import axios from "axios";
