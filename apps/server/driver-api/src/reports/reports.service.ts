@@ -2,7 +2,7 @@
 
 import {
   Injectable,
-  // Đảm bảo không có NotFoundException vì nó không được dùng
+  NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -79,6 +79,29 @@ export class ReportsService {
     return this.reportRepository.find({
       where: { senderId: driverId },
       order: { createdAt: 'DESC' }, 
+    });
+  }
+
+  // 👇 THÊM TOÀN BỘ HÀM NÀY VÀO CUỐI CLASS 👇
+  async findByTripId(tripId: string, driverId: string) {
+    // 1. Kiểm tra xem chuyến đi có tồn tại và thuộc tài xế này không
+    const trip = await this.tripRepository.findOne({
+      where: { id: tripId, driverId: driverId },
+    });
+
+    // Nếu không tìm thấy chuyến đi hoặc không đúng tài xế -> báo lỗi
+    if (!trip) {
+      throw new NotFoundException(
+        'Không tìm thấy chuyến đi hoặc bạn không có quyền xem báo cáo này.',
+      );
+    }
+
+    // 2. Nếu đúng, lấy tất cả báo cáo của chuyến đi đó
+    return this.reportRepository.find({
+      where: { tripId: tripId },
+      // Chỉ lấy các cột mà FE (file History.tsx) cần cho PDF
+      select: ['id', 'title', 'content', 'imageUrl', 'type'], 
+      order: { createdAt: 'ASC' }, // Sắp xếp theo thời gian
     });
   }
 }
