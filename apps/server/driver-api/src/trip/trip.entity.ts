@@ -8,11 +8,13 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
 import { Route } from '../route/route.entity';
 import { Bus } from '../bus/bus.entity';
 import { User } from '../user/user.entity';
 import { TripType, TripStatus, DayPart } from './trip.enums';
+import { TripStudent } from './trip-student.entity';
 
 @Entity('Trips')
 @Index(['driverId', 'tripDate', 'type', 'session']) // <-- index theo session
@@ -45,7 +47,7 @@ export class Trip {
     name: 'session',
     type: 'enum',
     enum: DayPart,
-    enumName: 'day_part',       // tên enum trong PostgreSQL
+    enumName: 'day_part', // tên enum trong PostgreSQL
     default: DayPart.MORNING,
   })
   session: DayPart;
@@ -82,4 +84,7 @@ export class Trip {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'driver_id' })
   driver: User;
+
+  @OneToMany(() => TripStudent, (tripStudent) => tripStudent.trip)
+  tripStudents: TripStudent;
 }

@@ -1,8 +1,9 @@
-import type React from "react"
+import type React from "react";
 // import type { Metadata } from "next"
 // import { Analytics } from "@vercel/analytics/next"
-import { Suspense } from "react"
-import "./globals.css"
+import { Suspense } from "react";
+import "./globals.css";
+import { UserProvider } from "@/context/UserContext";
 
 // export const metadata: Metadata = {
 //   title: "SSB Parent - School Bus Tracking",
@@ -13,12 +14,14 @@ import "./globals.css"
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
-    <div lang="vi" className="dark font-sans">
-      <Suspense fallback={null}>{children}</Suspense>
-      {/* <Analytics /> */}
-    </div>
-  )
+    <UserProvider>
+      <div lang="vi" className="light font-sans">
+        <Suspense fallback={null}>{children}</Suspense>
+        {/* <Analytics /> */}
+      </div>
+    </UserProvider>
+  );
 }
