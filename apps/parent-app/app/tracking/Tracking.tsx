@@ -1,7 +1,7 @@
 import Header from "../../components/layout/Header.tsx"
 import BottomNav from "../../components/layout/BottomNav.tsx"
 import LiveMap from "../../components/tracking/LiveMap.tsx"
-import BusInfoPanel from "../../components/tracking/BusInfoPanel.tsx"
+import TripInfoPanel from "../../components/tracking/TripInfoPanel.tsx"
 
 export default function TrackingPage() {
   return (
@@ -10,7 +10,7 @@ export default function TrackingPage() {
 
       <main className="relative h-[calc(100vh-8rem)]">
         <LiveMap />
-        <BusInfoPanel />
+        <TripInfoPanel />
       </main>
 
       <BottomNav />

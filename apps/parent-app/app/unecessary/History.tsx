@@ -1,6 +1,6 @@
 import Header from "../../components/layout/Header.tsx"
 import BottomNav from "../../components/layout/BottomNav.tsx"
-import TripHistory from "../../components/TripHistory"
+import TripHistory from "../../components/unecessary/TripHistory.tsx"
 import HistoryFilters from "../../components/schedule/HistoryFilters.tsx"
 
 export default function HistoryPage() {

@@ -1,7 +1,7 @@
 // Pages
 import Home from "../app/home/Home"
 import Login from "../app/login/Login"
-import History from "../app/history/History"
+import History from "./unecessary/History.tsx"
 import Profile from "../app/profile/Profile"
 import Schedule from "../app/schedule/Schedule"
 import Tracking from "../app/tracking/Tracking"

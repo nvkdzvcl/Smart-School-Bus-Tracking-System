@@ -1,6 +1,6 @@
 import Header from "../../components/layout/Header.tsx"
 import BottomNav from "../../components/layout/BottomNav.tsx"
-import BusStatusCard from "../../components/home/BusStatusCard.tsx"
+import TripStatusCard from "../../components/home/TripStatusCard.tsx"
 import StudentCard from "../../components/home/StudentCard.tsx"
 
 export default function Home() {
@@ -10,7 +10,7 @@ export default function Home() {
 
       <main className="max-w-2xl mx-auto p-4 space-y-4">
         <StudentCard />
-        <BusStatusCard />
+        <TripStatusCard />
         {/* <QuickActions /> */}
         {/* <UpcomingTrips /> */}
       </main>
