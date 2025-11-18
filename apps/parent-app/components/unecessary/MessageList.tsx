@@ -1,5 +1,5 @@
 import React from "react"
-import { Card, CardContent } from "../components/ui/Card"
+import { Card, CardContent } from "../ui/Card.tsx"
 import { Bell, MessageSquare, AlertTriangle, Info } from "lucide-react"
 
 const messages = [

@@ -2,17 +2,18 @@ import ReactDOM from "react-dom/client"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
 // Layout và style toàn cục
-import RootLayout from "../app/layout"
+import RootLayout from "../app/layout/layout.tsx"
 import "../app/globals.css"
 
 // Pages
 import Home from "../app/home/Home"
 import Login from "../app/login/Login"
-import History from "../app/history/History"
+import History from "../app/unecessary/History.tsx"
 import Messages from "../app/messages/Messages"
 import Profile from "../app/profile/Profile"
 import Schedule from "../app/schedule/Schedule"
 import Tracking from "../app/tracking/Tracking"
+import Settings from "../app/settings/Settings.tsx";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <BrowserRouter>
@@ -67,6 +68,14 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
                             <RootLayout>
                                 <Tracking />
                             </RootLayout>
+                    }
+                />
+                <Route
+                    path="/settings"
+                    element={
+                        <RootLayout>
+                            <Settings />
+                        </RootLayout>
                     }
                 />
             </Routes>

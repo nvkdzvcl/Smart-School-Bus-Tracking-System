@@ -1,7 +1,7 @@
 import React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/Avatar"
-import { Badge } from "../components/ui/Badge"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card.tsx"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/Avatar.tsx"
+import { Badge } from "../ui/Badge.tsx"
 import { User, MapPin, Bus, Phone } from "lucide-react"
 
 export default function StudentProfile() {

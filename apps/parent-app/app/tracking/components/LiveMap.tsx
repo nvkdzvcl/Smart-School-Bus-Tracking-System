@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react"
-import { Button } from "../components/ui/Button"
+import { Button } from "../../../components/ui/Button.tsx"
 import { Navigation, RefreshCw } from "lucide-react"
 
 export default function LiveMap() {

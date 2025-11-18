@@ -2,8 +2,8 @@ import type React from "react";
 // import type { Metadata } from "next"
 // import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react";
-import "./globals.css";
-import { UserProvider } from "@/context/UserContext";
+import "../globals.css";
+import { UserProvider } from "@/context/UserContext.tsx";
 
 // export const metadata: Metadata = {
 //   title: "SSB Parent - School Bus Tracking",

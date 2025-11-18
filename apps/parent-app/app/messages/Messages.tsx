@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
-import TopBar from "@/components/TopBar";
-import BottomNav from "@/components/BottomNav";
+import Header from "@/app/layout/components/Header.tsx";
+import BottomNav from "@/app/layout/components/BottomNav.tsx";
 import NotificationList from "./components/NotificationList";
 import ConversationList from "./components/ConversationList";
 import ConversationView from "./components/ConversationView";
@@ -93,8 +93,8 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* TopBar sẽ thay đổi tiêu đề và nút Back tùy theo view */}
-      <TopBar
+      {/* Header sẽ thay đổi tiêu đề và nút Back tùy theo view */}
+      <Header
         title="Messages"
         showBack
         showNotifications

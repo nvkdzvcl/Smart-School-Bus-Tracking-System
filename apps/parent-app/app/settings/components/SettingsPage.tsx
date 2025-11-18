@@ -1,17 +1,17 @@
 import React from "react"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/Card"
-import { Label } from "../components/ui/Label"
-import { Switch } from "../components/ui/Switch"
-import { Button } from "../components/ui/Button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/Select"
-import { Separator } from "../components/ui/Separator"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/Card.tsx"
+import { Label } from "../../../components/ui/Label.tsx"
+import { Switch } from "../../../components/ui/Switch.tsx"
+import { Button } from "../../../components/ui/Button.tsx"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/Select.tsx"
+import { Separator } from "../../../components/ui/Separator.tsx"
 
-export default function SettingsForm() {
+export default function SettingsPage() {
   return (
     <div className="space-y-4">
       {/* Notifications */}
-      <Card>
+      <Card className="pb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -64,7 +64,7 @@ export default function SettingsForm() {
       </Card>
 
       {/* Preferences */}
-      <Card>
+      <Card className="pb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -113,7 +113,7 @@ export default function SettingsForm() {
       </Card>
 
       {/* Location */}
-      <Card>
+      <Card className="pb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -136,23 +136,25 @@ export default function SettingsForm() {
           <Separator />
 
           <div className="space-y-2">
-            <Label>Home Address</Label>
+            <Label>Pickup Address</Label>
             <p className="text-sm">123 Nguyen Van Linh St., District 7, HCMC</p>
-            <Button variant="outline" size="sm" className="bg-transparent">
-              Update Address
-            </Button>
+              <Label>Dropoff Address</Label>
+              <p className="text-sm">123 Nguyen Van Linh St., District 7, HCMC</p>
+            {/*<Button variant="outline" size="sm" className="bg-transparent">*/}
+            {/*  Update Address*/}
+            {/*</Button>*/}
           </div>
         </CardContent>
       </Card>
 
       {/* Account */}
-      <Card>
+      <Card className="pb-6">
         <CardHeader>
           <CardTitle className="text-base">Account</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Button variant="outline" className="w-full justify-start bg-transparent">
-            Change Password
+            Change Profile
           </Button>
           <Button variant="outline" className="w-full justify-start bg-transparent">
             Privacy Policy

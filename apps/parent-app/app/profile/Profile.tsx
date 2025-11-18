@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
-import TopBar from "../../components/TopBar";
-import BottomNav from "../../components/BottomNav";
+import Header from "../layout/components/Header.tsx";
+import BottomNav from "../layout/components/BottomNav.tsx";
 import type { IAttendanceRecord, IStop, IStudent } from "@/types/data-types";
 import ProfileActionsCard from "./components/ProfileActionsCard";
 import StudentSwitcher from "./components/StudentSwitcher";
@@ -92,7 +92,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <TopBar title="Hồ Sơ" />
+      <Header title="Hồ Sơ" />
       <main className="max-w-2xl mx-auto p-4 space-y-4">
         {/* Thông tin phụ huynh */}
         <ProfileActionsCard parent={profile} onEdit={handleOpenModal} />

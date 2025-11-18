@@ -1,7 +1,7 @@
 import React from "react"
 import { NavLink } from "react-router-dom"
 import { Home, Map, Calendar, MessageSquare, User } from "lucide-react"
-import { cn } from "../lib/utils/Utils"
+import { cn } from "../../../lib/utils/Utils.ts"
 
 const navItems = [
   { href: "/", icon: Home, label: "Home" },
