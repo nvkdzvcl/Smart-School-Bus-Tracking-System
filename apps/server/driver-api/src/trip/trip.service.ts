@@ -10,111 +10,142 @@ import { TripStudent } from './trip-student.entity';
 import { TripStatus } from './trip.enums';
 
 export interface TripHistoryBE {
-  id: string;
-  date: string;
-  shift: string;
-  route: string;
-  startTime: string;
-  endTime: string;
-  totalStudents: number;
-  pickedUp: number;
-  droppedOff: number;
-  distance: string;
-  duration: string;
-  incidents: number;
-  status: 'completed' | 'incomplete';
+  id: string;
+  date: string;
+  shift: string;
+  route: string;
+  startTime: string;
+  endTime: string;
+  totalStudents: number;
+  pickedUp: number;
+  droppedOff: number;
+  distance: string;
+  duration: string;
+  incidents: number;
+  status: 'completed' | 'incomplete';
 }
 
 export interface HistorySummary {
-  totalTrips: number;
-  completedTrips: number;
-  totalIncidents: number;
+  totalTrips: number;
+  completedTrips: number;
+  totalIncidents: number;
 }
 
 @Injectable()
 export class TripService {
-  constructor(
-    @InjectRepository(Trip) private readonly tripRepository: Repository<Trip>,
-    @InjectRepository(Report) private readonly reportRepository: Repository<Report>,
-    @InjectRepository(TripStudent) private readonly tripStudentRepository: Repository<TripStudent>,
-    @InjectRepository(Route) private readonly routeRepository: Repository<Route>,
-  ) {}
+  constructor(
+    @InjectRepository(Trip) private readonly tripRepository: Repository<Trip>,
+    @InjectRepository(Report) private readonly reportRepository: Repository<Report>,
+    @InjectRepository(TripStudent) private readonly tripStudentRepository: Repository<TripStudent>,
+    @InjectRepository(Route) private readonly routeRepository: Repository<Route>,
+  ) {}
 
-  async getHistoryListByUser(user: any): Promise<TripHistoryBE[]> {
-    const driverId = user.userId;
+  async getHistoryListByUser(user: any): Promise<TripHistoryBE[]> {
+    const driverId = user.userId;
 
-    const rows = await this.tripRepository
-      .createQueryBuilder('trip')
-      // Join tuyến: có thể join theo entity hoặc tên table. Mình dùng tên table để tránh lệ thuộc metadata.
-      .leftJoin('Routes', 'route', 'route.id = trip.route_id')
-      // Join Trip_Students & Reports theo entity + ON:
-      .leftJoin(TripStudent, 'ts', 'ts.trip_id = trip.id')
-      .leftJoin(Report, 'report', 'report.trip_id = trip.id')
-      .where('trip.driver_id = :driverId', { driverId })
-      .andWhere('trip.status IN (:...statuses)', {
-        statuses: [TripStatus.COMPLETED, TripStatus.CANCELLED],
-      })
-      .andWhere(`trip.trip_date >= NOW() - INTERVAL '30 day'`)
-      .select([
-        'trip.id AS id',
-        'trip.trip_date AS date',
-        'trip.session AS shift',
-        'route.name AS route',
-        'trip.actual_start_time AS startTime',
-        'trip.actual_end_time AS endTime',
-        'trip.status AS status',
-        // Đếm
-        'COUNT(DISTINCT ts.student_id) AS "totalStudents"',
-        `SUM(CASE WHEN ts.status = 'attended' THEN 1 ELSE 0 END) AS "pickedUp"`,
-        `SUM(CASE WHEN ts.status = 'attended' THEN 1 ELSE 0 END) AS "droppedOff"`,
-        'COUNT(DISTINCT report.id) AS "incidents"',
-      ])
-      // group theo PK và những cột không tổng hợp
-      .groupBy('trip.id')
-      .addGroupBy('route.name')
-      .orderBy('trip.trip_date', 'DESC')
-      .addOrderBy('trip.session', 'DESC')
-      .getRawMany();
+    const rows = await this.tripRepository
+      .createQueryBuilder('trip')
+      .leftJoin('Routes', 'route', 'route.id = trip.route_id')
+      .leftJoin(TripStudent, 'ts', 'ts.trip_id = trip.id')
+      .leftJoin(Report, 'report', 'report.trip_id = trip.id')
+      .leftJoin('trip.driver', 'driver')
+      .leftJoin('trip.bus', 'bus')
+      .where('trip.driver_id = :driverId', { driverId })
+      .andWhere('trip.status IN (:...statuses)', {
+        statuses: [TripStatus.COMPLETED, TripStatus.CANCELLED],
+      })
+      .andWhere(`trip.trip_date >= NOW() - INTERVAL '30 day'`)
+      .select([
+        'trip.id AS id',
+        'trip.trip_date AS date',
+        'trip.session AS shift',
+        'route.name AS route',
+        'trip.actual_start_time AS "startTime"',
+        'trip.actual_end_time AS "endTime"',
+        'trip.status AS status',
+        'driver.fullName AS "driverName"',
+        'driver.phone AS "driverPhone"',
+        'driver.email AS "driverEmail"',
+        'bus.license_plate AS "licensePlate"',
+        // Đếm
+        'COUNT(DISTINCT ts.student_id) AS "totalStudents"', // (Đếm tổng học sinh VẪN ĐÚNG)
 
-    return rows.map((h: any) => {
-      const totalStudents = parseInt(h.totalStudents, 10) || 0;
-      const pickedUp = parseInt(h.pickedUp, 10) || 0;
-      const incidents = parseInt(h.incidents, 10) || 0;
+        // ĐÃ SỬA: Đếm số student_id DUY NHẤT CÓ status = 'attended'
+        `COUNT(DISTINCT CASE WHEN ts.status = 'attended' THEN ts.student_id ELSE NULL END) AS "pickedUp"`,
+        
+        // ĐÃ SỬA: Tương tự
+        `COUNT(DISTINCT CASE WHEN ts.status = 'attended' THEN ts.student_id ELSE NULL END) AS "droppedOff"`,
+        
+        'COUNT(DISTINCT report.id) AS "incidents"', // (Cũng nên dùng DISTINCT cho chắc)
+      ])
+      .groupBy('trip.id')
+      .addGroupBy('route.name')
+      .addGroupBy('driver.fullName') 
+      .addGroupBy('driver.phone')
+      .addGroupBy('driver.email')
+      .addGroupBy('bus.license_plate')
+      .orderBy('trip.trip_date', 'DESC')
+      .addOrderBy('trip.session', 'DESC')
+      .getRawMany();
 
-      const start = h.startTime ? new Date(h.startTime) : null;
-      const end = h.endTime ? new Date(h.endTime) : null;
+return rows.map((h: any) => {
+      const totalStudents = parseInt(h.totalStudents, 10) || 0;
+      const pickedUp = parseInt(h.pickedUp, 10) || 0;
+      const incidents = parseInt(h.incidents, 10) || 0;
 
-      let duration = 'N/A';
-      if (start && end) {
-        const diffMin = Math.round((end.getTime() - start.getTime()) / 60000);
-        duration = `${Math.floor(diffMin / 60)}h ${diffMin % 60}m`;
-      }
+      const start = h.startTime ? new Date(h.startTime) : null;
+      const end = h.endTime ? new Date(h.endTime) : null;
 
-      const status: 'completed' | 'incomplete' =
-        h.status === TripStatus.COMPLETED ? 'completed' : 'incomplete';
+      let duration = 'N/A';
+      if (start && end) {
+        // --- LOGIC SỬA ĐỂ TÍNH DURATION ---
+        // 1. Làm tròn start XUỐNG phút gần nhất (bỏ giây/ms)
+        const startFloored = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes());
+        // (11:49:42 -> 11:49:00)
 
-      const toHHMM = (d: Date | null) =>
-        d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : 'N/A';
+        // 2. Làm tròn end XUỐNG phút gần nhất (bỏ giây/ms)
+        const endFloored = new Date(end.getFullYear(), end.getMonth(), end.getDate(), end.getHours(), end.getMinutes());
+        // (11:50:08 -> 11:50:00)
 
-      return {
-        id: h.id,
-        date: h.date,
-        shift: h.shift === 'morning' ? 'Ca sáng' : 'Ca chiều',
-        route: h.route || 'N/A',
-        startTime: toHHMM(start),
-        endTime: toHHMM(end),
-        totalStudents,
-        pickedUp,
-        droppedOff: pickedUp,
-        distance: `${(Math.random() * 5 + 10).toFixed(1)} km`,
-        duration,
-        incidents,
-        status,
-      };
-    });
-  }
+        // 3. Tính chênh lệch của 2 mốc thời gian đã làm tròn này
+        const diffMin = Math.round((endFloored.getTime() - startFloored.getTime()) / 60000);
+        // (11:50:00 - 11:49:00) = 1 phút
 
-  async getHistorySummaryByUser(user: any): Promise<HistorySummary> {
+        duration = `${Math.floor(diffMin / 60)}h ${diffMin % 60}m`;
+        // Kết quả sẽ là "0h 1m"
+        // --- KẾT THÚC LOGIC SỬA ---
+      }
+
+      const status: 'completed' | 'incomplete' =
+        h.status === TripStatus.COMPLETED ? 'completed' : 'incomplete';
+
+      // Hàm này vẫn đúng, nó làm tròn xuống (floor) phút
+      const toHHMM = (d: Date | null) =>
+        d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : 'N/A';
+
+      return {
+        id: h.id,
+        date: h.date,
+        shift: h.shift === 'morning' ? 'Ca sáng' : 'Ca chiều',
+        route: h.route || 'N/A',
+        startTime: toHHMM(start), // Sẽ là "11:49"
+        endTime: toHHMM(end),   // Sẽ là "11:50"
+        totalStudents,
+        pickedUp,
+        droppedOff: pickedUp,
+        distance: `${(Math.random() * 5 + 10).toFixed(1)} km`, 
+        duration, // Sẽ là "0h 1m"
+        incidents,
+        status,
+        driverName: h.driverName || 'N/A',
+        driverPhone: h.driverPhone || 'N/A',
+        driverEmail: h.driverEmail || 'N/A',
+        licensePlate: h.licensePlate || 'N/A',
+      };
+    });
+  }
+
+async getHistorySummaryByUser(user: any): Promise<HistorySummary> {
     const driverId = user.userId;
 
     const s = await this.tripRepository
@@ -127,8 +158,12 @@ export class TripService {
       .andWhere(`trip.trip_date >= NOW() - INTERVAL '30 day'`)
       .select([
         'COUNT(DISTINCT trip.id) AS "totalTrips"',
-        `SUM(CASE WHEN trip.status = 'completed' THEN 1 ELSE 0 END) AS "completedTrips"`,
-        'COUNT(report.id) AS "totalIncidents"',
+        `COUNT(DISTINCT CASE WHEN trip.status = 'completed' THEN trip.id ELSE NULL END) AS "completedTrips"`,
+        
+        // ĐÃ SỬA: Xóa dấu phẩy ở cuối dòng này
+        'COUNT(DISTINCT report.id) AS "totalIncidents"'
+        
+      // ĐÃ SỬA: Xóa dòng "nbsp;"
       ])
       .getRawOne();
 

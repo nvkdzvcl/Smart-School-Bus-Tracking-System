@@ -1,12 +1,12 @@
 // apps/driver-api/src/reports/reports.controller.ts
 import {
   Controller, Post, Get, Body, Req, UseInterceptors, UploadedFile,
-  UseGuards, BadRequestException, ValidationPipe,
+  UseGuards, BadRequestException, ValidationPipe, Param,
 } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody, ApiOkResponse, } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
@@ -94,5 +94,15 @@ export class ReportsController {
 
     const result = await this.reportsService.create(driverId, dto, imageUrl);
     return result;
+  }
+
+  @Get('by-trip/:tripId')
+  @ApiOperation({ summary: 'Lấy chi tiết báo cáo theo ID chuyến đi' })
+  @ApiOkResponse({ description: 'Danh sách chi tiết các báo cáo' })
+  async getReportsByTripId(@Param('tripId') tripId: string, @Req() req: any) {
+    // Thêm kiểm tra bảo mật: chỉ tài xế sở hữu chuyến đi mới được xem
+    // (Mình sẽ làm ở Service)
+    const driverId = req.user.userId; 
+    return this.reportsService.findByTripId(tripId, driverId);
   }
 }
