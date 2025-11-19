@@ -1,6 +1,6 @@
 packages:
   # Tất cả app chính (FE + BE)
-  - "apps/*"
+  - "apps/**"
 
   # Thư viện dùng chung (nếu sau này bạn có utils hoặc SDK riêng)
   - "packages/*"

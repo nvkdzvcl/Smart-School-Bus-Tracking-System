@@ -50,9 +50,12 @@ CREATE TYPE attendance_status AS ENUM (
 );
 
 CREATE TYPE notification_type AS ENUM (
-  'alert',
+  'alert',         -- cảnh báo (ví dụ: xe trễ, tai nạn)
+  'info',          -- thông tin chung (ví dụ: thay đổi lộ trình)
+  'message',       -- tin nhắn từ nhà trường
+  'system',        -- thông báo hệ thống (điểm danh, xác nhận)
+  'reminder',       -- nhắc nhở (họp phụ huynh, sự kiện)
   'arrival',
-  'message',
   'incident'
 );
 
@@ -192,13 +195,32 @@ CREATE TABLE "Bus_Locations" (
 -- Notifications
 CREATE TABLE "Notifications" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "recipient_id" UUID,
+  "recipient_id" UUID, -- NULL nếu là thông báo broadcast
+  "target_group" VARCHAR(20), -- 'parent', 'driver', 'all' (nếu broadcast)
   "title" VARCHAR(255),
   "message" TEXT NOT NULL,
   "type" notification_type NOT NULL,
   "is_read" BOOLEAN NOT NULL DEFAULT false,
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   FOREIGN KEY ("recipient_id") REFERENCES "Users"("id") ON DELETE CASCADE
+);
+
+CREATE TABLE "Conversations" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Thêm 2 người tham gia (cho chat 1-1)
+  "participant_1_id" UUID,
+  "participant_2_id" UUID,
+
+  -- Các cột này dùng để cache, giúp tải danh sách cực nhanh
+  "last_message_preview" TEXT,
+  "last_message_at" TIMESTAMPTZ DEFAULT NOW(),
+
+  "created_at" TIMESTAMPTZ DEFAULT NOW(),
+  "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+
+  FOREIGN KEY ("participant_1_id") REFERENCES "Users"("id") ON DELETE SET NULL,
+  FOREIGN KEY ("participant_2_id") REFERENCES "Users"("id") ON DELETE SET NULL
 );
 
 -- Messages
@@ -210,6 +232,7 @@ CREATE TABLE "Messages" (
   "content" TEXT NOT NULL,
   "is_read" BOOLEAN NOT NULL DEFAULT false,
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
+  FOREIGN KEY ("conversation_id") REFERENCES "Conversations"("id") ON DELETE CASCADE,
   FOREIGN KEY ("sender_id") REFERENCES "Users"("id") ON DELETE SET NULL,
   FOREIGN KEY ("recipient_id") REFERENCES "Users"("id") ON DELETE SET NULL
 );
@@ -232,6 +255,8 @@ CREATE TABLE "Reports" (
   FOREIGN KEY ("student_id") REFERENCES "Students"("id") ON DELETE SET NULL
 );
 
+
+
 -- --- TRIGGERS ---
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Users"    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Stops"    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
@@ -240,6 +265,7 @@ CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Buses"    FOR EACH ROW EXECUTE FU
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Routes"   FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Trips"    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Reports"  FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
+CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Conversations" FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 -- --- INDEXES ---
 CREATE INDEX ON "Students" ("parent_id");
@@ -250,118 +276,172 @@ CREATE INDEX ON "Notifications" ("recipient_id");
 CREATE INDEX ON "Messages" ("conversation_id");
 CREATE INDEX ON "Reports" ("sender_id");
 CREATE INDEX ON "Reports" ("status");
+CREATE UNIQUE INDEX "uq_idx_participants" ON "Conversations" (
+  LEAST("participant_1_id", "participant_2_id"),
+  GREATEST("participant_1_id", "participant_2_id")
+);
 
 -- ========== PHẦN 2: DỮ LIỆU MẪU (CÓ SÁNG/CHIỀU) ==========
 
 DO $$
 DECLARE
-  v_driver_id UUID;
+  -- Users
+  v_driver_1_id UUID; -- Trần Văn B (Tài xế)
+  v_driver_2_id UUID; -- Lê Thị C (Tài xế)
   v_parent_id UUID;
+  v_manager_id UUID;  -- Nhà trường (Văn phòng)
 
+  -- Stops, Bus, Route
   v_stop_1_id UUID;
   v_stop_2_id UUID;
-
   v_bus_1_id UUID;
   v_route_1_id UUID;
 
-  v_student_1_id UUID; -- Nguyễn Văn An (sáng)
-  v_student_2_id UUID; -- Trần Thị Bình (sáng)
-  v_student_3_id UUID; -- Phạm Gia Huy (chiều)
+  -- Students
+  v_student_1_id UUID; -- Nguyễn Văn An
+  v_student_2_id UUID; -- Trần Thị Bình
+  v_student_3_id UUID; -- Phạm Gia Huy
 
-  v_trip_pickup_morning   UUID; -- đón sáng
-  v_trip_pickup_afternoon UUID; -- đón chiều (Huy)
-  v_trip_dropoff_afternoon UUID; -- trả chiều (An, Bình, Huy) -> CHỈ 1 TRIP
+  -- Trips
+  v_trip_pickup_morning   UUID;
+  v_trip_pickup_afternoon UUID;
+  v_trip_dropoff_afternoon UUID;
+  
+  -- Conversations
+  v_convo_1_id UUID; -- Parent <-> Driver 1
+  v_convo_2_id UUID; -- Parent <-> Manager (Nhà trường)
+  v_convo_3_id UUID; -- Parent <-> Driver 2
+
 BEGIN
-  -- Users
+  RAISE NOTICE '--- Seeding Users (with all chat participants) ---';
+  -- Users (Sửa tên và thêm user cho đủ 3 hội thoại)
   INSERT INTO "Users"(full_name, phone, email, password_hash, role)
   VALUES
-    ('Tài xế 01', '0912345678', 'driver01@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'driver'),
+    ('Trần Văn B (Tài xế)', '0912345678', 'driver01@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'driver'),
     ('Phụ huynh 01', '0922222222', 'parent01@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent'),
-    ('Quản lý 01',  '0933333333', 'manager01@ssb.com','$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'manager');
+    ('Nhà trường (Văn phòng)', '0933333333', 'manager01@ssb.com','$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'manager'),
+    ('Lê Thị C (Tài xế)', '0944444444', 'driver02@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'driver'); -- Thêm tài xế 2
 
-  SELECT id INTO v_driver_id FROM "Users" WHERE phone='0912345678';
+  -- Lấy ID
+  SELECT id INTO v_driver_1_id FROM "Users" WHERE phone='0912345678';
   SELECT id INTO v_parent_id FROM "Users" WHERE phone='0922222222';
+  SELECT id INTO v_manager_id FROM "Users" WHERE phone='0933333333';
+  SELECT id INTO v_driver_2_id FROM "Users" WHERE phone='0944444444';
 
-  -- Stops (tách 2 INSERT)
+  RAISE NOTICE '--- Seeding Stops ---';
   INSERT INTO "Stops"(name, address, latitude, longitude)
   VALUES ('Nhà Thờ Đức Bà', 'Quận 1, TPHCM', 10.77978, 106.69943)
   RETURNING id INTO v_stop_1_id;
-
   INSERT INTO "Stops"(name, address, latitude, longitude)
   VALUES ('Chợ Bến Thành', 'Quận 1, TPHCM', 10.77250, 106.69800)
   RETURNING id INTO v_stop_2_id;
 
-  -- Bus
+  RAISE NOTICE '--- Seeding Bus ---';
   INSERT INTO "Buses"(license_plate, capacity, status)
   VALUES ('51A-12345', 30, 'active')
   RETURNING id INTO v_bus_1_id;
 
-  -- Route
+  RAISE NOTICE '--- Seeding Route ---';
   INSERT INTO "Routes"(name) VALUES ('Tuyến A - Quận 1')
   RETURNING id INTO v_route_1_id;
-
-  -- Route_Stops
   INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
   VALUES (v_route_1_id, v_stop_1_id, 1);
   INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
   VALUES (v_route_1_id, v_stop_2_id, 2);
 
-  -- Students (tách 3 INSERT)
+  RAISE NOTICE '--- Seeding Students ---';
   INSERT INTO "Students"(full_name, parent_id, pickup_stop_id, dropoff_stop_id)
   VALUES ('Nguyễn Văn An', v_parent_id, v_stop_1_id, v_stop_2_id)
   RETURNING id INTO v_student_1_id;
-
   INSERT INTO "Students"(full_name, parent_id, pickup_stop_id, dropoff_stop_id)
   VALUES ('Trần Thị Bình', v_parent_id, v_stop_2_id, v_stop_1_id)
   RETURNING id INTO v_student_2_id;
-
   INSERT INTO "Students"(full_name, parent_id, pickup_stop_id, dropoff_stop_id)
   VALUES ('Phạm Gia Huy', v_parent_id, v_stop_1_id, v_stop_2_id)
   RETURNING id INTO v_student_3_id;
 
-  -- TRIPS (3 trip hợp lệ theo UNIQUE)
-  -- 1) ĐÓN SÁNG
+  RAISE NOTICE '--- Seeding Trips ---';
+  -- Gán các chuyến cho Tài xế 1
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_id, CURRENT_DATE, 'morning', 'pickup', 'scheduled',
-          (CURRENT_DATE + interval '6 hours 30 minutes'))
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'scheduled', (CURRENT_DATE + interval '6 hours 30 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-
-  -- 2) ĐÓN CHIỀU (Huy)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_id, CURRENT_DATE, 'afternoon', 'pickup', 'scheduled',
-          (CURRENT_DATE + interval '12 hours 30 minutes'))
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'afternoon', 'pickup', 'scheduled', (CURRENT_DATE + interval '12 hours 30 minutes'))
   RETURNING id INTO v_trip_pickup_afternoon;
-
-  -- 3) TRẢ CHIỀU (An, Bình, Huy) -> chỉ 1 trip
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_id, CURRENT_DATE, 'afternoon', 'dropoff', 'scheduled',
-          (CURRENT_DATE + interval '16 hours 30 minutes'))
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'afternoon', 'dropoff', 'scheduled', (CURRENT_DATE + interval '16 hours 30 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
 
-  -- TRIP_STUDENTS
-  -- Sáng: An & Bình chờ đón
-  INSERT INTO "Trip_Students"(trip_id, student_id, status)
-  VALUES (v_trip_pickup_morning, v_student_1_id, 'pending');
-  INSERT INTO "Trip_Students"(trip_id, student_id, status)
-  VALUES (v_trip_pickup_morning, v_student_2_id, 'pending');
+  RAISE NOTICE '--- Seeding Trip_Students ---';
+  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', CURRENT_DATE::timestamp + interval '6 hours 35 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', CURRENT_DATE::timestamp + interval '6 hours 40 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'attended', CURRENT_DATE::timestamp + interval '12 hours 35 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'attended', CURRENT_DATE::timestamp + interval '16 hours 35 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'attended', CURRENT_DATE::timestamp + interval '16 hours 40 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'attended', CURRENT_DATE::timestamp + interval '16 hours 45 minutes');
 
-  -- Chiều đón: Huy
-  INSERT INTO "Trip_Students"(trip_id, student_id, status)
-  VALUES (v_trip_pickup_morning, v_student_3_id, 'pending');
-
-  -- Chiều trả: An, Bình, Huy
-  INSERT INTO "Trip_Students"(trip_id, student_id, status)
-  VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'pending');
-  INSERT INTO "Trip_Students"(trip_id, student_id, status)
-  VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'pending');
-  INSERT INTO "Trip_Students"(trip_id, student_id, status)
-  VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'pending');
-
-  -- Notifications mẫu
+  RAISE NOTICE '--- Seeding Notifications (Parent) ---';
   INSERT INTO "Notifications"(recipient_id, title, message, type)
   VALUES
     (v_parent_id, 'Lịch đưa đón sáng', 'Hôm nay có chuyến đón sáng cho Nguyễn Văn An & Trần Thị Bình.', 'arrival'),
     (v_parent_id, 'Lịch đưa đón chiều', 'Hôm nay có chuyến đón chiều & trả chiều cho Phạm Gia Huy; trả chiều gồm cả An & Bình.', 'arrival');
+
+  -- === PHẦN THÊM MỚI ĐỂ TEST CHAT ===
+  RAISE NOTICE '--- Seeding Conversations & Messages (MOCK DATA) ---';
+
+-- === PHẦN THÊM MỚI ĐỂ TEST CHAT ===
+  RAISE NOTICE '--- Seeding Conversations & Messages (MOCK DATA) ---';
+
+  -- 1. Hội thoại 1: Parent 1 <-> Driver 1 (Trần Văn B)
+  -- (Sửa last_message_at để khớp với tin nhắn cuối cùng)
+  INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
+  VALUES (v_parent_id, v_driver_1_id, (NOW() - interval '1 hour 30 minutes')) -- 10:30 AM (Giả lập)
+  RETURNING id INTO v_convo_1_id;
+
+  -- (Sửa lại: Thêm 6 tin nhắn mẫu từ ChatBox)
+  INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at)
+  VALUES 
+    (v_convo_1_id, v_driver_1_id, v_parent_id, 'Chào anh, tôi đang trên đường đến đón bé Anh.', (NOW() - interval '1 hour 36 minutes')),
+    (v_convo_1_id, v_parent_id, v_driver_1_id, 'Vâng, cảm ơn tài xế. Nhờ anh 5 phút nữa nhé.', (NOW() - interval '1 hour 35 minutes')),
+    (v_convo_1_id, v_driver_1_id, v_parent_id, 'Vâng, tôi sẽ cho bé xuống ở cổng sau theo yêu cầu.', (NOW() - interval '1 hour 34 minutes')),
+    (v_convo_1_id, v_parent_id, v_driver_1_id, 'Ok anh.', (NOW() - interval '1 hour 33 minutes')),
+    (v_convo_1_id, v_driver_1_id, v_parent_id, 'Tôi đến cổng rồi ạ.', (NOW() - interval '1 hour 31 minutes')),
+    (v_convo_1_id, v_parent_id, v_driver_1_id, 'Tôi cho bé ra ngay.', (NOW() - interval '1 hour 30 minutes'));
+
+  -- (Sửa lại: Cập nhật last_message_preview cho đúng tin nhắn cuối cùng)
+  UPDATE "Conversations"
+  SET last_message_preview = 'Bạn: Tôi cho bé ra ngay.'
+  WHERE id = v_convo_1_id;
+  
+  -- 2. Hội thoại 2: Parent 1 <-> Nhà trường (Manager 1)
+  -- (Tin nhắn này chưa được đọc: is_read = false)
+  INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
+  VALUES (v_parent_id, v_manager_id, (NOW() - interval '2 hours 45 minutes')) -- 9:15 AM
+  RETURNING id INTO v_convo_2_id;
+
+  INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at, is_read)
+  VALUES 
+    (v_convo_2_id, v_parent_id, v_manager_id, 'Vâng, tôi đã nhận được thông báo.', (NOW() - interval '2 hours 45 minutes'), false); -- CHƯA ĐỌC
+
+  UPDATE "Conversations"
+  SET last_message_preview = 'Bạn: Vâng, tôi đã nhận được thông báo.'
+  WHERE id = v_convo_2_id;
+
+  -- 3. Hội thoại 3: Parent 1 <-> Driver 2 (Lê Thị C)
+  INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
+  VALUES (v_parent_id, v_driver_2_id, (NOW() - interval '1 day')) -- Hôm qua
+  RETURNING id INTO v_convo_3_id;
+
+  INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at)
+  VALUES 
+    (v_convo_3_id, v_parent_id, v_driver_2_id, 'Cảm ơn chị.', (NOW() - interval '1 day'));
+
+  UPDATE "Conversations"
+  SET last_message_preview = 'Bạn: Cảm ơn chị.'
+  WHERE id = v_convo_3_id;
+  
+  RAISE NOTICE '--- Seeding Part 2 Completed Successfully ---';
+
 END $$;
 
 -- SELECT ... WHERE t.session='afternoon' AND t.type='dropoff';

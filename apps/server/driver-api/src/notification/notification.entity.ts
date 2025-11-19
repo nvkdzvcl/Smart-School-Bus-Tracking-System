@@ -35,8 +35,9 @@ export class Notification {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  // Quan hệ: Nhiều thông báo thuộc 1 người nhận
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.notifications, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'recipient_id' })
   recipient: User;
 }

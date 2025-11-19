@@ -4,4 +4,7 @@ export enum NotificationType {
   ARRIVAL = 'arrival',
   MESSAGE = 'message',
   INCIDENT = 'incident',
+  INFO = 'info',
+  SYSTEM = 'system',
+  REMINDER = 'reminder',
 }
