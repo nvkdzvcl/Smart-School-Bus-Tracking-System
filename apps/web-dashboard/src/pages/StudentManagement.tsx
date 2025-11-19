@@ -64,7 +64,17 @@ export default function StudentManagement() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedRoute, setSelectedRoute] = useState('')
   const [editingStudent, setEditingStudent] = useState<Student | null>(null)
-  const [editSelectedRoute, setEditSelectedRoute] = useState('')
+  // removed unused: editSelectedRoute
+
+  // state cho form thêm mới
+  type NewStudent = Omit<Student, 'id'>
+  const emptyNewStudent: NewStudent = { name: '', class: '', parentName: '', parentPhone: '', status: 'active' }
+  const [newStudent, setNewStudent] = useState<NewStudent>(emptyNewStudent)
+
+  // danh sách điểm dừng theo tuyến được chọn (form thêm)
+  const addStops = useMemo(() => {
+    return mockRoutes.find(r => r.id === selectedRoute)?.stops ?? []
+  }, [selectedRoute])
 
   // pagination
   const [page, setPage] = useState(1)
@@ -122,13 +132,13 @@ export default function StudentManagement() {
     setEditingStudent(student)
     setShowEditModal(true)
   }
-  
+
   const handleSaveEdit = (next: Student) => {
     setStudents(prev => prev.map(s => (s.id === next.id ? next : s)))
     setShowEditModal(false)
     setEditingStudent(null)
   }
-  
+
   const handleDeleteStudent = (id: string) => {
     if (confirm('Xóa học sinh này?')) {
       setStudents(prev => prev.filter(s => s.id !== id))
@@ -136,7 +146,34 @@ export default function StudentManagement() {
     }
   }
 
-  
+  // mở form thêm mới
+  const openAdd = () => {
+    setNewStudent(emptyNewStudent)
+    setSelectedRoute('')
+    setShowAddModal(true)
+  }
+
+  // submit thêm mới
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newStudent.name.trim()) return alert('Vui lòng nhập Họ và tên')
+    if (!newStudent.class.trim()) return alert('Vui lòng nhập Lớp')
+
+    const r = mockRoutes.find(rt => rt.id === selectedRoute)
+    const id = String(Date.now())
+    const toAdd: Student = {
+      id,
+      ...newStudent,
+      routeId: selectedRoute || undefined,
+      routeName: r?.name,
+      stopName: newStudent.stopName,
+    }
+    setStudents(prev => [...prev, toAdd])
+    setShowAddModal(false)
+    setNewStudent(emptyNewStudent)
+    setSelectedRoute('')
+    resetToFirst()
+  }
 
   return (
     <div className="space-y-6">
@@ -146,7 +183,7 @@ export default function StudentManagement() {
           <h1 className="text-3xl font-bold text-gray-900">Quản lý Học sinh</h1>
           <p className="text-gray-600 mt-2">Quản lý thông tin học sinh, phụ huynh và phân công tuyến đường</p>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="btn-primary flex items-center space-x-2">
+        <button onClick={openAdd} className="btn-primary flex items-center space-x-2">
           <Plus className="w-4 h-4" />
           <span>Thêm học sinh</span>
         </button>
@@ -167,6 +204,7 @@ export default function StudentManagement() {
           </div>
 
           <select
+            aria-label="Lọc theo khối"
             value={gradeFilter}
             onChange={(e) => { setGradeFilter(e.target.value); setClassFilter('all'); resetToFirst() }}
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -176,6 +214,7 @@ export default function StudentManagement() {
           </select>
 
           <select
+            aria-label="Lọc theo lớp"
             value={classFilter}
             onChange={(e) => { setClassFilter(e.target.value); resetToFirst() }}
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100"
@@ -186,6 +225,7 @@ export default function StudentManagement() {
           </select>
 
           <select
+            aria-label="Lọc theo trạng thái"
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); resetToFirst() }}
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -196,6 +236,7 @@ export default function StudentManagement() {
           </select>
 
           <select
+            aria-label="Lọc theo tuyến"
             value={routeFilter}
             onChange={(e) => { setRouteFilter(e.target.value); resetToFirst() }}
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
@@ -249,10 +290,10 @@ export default function StudentManagement() {
                 <td className="px-3 py-2">{student.stopName ?? '—'}</td>
                 <td className="px-3 py-2">
                   <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => handleEditStudent(student)} className="text-primary-600 hover:text-primary-900">
+                    <button aria-label="Chỉnh sửa học sinh" title="Chỉnh sửa học sinh" onClick={() => handleEditStudent(student)} className="text-primary-600 hover:text-primary-900">
                       <Edit className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDeleteStudent(student.id)} className="text-red-600 hover:text-red-900">
+                    <button aria-label="Xóa học sinh" title="Xóa học sinh" onClick={() => handleDeleteStudent(student.id)} className="text-red-600 hover:text-red-900">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -287,16 +328,110 @@ export default function StudentManagement() {
         </div>
       </div>
 
-      {/* Add Student Modal (giữ nguyên logic) */}
+      {/* Add Student Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Thêm học sinh mới</h3>
-            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setShowAddModal(false) }}>
-              {/* ... giữ nguyên form như bạn đã viết ... */}
-              {/* (Bạn có thể paste block Add Student Modal cũ của bạn vào đây không đổi) */}
+            <form className="space-y-6" onSubmit={handleAddSubmit}>
+              {/* Thông tin học sinh */}
+              <section>
+                <h4 className="font-medium mb-3">Thông tin học sinh</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label className="grid gap-1 text-sm">
+                    <span>Họ và tên</span>
+                    <input
+                      className="h-9 rounded-lg border border-gray-300 px-3"
+                      value={newStudent.name}
+                      onChange={e => setNewStudent({ ...newStudent, name: e.target.value })}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    <span>Lớp</span>
+                    <input
+                      className="h-9 rounded-lg border border-gray-300 px-3"
+                      value={newStudent.class}
+                      onChange={e => setNewStudent({ ...newStudent, class: e.target.value })}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    <span>Trạng thái</span>
+                    <select
+                      className="h-9 rounded-lg border border-gray-300 px-3"
+                      value={newStudent.status}
+                      onChange={e => setNewStudent({ ...newStudent, status: e.target.value as Student['status'] })}
+                    >
+                      <option value="active">Đang học</option>
+                      <option value="inactive">Không hoạt động</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              {/* Thông tin phụ huynh */}
+              <section>
+                <h4 className="font-medium mb-3">Thông tin phụ huynh</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="grid gap-1 text-sm">
+                    <span>Tên phụ huynh</span>
+                    <input
+                      className="h-9 rounded-lg border border-gray-300 px-3"
+                      value={newStudent.parentName}
+                      onChange={e => setNewStudent({ ...newStudent, parentName: e.target.value })}
+                    />
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    <span>Số điện thoại</span>
+                    <input
+                      className="h-9 rounded-lg border border-gray-300 px-3"
+                      value={newStudent.parentPhone}
+                      onChange={e => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
+                    />
+                  </label>
+                </div>
+              </section>
+
+              {/* Phân công tuyến đường */}
+              <section>
+                <h4 className="font-medium mb-3">Phân công tuyến đường</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="grid gap-1 text-sm">
+                    <span>Chọn tuyến</span>
+                    <select
+                      className="h-9 rounded-lg border border-gray-300 px-3"
+                      value={selectedRoute}
+                      onChange={(e) => {
+                        const rid = e.target.value
+                        setSelectedRoute(rid)
+                        setNewStudent(prev => ({
+                          ...prev,
+                          routeId: rid || undefined,
+                          routeName: rid ? (mockRoutes.find(r => r.id === rid)?.name) : undefined,
+                          stopName: undefined
+                        }))
+                      }}
+                    >
+                      <option value="">— Chưa phân tuyến —</option>
+                      {mockRoutes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-sm">
+                    <span>Điểm dừng</span>
+                    <select
+                      className="h-9 rounded-lg border border-gray-300 px-3 disabled:bg-gray-100"
+                      value={newStudent.stopName || ''}
+                      onChange={(e) => setNewStudent({ ...newStudent, stopName: e.target.value || undefined })}
+                      disabled={!selectedRoute}
+                    >
+                      <option value="">{selectedRoute ? 'Chọn điểm dừng' : 'Chọn tuyến trước'}</option>
+                      {addStops.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </label>
+                </div>
+              </section>
+
               <div className="flex justify-end space-x-3 pt-4">
-                <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Hủy</button>
+                <button type="button" onClick={() => { setShowAddModal(false) }} className="btn-secondary">Hủy</button>
                 <button type="submit" className="btn-primary">Thêm học sinh</button>
               </div>
             </form>
@@ -314,7 +449,7 @@ export default function StudentManagement() {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => { setShowEditModal(false); setEditingStudent(null); setEditSelectedRoute('') }}
+                  onClick={() => { setShowEditModal(false); setEditingStudent(null) }}
                   className="btn-secondary"
                 >Hủy</button>
                 <button type="submit" className="btn-primary">Cập nhật thông tin</button>
