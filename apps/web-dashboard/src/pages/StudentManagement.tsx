@@ -1,253 +1,214 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Search, User, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getStudents, getParents, getStops, createStudent, updateStudent, deleteStudent, Student as ApiStudent } from '../lib/api'
 
-interface Student {
+interface StudentUI {
   id: string
-  name: string
-  class: string
-  parentName: string
-  parentPhone: string
+  fullName: string
+  class?: string
+  status: 'active' | 'inactive'
+  parentId?: string
+  parentName?: string
+  parentPhone?: string
   routeId?: string
   routeName?: string
-  stopName?: string
-  status: 'active' | 'inactive'
+  pickupStopId?: string
+  pickupStopName?: string
+  dropoffStopId?: string
+  dropoffStopName?: string
 }
 
-const mockStudents: Student[] = [
-  { id: '1', name: 'Nguyễn Minh An', class: '6A1', parentName: 'Nguyễn Văn Bình', parentPhone: '0901111111', routeId: '1', routeName: 'Tuyến 1', stopName: 'Điểm dừng A', status: 'active' },
-  { id: '2', name: 'Trần Thị Bảo', class: '7B2', parentName: 'Trần Văn Cường', parentPhone: '0902222222', routeId: '2', routeName: 'Tuyến 2', stopName: 'Điểm dừng B', status: 'active' },
-  { id: '3', name: 'Lê Hoàng Dũng', class: '8C1', parentName: 'Lê Thị Hoa', parentPhone: '0903333333', status: 'inactive' },
-]
-
-const mockRoutes = [
-  { id: '1', name: 'Tuyến 1', stops: ['Điểm dừng A', 'Điểm dừng B', 'Điểm dừng C'] },
-  { id: '2', name: 'Tuyến 2', stops: ['Điểm dừng D', 'Điểm dừng E', 'Điểm dừng F'] },
-  { id: '3', name: 'Tuyến 3', stops: ['Điểm dừng G', 'Điểm dừng H', 'Điểm dừng I'] }
-]
-
-// ───────────────────────────────── helpers ─────────────────────────────────
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'active': return 'bg-green-100 text-green-800'
-    case 'inactive': return 'bg-red-100 text-red-800'
-    default: return 'bg-gray-100 text-gray-800'
-  }
-}
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'active': return 'Đang học'
-    case 'inactive': return 'Không hoạt động'
-    default: return status
-  }
-}
-// Lấy khối từ chuỗi lớp, ví dụ "6A1" -> 6
-const getGradeFromClass = (cls: string): number | null => {
-  const m = cls.match(/^(\d{1,2})/); return m ? Number(m[1]) : null
-}
-
-
-
-
-// ─────────────────────────────── component ────────────────────────────────
 export default function StudentManagement() {
-  const [students, setStudents] = useState<Student[]>(mockStudents)
+  // data state
+  const [students, setStudents] = useState<StudentUI[]>([])
+  const [parents, setParents] = useState<{ id: string; fullName: string; phone: string }[]>([])
+  const [stops, setStops] = useState<{ id: string; name: string }[]>([])
+
+  // ui state
   const [searchTerm, setSearchTerm] = useState('')
-
-  // filters
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [gradeFilter, setGradeFilter] = useState<string>('all')   // Khối
-  const [classFilter, setClassFilter] = useState<string>('all')   // Lớp
-  const [routeFilter, setRouteFilter] = useState<string>('all')   // Tuyến
-
-  // modal states (giữ nguyên)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedRoute, setSelectedRoute] = useState('')
-  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
-  // removed unused: editSelectedRoute
-
-  // state cho form thêm mới
-  type NewStudent = Omit<Student, 'id'>
-  const emptyNewStudent: NewStudent = { name: '', class: '', parentName: '', parentPhone: '', status: 'active' }
-  const [newStudent, setNewStudent] = useState<NewStudent>(emptyNewStudent)
-
-  // danh sách điểm dừng theo tuyến được chọn (form thêm)
-  const addStops = useMemo(() => {
-    return mockRoutes.find(r => r.id === selectedRoute)?.stops ?? []
-  }, [selectedRoute])
-
-  // pagination
+  const [gradeFilter, setGradeFilter] = useState<string>('all')
+  const [classFilter, setClassFilter] = useState<string>('all')
   const [page, setPage] = useState(1)
   const pageSize = 8
 
-  // Các options động cho bộ lọc
+  // modals
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<StudentUI | null>(null)
+
+  // form add
+  const emptyAddForm: Omit<StudentUI, 'id'> = { fullName: '', class: '', status: 'active' }
+  const [addForm, setAddForm] = useState<Omit<StudentUI, 'id'>>(emptyAddForm)
+
+  // form edit (controlled separately)
+  const [editForm, setEditForm] = useState<StudentUI | null>(null)
+
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // helpers
+  const mapStudent = (s: ApiStudent): StudentUI => ({
+    id: s.id,
+    fullName: s.fullName,
+    class: s.class,
+    status: s.status,
+    parentId: s.parent?.id,
+    parentName: s.parent?.fullName,
+    parentPhone: s.parent?.phone,
+    routeId: s.route?.id,
+    routeName: s.route?.name,
+    pickupStopId: s.pickupStop?.id,
+    pickupStopName: s.pickupStop?.name,
+    dropoffStopId: s.dropoffStop?.id,
+    dropoffStopName: s.dropoffStop?.name,
+  })
+
+  // initial load
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true); setError(null)
+      try {
+        const [stu, par, sps] = await Promise.all([
+          getStudents(),
+          getParents(),
+          getStops()
+        ])
+        setStudents(stu.map(mapStudent))
+        setParents(par)
+        setStops(sps)
+      } catch (e: any) {
+        setError(e.message || 'Không tải được dữ liệu')
+      } finally { setLoading(false) }
+    }
+    load()
+  }, [])
+
+  // derived options
   const gradeOptions = useMemo(() => {
     const s = new Set<number>()
-    students.forEach(st => { const g = getGradeFromClass(st.class); if (g) s.add(g) })
+    students.forEach(st => { const m = st.class?.match(/^(\d{1,2})/); if (m) s.add(Number(m[1])) })
     return Array.from(s).sort((a, b) => a - b)
   }, [students])
 
   const classOptions = useMemo(() => {
     if (gradeFilter === 'all') return []
     const s = new Set<string>()
-    students.forEach(st => {
-      const g = getGradeFromClass(st.class)
-      if (String(g) === gradeFilter) s.add(st.class)
-    })
+    students.forEach(st => { const g = st.class?.match(/^(\d{1,2})/)?.[1]; if (g && g === gradeFilter) s.add(st.class!) })
     return Array.from(s).sort()
   }, [students, gradeFilter])
 
-  // filter + search
+  // filtering
   const filteredStudents = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
-    return students.filter(student => {
-      const matchesSearch =
-        !term ||
-        student.name.toLowerCase().includes(term) ||
-        student.parentName.toLowerCase().includes(term) ||
-        student.class.toLowerCase().includes(term) ||
-        student.parentPhone.includes(term)
-
-      const matchesStatus = statusFilter === 'all' || student.status === statusFilter
-      const grade = getGradeFromClass(student.class)
-      const matchesGrade = gradeFilter === 'all' || String(grade) === gradeFilter
-      const matchesClass = classFilter === 'all' || student.class === classFilter
-      const matchesRoute = routeFilter === 'all' || student.routeId === routeFilter
-
-      return matchesSearch && matchesStatus && matchesGrade && matchesClass && matchesRoute
+    return students.filter(st => {
+      const matchesSearch = !term ||
+        st.fullName.toLowerCase().includes(term) ||
+        (st.parentName || '').toLowerCase().includes(term) ||
+        (st.class || '').toLowerCase().includes(term) ||
+        (st.parentPhone || '').includes(term)
+      const matchesStatus = statusFilter === 'all' || st.status === statusFilter
+      const grade = st.class?.match(/^(\d{1,2})/)?.[1]
+      const matchesGrade = gradeFilter === 'all' || grade === gradeFilter
+      const matchesClass = classFilter === 'all' || st.class === classFilter
+      return matchesSearch && matchesStatus && matchesGrade && matchesClass
     })
-  }, [students, searchTerm, statusFilter, gradeFilter, classFilter, routeFilter])
+  }, [students, searchTerm, statusFilter, gradeFilter, classFilter])
 
-  // phân trang
   const maxPage = Math.max(1, Math.ceil(filteredStudents.length / pageSize))
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize
     return filteredStudents.slice(start, start + pageSize)
   }, [filteredStudents, page])
 
-  // reset page khi thay đổi filter/search
-  const resetToFirst = () => setPage(1)
+  const resetPage = () => setPage(1)
 
-  const handleEditStudent = (student: Student) => {
-    setEditingStudent(student)
-    setShowEditModal(true)
-  }
+  // actions
+  const openAdd = () => { setAddForm(emptyAddForm); setShowAddModal(true) }
 
-  const handleSaveEdit = (next: Student) => {
-    setStudents(prev => prev.map(s => (s.id === next.id ? next : s)))
-    setShowEditModal(false)
-    setEditingStudent(null)
-  }
-
-  const handleDeleteStudent = (id: string) => {
-    if (confirm('Xóa học sinh này?')) {
-      setStudents(prev => prev.filter(s => s.id !== id))
-      resetToFirst()
-    }
-  }
-
-  // mở form thêm mới
-  const openAdd = () => {
-    setNewStudent(emptyNewStudent)
-    setSelectedRoute('')
-    setShowAddModal(true)
-  }
-
-  // submit thêm mới
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newStudent.name.trim()) return alert('Vui lòng nhập Họ và tên')
-    if (!newStudent.class.trim()) return alert('Vui lòng nhập Lớp')
-
-    const r = mockRoutes.find(rt => rt.id === selectedRoute)
-    const id = String(Date.now())
-    const toAdd: Student = {
-      id,
-      ...newStudent,
-      routeId: selectedRoute || undefined,
-      routeName: r?.name,
-      stopName: newStudent.stopName,
-    }
-    setStudents(prev => [...prev, toAdd])
-    setShowAddModal(false)
-    setNewStudent(emptyNewStudent)
-    setSelectedRoute('')
-    resetToFirst()
+    if (!addForm.fullName) return alert('Họ và tên bắt buộc')
+    try {
+      const created = await createStudent({
+        fullName: addForm.fullName,
+        class: addForm.class || undefined,
+        status: addForm.status,
+        parentId: addForm.parentId,
+        routeId: addForm.routeId,
+        pickupStopId: addForm.pickupStopId,
+        dropoffStopId: addForm.dropoffStopId,
+      })
+      setStudents(prev => [...prev, mapStudent(created)])
+      setShowAddModal(false); resetPage()
+    } catch (e: any) { alert(e.message || 'Thêm học sinh thất bại') }
   }
+
+  const handleEditStudent = (st: StudentUI) => { setEditingStudent(st); setEditForm(st); setShowEditModal(true) }
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!editForm) return
+    try {
+      const updated = await updateStudent(editForm.id, {
+        fullName: editForm.fullName,
+        class: editForm.class,
+        status: editForm.status,
+        parentId: editForm.parentId,
+        routeId: editForm.routeId,
+        pickupStopId: editForm.pickupStopId,
+        dropoffStopId: editForm.dropoffStopId,
+      })
+      setStudents(prev => prev.map(s => s.id === editForm.id ? mapStudent(updated) : s))
+      setShowEditModal(false); setEditingStudent(null); setEditForm(null)
+    } catch (e: any) { alert(e.message || 'Cập nhật thất bại') }
+  }
+
+  const handleDeleteStudent = async (id: string) => {
+    if (!confirm('Xóa học sinh này?')) return
+    try { await deleteStudent(id); setStudents(prev => prev.filter(s => s.id !== id)); resetPage() } catch (e: any) { alert(e.message || 'Xóa thất bại') }
+  }
+
+  // status badge helpers
+  const getStatusColor = (status: string) => status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+  const getStatusText = (status: string) => status === 'active' ? 'Đang học' : 'Không hoạt động'
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Quản lý Học sinh</h1>
           <p className="text-gray-600 mt-2">Quản lý thông tin học sinh, phụ huynh và phân công tuyến đường</p>
         </div>
-        <button onClick={openAdd} className="btn-primary flex items-center space-x-2">
-          <Plus className="w-4 h-4" />
-          <span>Thêm học sinh</span>
-        </button>
+        <button onClick={openAdd} className="btn-primary flex items-center space-x-2"><Plus className="w-4 h-4" /><span>Thêm học sinh</span></button>
       </div>
 
-      {/* Filters */}
       <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div className="md:col-span-2 relative">
+        <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+          <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
-              type="text"
-              placeholder="Tìm theo tên HS, phụ huynh, lớp, SĐT…"
               value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); resetToFirst() }}
+              onChange={e => { setSearchTerm(e.target.value); resetPage() }}
+              placeholder="Tìm theo tên HS, phụ huynh, lớp, SĐT…"
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-
-          <select
-            aria-label="Lọc theo khối"
-            value={gradeFilter}
-            onChange={(e) => { setGradeFilter(e.target.value); setClassFilter('all'); resetToFirst() }}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
+          <select value={gradeFilter} onChange={e => { setGradeFilter(e.target.value); setClassFilter('all'); resetPage() }} className="w-[160px] shrink-0 border border-gray-300 rounded-lg px-3 py-2" aria-label="Lọc theo khối">
             <option value="all">Tất cả khối</option>
             {gradeOptions.map(g => <option key={g} value={g}>{g}</option>)}
           </select>
-
-          <select
-            aria-label="Lọc theo lớp"
-            value={classFilter}
-            onChange={(e) => { setClassFilter(e.target.value); resetToFirst() }}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100"
-            disabled={gradeFilter === 'all'}
-          >
+          <select value={classFilter} disabled={gradeFilter === 'all'} onChange={e => { setClassFilter(e.target.value); resetPage() }} className="w-[160px] shrink-0 border border-gray-300 rounded-lg px-3 py-2 disabled:bg-gray-100" aria-label="Lọc theo lớp">
             <option value="all">Tất cả lớp</option>
             {classOptions.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-
-          <select
-            aria-label="Lọc theo trạng thái"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); resetToFirst() }}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
+          <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); resetPage() }} className="w-[180px] shrink-0 border border-gray-300 rounded-lg px-3 py-2" aria-label="Lọc theo trạng thái">
             <option value="all">Tất cả trạng thái</option>
             <option value="active">Đang học</option>
             <option value="inactive">Không hoạt động</option>
           </select>
-
-          <select
-            aria-label="Lọc theo tuyến"
-            value={routeFilter}
-            onChange={(e) => { setRouteFilter(e.target.value); resetToFirst() }}
-            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-            <option value="all">Tất cả tuyến</option>
-            {mockRoutes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-          </select>
         </div>
       </div>
 
-      {/* TABLE + pagination */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="w-full table-auto text-sm">
           <thead>
@@ -258,370 +219,126 @@ export default function StudentManagement() {
               <th className="px-3 py-2 font-medium">Tên phụ huynh</th>
               <th className="px-3 py-2 font-medium">SĐT</th>
               <th className="px-3 py-2 font-medium">Tuyến</th>
-              <th className="px-3 py-2 font-medium">Điểm dừng</th>
+              <th className="px-3 py-2 font-medium">Đón</th>
+              <th className="px-3 py-2 font-medium">Trả</th>
               <th className="px-3 py-2 font-medium text-right">Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 && (
-              <tr>
-                <td colSpan={8} className="py-10 text-center text-gray-500">Không có dữ liệu phù hợp.</td>
-              </tr>
-            )}
-            {paginated.map((student, i) => (
-              <tr key={student.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                <td className="px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-primary-100 rounded-full grid place-items-center">
-                      <User className="w-4 h-4 text-primary-600" />
-                    </div>
-                    <span className="font-medium text-gray-900">{student.name}</span>
-                  </div>
-                </td>
-                <td className="px-3 py-2">{student.class}</td>
-                <td className="px-3 py-2">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(student.status)}`}>
-                    {getStatusText(student.status)}
-                  </span>
-                </td>
-                <td className="px-3 py-2">{student.parentName}</td>
-                <td className="px-3 py-2">{student.parentPhone}</td>
-                <td className="px-3 py-2">{student.routeName ?? '—'}</td>
-                <td className="px-3 py-2">{student.stopName ?? '—'}</td>
-                <td className="px-3 py-2">
-                  <div className="flex items-center justify-end gap-2">
-                    <button aria-label="Chỉnh sửa học sinh" title="Chỉnh sửa học sinh" onClick={() => handleEditStudent(student)} className="text-primary-600 hover:text-primary-900">
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button aria-label="Xóa học sinh" title="Xóa học sinh" onClick={() => handleDeleteStudent(student.id)} className="text-red-600 hover:text-red-900">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
+            {loading && <tr><td colSpan={9} className="py-8 text-center text-gray-500">Đang tải...</td></tr>}
+            {!loading && paginated.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-gray-500">Không có dữ liệu phù hợp.</td></tr>}
+            {!loading && paginated.map((st, i) => (
+              <tr key={st.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                <td className="px-3 py-2"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-primary-100 rounded-full grid place-items-center"><User className="w-4 h-4 text-primary-600" /></div><span className="font-medium text-gray-900">{st.fullName}</span></div></td>
+                <td className="px-3 py-2">{st.class || '—'}</td>
+                <td className="px-3 py-2"><span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(st.status)}`}>{getStatusText(st.status)}</span></td>
+                <td className="px-3 py-2">{st.parentName || '—'}</td>
+                <td className="px-3 py-2">{st.parentPhone || '—'}</td>
+                <td className="px-3 py-2">{st.routeName || '—'}</td>
+                <td className="px-3 py-2">{st.pickupStopName || '—'}</td>
+                <td className="px-3 py-2">{st.dropoffStopName || '—'}</td>
+                <td className="px-3 py-2"><div className="flex justify-end gap-2"><button onClick={() => handleEditStudent(st)} className="text-primary-600 hover:text-primary-900" title="Chỉnh sửa"><Edit className="w-4 h-4" /></button><button onClick={() => handleDeleteStudent(st.id)} className="text-red-600 hover:text-red-900" title="Xóa"><Trash2 className="w-4 h-4" /></button></div></td>
               </tr>
             ))}
           </tbody>
         </table>
-
-        {/* footer pagination */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm">
-          <div className="text-gray-600">
-            Hiển thị <b>{paginated.length}</b> / <b>{filteredStudents.length}</b> học sinh
-          </div>
+          <div className="text-gray-600">Hiển thị <b>{paginated.length}</b> / <b>{filteredStudents.length}</b> học sinh</div>
           <div className="flex items-center gap-2">
-            <button
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" /> Trước
-            </button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50"><ChevronLeft className="h-4 w-4" /> Trước</button>
             <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
-            <button
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50"
-              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
-              disabled={page >= maxPage}
-            >
-              Sau <ChevronRight className="h-4 w-4" />
-            </button>
+            <button onClick={() => setPage(p => Math.min(maxPage, p + 1))} disabled={page >= maxPage} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50">Sau <ChevronRight className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
 
-      {/* Add Student Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Thêm học sinh mới</h3>
-            <form className="space-y-6" onSubmit={handleAddSubmit}>
-              {/* Thông tin học sinh */}
+            <form onSubmit={handleAddSubmit} className="space-y-6">
               <section>
                 <h4 className="font-medium mb-3">Thông tin học sinh</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <label className="grid gap-1 text-sm">
-                    <span>Họ và tên</span>
-                    <input
-                      className="h-9 rounded-lg border border-gray-300 px-3"
-                      value={newStudent.name}
-                      onChange={e => setNewStudent({ ...newStudent, name: e.target.value })}
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span>Lớp</span>
-                    <input
-                      className="h-9 rounded-lg border border-gray-300 px-3"
-                      value={newStudent.class}
-                      onChange={e => setNewStudent({ ...newStudent, class: e.target.value })}
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span>Trạng thái</span>
-                    <select
-                      className="h-9 rounded-lg border border-gray-300 px-3"
-                      value={newStudent.status}
-                      onChange={e => setNewStudent({ ...newStudent, status: e.target.value as Student['status'] })}
-                    >
-                      <option value="active">Đang học</option>
-                      <option value="inactive">Không hoạt động</option>
-                    </select>
-                  </label>
+                  <label className="grid gap-1 text-sm"><span>Họ và tên</span><input className="h-9 rounded-lg border border-gray-300 px-3" value={addForm.fullName} onChange={e => setAddForm(f => ({ ...f, fullName: e.target.value }))} /></label>
+                  <label className="grid gap-1 text-sm"><span>Lớp</span><input className="h-9 rounded-lg border border-gray-300 px-3" value={addForm.class || ''} onChange={e => setAddForm(f => ({ ...f, class: e.target.value }))} /></label>
+                  <label className="grid gap-1 text-sm"><span>Trạng thái</span><select className="h-9 rounded-lg border border-gray-300 px-3" value={addForm.status} onChange={e => setAddForm(f => ({ ...f, status: e.target.value as StudentUI['status'] }))}><option value="active">Đang học</option><option value="inactive">Không hoạt động</option></select></label>
                 </div>
               </section>
-
-              {/* Thông tin phụ huynh */}
               <section>
-                <h4 className="font-medium mb-3">Thông tin phụ huynh</h4>
+                <h4 className="font-medium mb-3">Phụ huynh</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="grid gap-1 text-sm">
-                    <span>Tên phụ huynh</span>
-                    <input
-                      className="h-9 rounded-lg border border-gray-300 px-3"
-                      value={newStudent.parentName}
-                      onChange={e => setNewStudent({ ...newStudent, parentName: e.target.value })}
-                    />
-                  </label>
-                  <label className="grid gap-1 text-sm">
-                    <span>Số điện thoại</span>
-                    <input
-                      className="h-9 rounded-lg border border-gray-300 px-3"
-                      value={newStudent.parentPhone}
-                      onChange={e => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
-                    />
-                  </label>
+                  <label className="grid gap-1 text-sm"><span>Chọn phụ huynh</span><select className="h-9 rounded-lg border border-gray-300 px-3" value={addForm.parentId || ''} onChange={e => { const p = parents.find(x => x.id === e.target.value); setAddForm(f => ({ ...f, parentId: e.target.value || undefined, parentName: p?.fullName, parentPhone: p?.phone })) }}><option value="">— Chưa chọn —</option>{parents.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}</select></label>
+                  <div className="grid gap-1 text-sm"><span>SĐT phụ huynh</span><input disabled className="h-9 rounded-lg border border-gray-200 bg-gray-100 px-3" value={addForm.parentPhone || ''} /></div>
                 </div>
               </section>
-
-              {/* Phân công tuyến đường */}
               <section>
-                <h4 className="font-medium mb-3">Phân công tuyến đường</h4>
+                <h4 className="font-medium mb-3">Điểm dừng</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <label className="grid gap-1 text-sm">
-                    <span>Chọn tuyến</span>
-                    <select
-                      className="h-9 rounded-lg border border-gray-300 px-3"
-                      value={selectedRoute}
-                      onChange={(e) => {
-                        const rid = e.target.value
-                        setSelectedRoute(rid)
-                        setNewStudent(prev => ({
-                          ...prev,
-                          routeId: rid || undefined,
-                          routeName: rid ? (mockRoutes.find(r => r.id === rid)?.name) : undefined,
-                          stopName: undefined
-                        }))
-                      }}
-                    >
-                      <option value="">— Chưa phân tuyến —</option>
-                      {mockRoutes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  <label className="grid gap-1 text-sm"><span>Điểm đón</span>
+                    <select className="h-9 rounded-lg border border-gray-300 px-3 w-full" value={addForm.pickupStopId || ''} onChange={e => { const sp = stops.find(x => x.id === e.target.value); setAddForm(f => ({ ...f, pickupStopId: e.target.value || undefined, pickupStopName: sp?.name })) }}>
+                      <option value="">— Chưa chọn —</option>
+                      {stops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </label>
-                  <label className="grid gap-1 text-sm">
-                    <span>Điểm dừng</span>
-                    <select
-                      className="h-9 rounded-lg border border-gray-300 px-3 disabled:bg-gray-100"
-                      value={newStudent.stopName || ''}
-                      onChange={(e) => setNewStudent({ ...newStudent, stopName: e.target.value || undefined })}
-                      disabled={!selectedRoute}
-                    >
-                      <option value="">{selectedRoute ? 'Chọn điểm dừng' : 'Chọn tuyến trước'}</option>
-                      {addStops.map(s => <option key={s} value={s}>{s}</option>)}
+                  <label className="grid gap-1 text-sm"><span>Điểm trả</span>
+                    <select className="h-9 rounded-lg border border-gray-300 px-3 w-full" value={addForm.dropoffStopId || ''} onChange={e => { const sp = stops.find(x => x.id === e.target.value); setAddForm(f => ({ ...f, dropoffStopId: e.target.value || undefined, dropoffStopName: sp?.name })) }}>
+                      <option value="">— Chưa chọn —</option>
+                      {stops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                   </label>
                 </div>
               </section>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <button type="button" onClick={() => { setShowAddModal(false) }} className="btn-secondary">Hủy</button>
-                <button type="submit" className="btn-primary">Thêm học sinh</button>
-              </div>
+              <div className="flex justify-end gap-3 pt-4"><button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Hủy</button><button type="submit" className="btn-primary">Thêm học sinh</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Edit Student Modal (giữ nguyên form, chỉ giữ handler đóng) */}
-      {showEditModal && editingStudent && (
+      {showEditModal && editingStudent && editForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Chỉnh sửa thông tin học sinh</h3>
-            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setShowEditModal(false) }}>
-              {/* ... paste lại block Edit Student Modal của bạn ... */}
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => { setShowEditModal(false); setEditingStudent(null) }}
-                  className="btn-secondary"
-                >Hủy</button>
-                <button type="submit" className="btn-primary">Cập nhật thông tin</button>
-              </div>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <section>
+                <h4 className="font-medium mb-3">Thông tin học sinh</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label className="grid gap-1 text-sm"><span>Họ và tên</span><input className="h-9 rounded-lg border border-gray-300 px-3" value={editForm.fullName} onChange={e => setEditForm(f => ({ ...f!, fullName: e.target.value }))} /></label>
+                  <label className="grid gap-1 text-sm"><span>Lớp</span><input className="h-9 rounded-lg border border-gray-300 px-3" value={editForm.class || ''} onChange={e => setEditForm(f => ({ ...f!, class: e.target.value }))} /></label>
+                  <label className="grid gap-1 text-sm"><span>Trạng thái</span><select className="h-9 rounded-lg border border-gray-300 px-3" value={editForm.status} onChange={e => setEditForm(f => ({ ...f!, status: e.target.value as StudentUI['status'] }))}><option value="active">Đang học</option><option value="inactive">Không hoạt động</option></select></label>
+                </div>
+              </section>
+              <section>
+                <h4 className="font-medium mb-3">Phụ huynh</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="grid gap-1 text-sm"><span>Chọn phụ huynh</span><select className="h-9 rounded-lg border border-gray-300 px-3" value={editForm.parentId || ''} onChange={e => { const p = parents.find(x => x.id === e.target.value); setEditForm(f => ({ ...f!, parentId: e.target.value || undefined, parentName: p?.fullName, parentPhone: p?.phone })) }}><option value="">— Chưa chọn —</option>{parents.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}</select></label>
+                  <div className="grid gap-1 text-sm"><span>SĐT phụ huynh</span><input disabled className="h-9 rounded-lg border border-gray-200 bg-gray-100 px-3" value={editForm.parentPhone || ''} /></div>
+                </div>
+              </section>
+              <section>
+                <h4 className="font-medium mb-3">Điểm dừng</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className="grid gap-1 text-sm"><span>Điểm đón</span>
+                    <select className="h-9 rounded-lg border border-gray-300 px-3 w-full" value={editForm.pickupStopId || ''} onChange={e => { const sp = stops.find(x => x.id === e.target.value); setEditForm(f => ({ ...f!, pickupStopId: e.target.value || undefined, pickupStopName: sp?.name })) }}>
+                      <option value="">— Chưa chọn —</option>
+                      {stops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-sm"><span>Điểm trả</span>
+                    <select className="h-9 rounded-lg border border-gray-300 px-3 w-full" value={editForm.dropoffStopId || ''} onChange={e => { const sp = stops.find(x => x.id === e.target.value); setEditForm(f => ({ ...f!, dropoffStopId: e.target.value || undefined, dropoffStopName: sp?.name })) }}>
+                      <option value="">— Chưa chọn —</option>
+                      {stops.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </label>
+                </div>
+              </section>
+              <div className="flex justify-end space-x-3 pt-4"><button type="button" onClick={() => { setShowEditModal(false); setEditingStudent(null); setEditForm(null) }} className="btn-secondary">Hủy</button><button type="submit" className="btn-primary">Cập nhật thông tin</button></div>
             </form>
           </div>
         </div>
       )}
-      {showEditModal && editingStudent && (
-        <EditStudentModal
-          open={showEditModal}
-          student={editingStudent}
-          routes={mockRoutes}
-          onClose={() => { setShowEditModal(false); setEditingStudent(null) }}
-          onSave={handleSaveEdit}
-        />
-      )}
 
-    </div>
-  )
-}
-
-type EditProps = {
-  open: boolean
-  student: Student
-  routes: { id: string; name: string; stops: string[] }[]
-  onClose: () => void
-  onSave: (next: Student) => void
-}
-
-function EditStudentModal({ open, student, routes, onClose, onSave }: EditProps) {
-  const [form, setForm] = useState<Student>(student)
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(student.routeId || '')
-  const stops = useMemo(
-    () => routes.find(r => r.id === selectedRouteId)?.stops ?? [],
-    [routes, selectedRouteId],
-  )
-
-  // nếu đổi tuyến thì clear stop
-  const handleChangeRoute = (rid: string) => {
-    setSelectedRouteId(rid)
-    setForm(prev => ({ ...prev, routeId: rid || undefined, routeName: rid ? routes.find(r => r.id === rid)?.name : undefined, stopName: undefined }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // validate cơ bản
-    if (!form.name.trim()) return alert('Vui lòng nhập Họ và tên')
-    if (!form.class.trim()) return alert('Vui lòng nhập Lớp')
-
-    // cập nhật tên tuyến từ id
-    const r = routes.find(r => r.id === selectedRouteId)
-    const next: Student = {
-      ...form,
-      routeId: selectedRouteId || undefined,
-      routeName: r?.name,
-      // stopName đã được set khi chọn stop bên dưới
-    }
-    onSave(next)
-  }
-
-  if (!open) return null
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-[60] grid place-items-center p-4">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b p-4">
-          <h3 className="text-lg font-semibold">Chỉnh sửa thông tin học sinh</h3>
-          <button onClick={onClose} className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100">✕</button>
-        </div>
-
-        <form className="space-y-6 p-4" onSubmit={handleSubmit}>
-          {/* Thông tin học sinh */}
-          <section>
-            <h4 className="font-medium mb-3">Thông tin học sinh</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className="grid gap-1 text-sm">
-                <span>Họ và tên</span>
-                <input
-                  className="h-9 rounded-lg border border-gray-300 px-3"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span>Lớp</span>
-                <input
-                  className="h-9 rounded-lg border border-gray-300 px-3"
-                  value={form.class}
-                  onChange={e => setForm({ ...form, class: e.target.value })}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span>Trạng thái</span>
-                <select
-                  className="h-9 rounded-lg border border-gray-300 px-3"
-                  value={form.status}
-                  onChange={e => setForm({ ...form, status: e.target.value as Student['status'] })}
-                >
-                  <option value="active">Đang học</option>
-                  <option value="inactive">Không hoạt động</option>
-                </select>
-              </label>
-            </div>
-          </section>
-
-          {/* Thông tin phụ huynh */}
-          <section>
-            <h4 className="font-medium mb-3">Thông tin phụ huynh</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="grid gap-1 text-sm">
-                <span>Tên phụ huynh</span>
-                <input
-                  className="h-9 rounded-lg border border-gray-300 px-3"
-                  value={form.parentName}
-                  onChange={e => setForm({ ...form, parentName: e.target.value })}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span>Số điện thoại</span>
-                <input
-                  className="h-9 rounded-lg border border-gray-300 px-3"
-                  value={form.parentPhone}
-                  onChange={e => setForm({ ...form, parentPhone: e.target.value })}
-                />
-              </label>
-            </div>
-          </section>
-
-          {/* Phân công tuyến đường */}
-          <section>
-            <h4 className="font-medium mb-3">Phân công tuyến đường</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="grid gap-1 text-sm">
-                <span>Thay đổi tuyến đường</span>
-                <select
-                  className="h-9 rounded-lg border border-gray-300 px-3"
-                  value={selectedRouteId}
-                  onChange={(e) => handleChangeRoute(e.target.value)}
-                >
-                  <option value="">— Chưa phân tuyến —</option>
-                  {routes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span>Điểm dừng</span>
-                <select
-                  className="h-9 rounded-lg border border-gray-300 px-3 disabled:bg-gray-100"
-                  value={form.stopName || ''}
-                  onChange={(e) => setForm({ ...form, stopName: e.target.value || undefined })}
-                  disabled={!selectedRouteId}
-                >
-                  <option value="">{selectedRouteId ? 'Chọn điểm dừng' : 'Chọn tuyến trước'}</option>
-                  {stops.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </label>
-            </div>
-
-            {/* Cảnh báo đổi tuyến */}
-            {selectedRouteId !== (student.routeId || '') && (
-              <div className="mt-4 p-3 rounded-lg border border-yellow-200 bg-yellow-50 text-sm text-yellow-800">
-                Bạn đang thay đổi tuyến từ “{student.routeName || 'Chưa có'}” sang “{routes.find(r => r.id === selectedRouteId)?.name || '—'}”.
-              </div>
-            )}
-          </section>
-
-          <div className="flex justify-end gap-3 border-t pt-4">
-            <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
-            <button type="submit" className="btn-primary">Cập nhật thông tin</button>
-          </div>
-        </form>
-      </div>
+      {error && <div className="text-sm text-red-600">{error}</div>}
     </div>
   )
 }
