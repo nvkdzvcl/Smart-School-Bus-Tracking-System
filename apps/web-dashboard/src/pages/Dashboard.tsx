@@ -1,13 +1,6 @@
+import { useEffect, useState, useMemo } from 'react'
 import { Bus, Users, GraduationCap, Route, AlertTriangle, CheckCircle } from 'lucide-react'
-
-const statsData = [
-  { icon: Bus, label: 'Tổng số xe buýt', value: '24', color: 'bg-blue-500' },
-  { icon: Users, label: 'Tài xế hoạt động', value: '18', color: 'bg-green-500' },
-  { icon: GraduationCap, label: 'Học sinh đăng ký', value: '1,247', color: 'bg-purple-500' },
-  { icon: Route, label: 'Tuyến đường', value: '12', color: 'bg-orange-500' }
-]
-
-
+import { getAllBuses, getDrivers, getStudents, getRoutes } from '../lib/api'
 
 const recentAlerts = [
   { id: 1, type: 'warning', message: 'Xe BUS-001 chậm 15 phút tại điểm dừng Trường THPT ABC', time: '10:30' },
@@ -16,12 +9,48 @@ const recentAlerts = [
 ]
 
 export default function Dashboard() {
+  const [stats, setStats] = useState({ buses: 0, drivers: 0, students: 0, routes: 0 })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true); setError(null)
+      try {
+        const [buses, drivers, students, routes] = await Promise.all([
+          getAllBuses(), getDrivers(), getStudents(), getRoutes()
+        ])
+        setStats({ buses: buses.length, drivers: drivers.length, students: students.length, routes: routes.length })
+      } catch (e: any) { setError(e.message || 'Không tải được số liệu') } finally { setLoading(false) }
+    }
+    load()
+  }, [])
+
+  const statsData = useMemo(() => [
+    { icon: Bus, label: 'Tổng số xe buýt', value: stats.buses, color: 'bg-blue-500' },
+    { icon: Users, label: 'Tài xế hoạt động', value: stats.drivers, color: 'bg-green-500' },
+    { icon: GraduationCap, label: 'Học sinh đăng ký', value: stats.students, color: 'bg-purple-500' },
+    { icon: Route, label: 'Tuyến đường', value: stats.routes, color: 'bg-orange-500' }
+  ], [stats])
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Tổng quan hệ thống</h1>
-        <p className="text-gray-600 mt-2">Giám sát và quản lý hệ thống xe đưa đón học sinh</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Tổng quan hệ thống</h1>
+          <p className="text-gray-600 mt-2">Giám sát và quản lý hệ thống xe đưa đón học sinh</p>
+        </div>
+        <button
+          onClick={() => {
+            setLoading(true); setError(null)
+            Promise.all([getAllBuses(), getDrivers(), getStudents(), getRoutes()])
+              .then(([buses, drivers, students, routes]) => setStats({ buses: buses.length, drivers: drivers.length, students: students.length, routes: routes.length }))
+              .catch(e => setError(e.message || 'Không tải được số liệu'))
+              .finally(() => setLoading(false))
+          }}
+          className="btn-secondary"
+        >Làm mới</button>
       </div>
 
       {/* Stats Cards */}
@@ -36,7 +65,7 @@ export default function Dashboard() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-2xl font-bold text-gray-900">{loading ? '...' : stat.value}</p>
                 </div>
               </div>
             </div>
@@ -44,7 +73,7 @@ export default function Dashboard() {
         })}
       </div>
 
-
+      {error && <div className="text-sm text-red-600">{error}</div>}
 
       {/* Recent Alerts */}
       <div className="card">
