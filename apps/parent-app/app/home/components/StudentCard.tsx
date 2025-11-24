@@ -1,41 +1,59 @@
-import {useState} from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/Avatar.tsx"
-import { Card, CardContent } from "../../../components/ui/Card.tsx"
-import { Badge } from "../../../components/ui/Badge.tsx"
+import { ChevronRight } from "lucide-react";
 
-export default function StudentCard() {
-    const [avatarImageSource, setAvatarImageSource] = useState("/diverse-students-studying.png");
-    const [studentID, setStudentID] = useState("3123560000")
-    const [studentName, setStudentName] = useState("Nguyen Van A")
+type StudentCardProps = {
+  id: string;
+  fullName: string;
+  status: string;
+  statusText: string;
+  getAvatarLabel: (name: string | null | undefined) => string;
+};
 
+export default function StudentCard({
+  id,
+  fullName,
+  status,
+  statusText,
+  getAvatarLabel,
+}: StudentCardProps) {
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4 space-y-5">
-          <Avatar className="w-16 h-16 border-2 border-primary/20 mt-5">
-            <AvatarImage src={avatarImageSource} alt="Student" />
-            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">AN</AvatarFallback>
-          </Avatar>
+    <div
+      key={id}
+      className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center gap-4"
+    >
+      {/* Avatar */}
+      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center shrink-0 border-2 border-white shadow-sm">
+        <span className="text-gray-500 font-bold text-xl">
+          {getAvatarLabel(fullName)}
+        </span>
+      </div>
 
+      <div className="flex-1">
+        <h3 className="font-bold text-slate-800">{fullName}</h3>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <p className="text-lg font-semibold truncate">{studentName}</p>
-              <Badge variant="secondary" className="text-xs">
-                Grade 5A
-              </Badge>
-            </div>
-              <p className="text-sm text-muted-foreground">Student ID: {studentID}</p>
-          </div>
+        <div className="mt-2 flex items-center gap-2">
+          {/* Badge trạng thái */}
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              status === "attended"
+                ? "bg-green-50 text-green-700 border-green-200"
+                : status === "pending"
+                ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                : "bg-red-50 text-red-700 border-red-200"
+            }`}
+          >
+            {status === "attended"
+              ? "Đã xong"
+              : status === "pending"
+              ? "Đang chờ"
+              : "Vắng mặt"}
+          </span>
 
-          {/* <Button variant="ghost" size="icon" className="w-8 h-8 shrink-0">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-            <ChevronDown className="w-4 h-4" />
-          </Button> */}
+          {/* Chỉ hiện text nếu KHÔNG PHẢI là đang chờ */}
+          {status !== "pending" && (
+            <span className="text-xs text-slate-600">• {statusText}</span>
+          )}
         </div>
-      </CardContent>
-    </Card>
-  )
+      </div>
+    </div>
+  );
 }

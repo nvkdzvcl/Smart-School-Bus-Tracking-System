@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 
@@ -25,5 +25,23 @@ export class UsersService {
     });
     // Trả về bản ghi đã cập nhật
     return await this.getById(id);
+  }
+
+  async searchUsers(keyword: string) {
+    return await this.userRepository.find({
+      where: [
+        // Trường hợp 1: Đúng Role VÀ trùng Tên
+        {
+          role: In(['driver', 'manager']),
+          fullName: ILike(`%${keyword}%`), // ILike để tìm không phân biệt hoa thường
+        },
+        // HOẶC (OR)
+        // Trường hợp 2: Đúng Role VÀ trùng SĐT
+        {
+          role: In(['driver', 'manager']),
+          phone: ILike(`%${keyword}%`),
+        },
+      ],
+    });
   }
 }

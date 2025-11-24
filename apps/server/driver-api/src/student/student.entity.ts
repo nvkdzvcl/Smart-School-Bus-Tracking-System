@@ -7,9 +7,11 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../user/user.entity';
 import { Stop } from '../route/stop.entity';
+import { TripStudent } from 'src/trip/trip-student.entity';
 
 @Entity('Students') // Khớp tên bảng "Students"
 export class Student {
@@ -47,4 +49,7 @@ export class Student {
   @ManyToOne(() => Stop)
   @JoinColumn({ name: 'dropoff_stop_id' })
   dropoffStop: Stop;
+
+  @OneToMany(() => TripStudent, (tripStudent) => tripStudent.student)
+  tripStudents: TripStudent[];
 }

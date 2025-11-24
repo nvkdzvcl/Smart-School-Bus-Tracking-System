@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Req } from '@nestjs/common';
 
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -17,11 +10,11 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-@Get('chat-contacts')
-  async getChatContacts(@Req() req: any) {
-    const driverId = req.user.userId;
-    return this.profileService.getChatContacts(driverId);
-  }
+  @Get('chat-contacts')
+  async getChatContacts(@Req() req: any) {
+    const driverId = req.user.userId;
+    return this.profileService.getChatContacts(driverId);
+  }
 
   @Get('me')
   async getMe(@Req() req: any) {
@@ -36,10 +29,7 @@ export class ProfileController {
   }
 
   @Patch('change-password')
-  async changePassword(
-    @Req() req: any,
-    @Body() dto: ChangePasswordDto,
-  ) {
+  async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
     const userId = req.user.userId;
     return this.profileService.changePassword(userId, dto);
   }

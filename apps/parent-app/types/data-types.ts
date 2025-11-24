@@ -81,3 +81,136 @@ export interface Message {
   isRead: boolean;
   createdAt: string; // Quan trọng: Khi JSON gửi về, 'Date' (từ backend) sẽ trở thành 'string'
 }
+
+export type TripSession = "morning" | "afternoon";
+export type TripType = "pickup" | "dropoff";
+export type TripStatus =
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+export type AttendanceStatus = "pending" | "attended" | "absent";
+export interface Stop {
+  id: string;
+  name: string;
+  address: string;
+  latitude: string | number; // API thường trả về string cho Decimal, cần parse nếu muốn dùng map
+  longitude: string | number;
+}
+
+export interface Bus {
+  id: string;
+  licensePlate: string;
+  capacity: number;
+  // status...
+}
+
+export interface Driver {
+  id: string;
+  fullName: string;
+  phone: string;
+  avatar?: string; // Nếu có
+}
+
+// 3. Interface Chuyến đi (Trip)
+export interface Trip {
+  id: string;
+  tripDate: string; // YYYY-MM-DD
+  session: TripSession;
+  type: TripType;
+  status: TripStatus;
+  actualStartTime: string | null; // ISO String
+  actualEndTime: string | null; // ISO String
+
+  // Quan hệ (được join trong service)
+  bus?: Bus;
+  driver?: Driver;
+  routeId?: string;
+}
+
+// 4. Interface Bảng trung gian (TripStudent)
+// Đây là cái kết nối Học sinh với Chuyến đi
+export interface TripStudent {
+  status: AttendanceStatus; // Trạng thái điểm danh
+  attendedAt: string | null; // Thời gian lên/xuống xe thực tế
+  trip: Trip; // Chi tiết chuyến đi
+}
+
+// 5. === INTERFACE CHÍNH: STUDENT ===
+export interface Student {
+  id: string;
+  fullName: string;
+  parentId: string;
+
+  // Điểm đón/trả mặc định (nếu có)
+  pickupStopId?: string;
+  dropoffStopId?: string;
+  pickupStop?: Stop;
+  dropoffStop?: Stop;
+
+  // Danh sách các chuyến đi (của ngày hôm nay)
+  // Mảng này sẽ chứa các object TripStudent, bên trong có Trip
+  tripStudents: TripStudent[];
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type DayPart = "morning" | "afternoon";
+
+export type ParentScheduleResponse = {
+  date: string;
+  session: DayPart;
+  trips: ParentTrip[];
+};
+
+export type ParentTrip = {
+  tripId: string;
+  type: TripType;
+  status: TripStatus;
+  route: { id: string; name: string };
+  bus: { id: string; licensePlate: string };
+  driver: { id: string; fullName: string; phone?: string };
+  times: {
+    scheduledStart?: string | null;
+    actualStart?: string | null;
+    scheduledEnd?: string | null;
+    actualEnd?: string | null;
+  };
+  live?: {
+    lastLocation?: {
+      latitude: number;
+      longitude: number;
+      timestamp: string;
+    } | null;
+    etaToMyStop?: string | null;
+  };
+  myChildren: ParentTripChild[];
+  notifications: ParentTripNotification[];
+};
+
+export type ParentTripChild = {
+  studentId: string;
+  fullName: string;
+  stop: {
+    type: TripType;
+    id: string;
+    name: string;
+    address?: string | null;
+    latitude: number;
+    longitude: number;
+  };
+  attendance: {
+    status: AttendanceStatus;
+    attendedAt?: string | null;
+  };
+};
+
+export type ParentTripNotification = {
+  id: string;
+  type: NotificationType;
+  title?: string | null;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+};
