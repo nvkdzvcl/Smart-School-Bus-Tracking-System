@@ -8,6 +8,9 @@ import { TripHistoryBE, HistorySummary } from './trip.service'; // << IMPORT INT
 export class TripController {
   constructor(private readonly tripService: TripService) {}
 
+  @ApiTags('Trips (Driver)')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   // Lấy danh sách chi tiết các chuyến đi
   @Get('history')
   @ApiOperation({
@@ -17,6 +20,9 @@ export class TripController {
     return this.tripService.getHistoryListByUser(req.user);
   }
 
+  @ApiTags('Trips (Driver)')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   // Lấy tổng quan (Summary Stats)
   @Get('history/summary')
   @ApiOperation({ summary: 'Lấy tổng quan thống kê chuyến đi trong 30 ngày' })
