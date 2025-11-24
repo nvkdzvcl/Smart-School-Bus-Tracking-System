@@ -16,6 +16,8 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { StopsModule } from './stops/stops.module';
 import { TripModule } from './trip/trip.module';
 import { StudentModule } from './student/student.module';
+import { ProfileModule } from './profile/profile.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -50,6 +52,8 @@ import { StudentModule } from './student/student.module';
     StopsModule,
     TripModule,
     StudentModule,
+    ProfileModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
