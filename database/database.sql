@@ -73,6 +73,11 @@ CREATE TYPE report_status AS ENUM (
   'resolved'
 );
 
+CREATE TYPE student_status AS ENUM (
+  'active',
+  'inactive'
+);
+
 -- --- HÀM TỰ ĐỘNG CẬP NHẬT `updated_at` ---
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
@@ -93,6 +98,7 @@ CREATE TABLE "Users" (
   "password_hash" VARCHAR(255),
   "role" user_role NOT NULL,
   "fcm_token" VARCHAR(255),
+  "license_number" VARCHAR(255), -- số bằng lái (nullable)
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
@@ -106,20 +112,6 @@ CREATE TABLE "Stops" (
   "longitude" DECIMAL(9, 6) NOT NULL,
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Students
-CREATE TABLE "Students" (
-  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "full_name" VARCHAR(255) NOT NULL,
-  "parent_id" UUID,
-  "pickup_stop_id" UUID,
-  "dropoff_stop_id" UUID,
-  "created_at" TIMESTAMPTZ DEFAULT NOW(),
-  "updated_at" TIMESTAMPTZ DEFAULT NOW(),
-  FOREIGN KEY ("parent_id") REFERENCES "Users"("id") ON DELETE SET NULL,
-  FOREIGN KEY ("pickup_stop_id") REFERENCES "Stops"("id") ON DELETE SET NULL,
-  FOREIGN KEY ("dropoff_stop_id") REFERENCES "Stops"("id") ON DELETE SET NULL
 );
 
 -- Buses
@@ -136,6 +128,8 @@ CREATE TABLE "Buses" (
 CREATE TABLE "Routes" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name" VARCHAR(255) UNIQUE NOT NULL,
+  "description" VARCHAR(255), -- mô tả tuyến (nullable)
+  "status" VARCHAR(20) DEFAULT 'active', -- active/inactive
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
@@ -148,6 +142,24 @@ CREATE TABLE "Route_Stops" (
   PRIMARY KEY ("route_id", "stop_id"),
   FOREIGN KEY ("route_id") REFERENCES "Routes"("id") ON DELETE CASCADE,
   FOREIGN KEY ("stop_id") REFERENCES "Stops"("id") ON DELETE CASCADE
+);
+
+-- Students
+CREATE TABLE IF NOT EXISTS "Students" (
+  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "full_name" VARCHAR(255) NOT NULL,
+  "parent_id" UUID,
+  "pickup_stop_id" UUID,
+  "dropoff_stop_id" UUID,
+  "class" VARCHAR(20),
+  "status" student_status DEFAULT 'active',
+  "route_id" UUID,
+  "created_at" TIMESTAMPTZ DEFAULT NOW(),
+  "updated_at" TIMESTAMPTZ DEFAULT NOW(),
+  FOREIGN KEY ("parent_id") REFERENCES "Users"("id") ON DELETE SET NULL,
+  FOREIGN KEY ("pickup_stop_id") REFERENCES "Stops"("id") ON DELETE SET NULL,
+  FOREIGN KEY ("dropoff_stop_id") REFERENCES "Stops"("id") ON DELETE SET NULL,
+  FOREIGN KEY ("route_id") REFERENCES "Routes"("id") ON DELETE SET NULL
 );
 
 -- Trips: THÊM "session"
@@ -268,7 +280,9 @@ CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Reports"  FOR EACH ROW EXECUTE FU
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Conversations" FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 
 -- --- INDEXES ---
-CREATE INDEX ON "Students" ("parent_id");
+CREATE INDEX IF NOT EXISTS students_parent_idx ON "Students" ("parent_id");
+CREATE INDEX IF NOT EXISTS students_status_idx ON "Students"("status");
+CREATE INDEX IF NOT EXISTS students_route_idx ON "Students"("route_id");
 CREATE INDEX ON "Trips" ("driver_id", "trip_date", "session", "type");
 CREATE INDEX ON "Trips" ("bus_id", "trip_date", "session", "type");
 CREATE INDEX ON "Bus_Locations" ("trip_id", "timestamp" DESC);
@@ -280,6 +294,7 @@ CREATE UNIQUE INDEX "uq_idx_participants" ON "Conversations" (
   LEAST("participant_1_id", "participant_2_id"),
   GREATEST("participant_1_id", "participant_2_id")
 );
+CREATE INDEX IF NOT EXISTS routes_status_idx ON "Routes"("status");
 
 -- ========== PHẦN 2: DỮ LIỆU MẪU (CÓ SÁNG/CHIỀU) ==========
 
@@ -341,8 +356,8 @@ BEGIN
   VALUES ('51A-12345', 30, 'active')
   RETURNING id INTO v_bus_1_id;
 
-  RAISE NOTICE '--- Seeding Route ---';
-  INSERT INTO "Routes"(name) VALUES ('Tuyến A - Quận 1')
+  -- Route
+  INSERT INTO "Routes"(name, description, status) VALUES ('Tuyến A - Quận 1','Tuyến đường khu vực trung tâm','active')
   RETURNING id INTO v_route_1_id;
   INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
   VALUES (v_route_1_id, v_stop_1_id, 1);
@@ -510,7 +525,6 @@ END $$;
 
 -- SELECT ... WHERE t.session='afternoon' AND t.type='dropoff';
 -- ========== PHẦN 4: DỮ LIỆU BÁO CÁO & THÔNG BÁO MẪU (THÊM VÀO) ==========
--- (Dán khối này vào cuối file database.sql của bạn)
 
 DO $$
 DECLARE
@@ -665,7 +679,7 @@ BEGIN
   -- ===== ROUTES =====
   SELECT id INTO v_route_1 FROM "Routes" WHERE name='Tuyến A - Quận 1' LIMIT 1;
   IF NOT EXISTS (SELECT 1 FROM "Routes" WHERE name='Tuyến B - Trung Tâm') THEN
-    INSERT INTO "Routes"(name) VALUES ('Tuyến B - Trung Tâm');
+    INSERT INTO "Routes"(name, description, status) VALUES ('Tuyến B - Trung Tâm','Tuyến đường khu vực mở rộng','active');
   END IF;
   SELECT id INTO v_route_2 FROM "Routes" WHERE name='Tuyến B - Trung Tâm' LIMIT 1;
 
@@ -704,7 +718,6 @@ BEGIN
     INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
     VALUES (v_route_1, v_bus_1, v_driver1, CURRENT_DATE, 'morning', 'pickup', 'in_progress',
             (CURRENT_DATE + interval '06:30'));
-    SELECT currval(pg_get_serial_sequence('Bus_Locations','id')); -- no-op to keep plpgsql happy
     SELECT id INTO v_pickup_morning
     FROM "Trips"
     WHERE driver_id=v_driver1 AND trip_date=CURRENT_DATE AND session='morning' AND type='pickup'
@@ -831,3 +844,15 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
 END $$;
+
+-- ALTERs for existing database (run manually if migrating):
+-- ALTER TYPE student_status ADD VALUE IF NOT EXISTS 'active'; -- enum created above
+-- ALTER TYPE student_status ADD VALUE IF NOT EXISTS 'inactive';
+-- ALTER TABLE "Students" ADD COLUMN IF NOT EXISTS "class" VARCHAR(20);
+-- ALTER TABLE "Students" ADD COLUMN IF NOT EXISTS "status" student_status DEFAULT 'active';
+-- ALTER TABLE "Students" ADD COLUMN IF NOT EXISTS "route_id" UUID REFERENCES "Routes"("id") ON DELETE SET NULL;
+-- CREATE INDEX IF NOT EXISTS students_status_idx ON "Students"("status");
+-- CREATE INDEX IF NOT EXISTS students_route_idx ON "Students"("route_id");
+-- ALTER TABLE "Routes" ADD COLUMN IF NOT EXISTS description VARCHAR(255);
+-- ALTER TABLE "Routes" ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';
+-- CREATE INDEX IF NOT EXISTS routes_status_idx ON "Routes"("status");

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import StopPicker from './StopPicker'
-import { createBusStop } from '../api/busStops'
+import { createBusStop } from '../lib/api'
 
 interface BusStop {
   id?: string
