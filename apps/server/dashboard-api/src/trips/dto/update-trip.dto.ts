@@ -1,5 +1,5 @@
 import { IsUUID, IsOptional, IsEnum, IsDateString } from 'class-validator'
-import { TripStatus } from '../../common/enums'
+import { TripStatus, TripType, DayPart } from '../../common/enums'
 export class UpdateTripDto {
     @IsOptional()
     @IsUUID()
@@ -24,4 +24,17 @@ export class UpdateTripDto {
     @IsOptional()
     @IsDateString()
     actualEndTime?: string
+
+    // Optional fields for updating schedule
+    @IsOptional()
+    @IsDateString()
+    tripDate?: string
+
+    @IsOptional()
+    @IsEnum(DayPart)
+    session?: DayPart
+
+    @IsOptional()
+    @IsEnum(TripType)
+    type?: TripType
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Search, Clock, User, Bus } from 'lucide-react'
-import { createTrip } from '../lib/api'
+import { createTrip, updateTrip, deleteTrip } from '../lib/api'
 
 interface Schedule {
   id: string
@@ -39,6 +39,15 @@ export default function ScheduleManagement() {
   const [addBusId, setAddBusId] = useState<string | undefined>(undefined)
   const [addLoading, setAddLoading] = useState(false)
 
+  // Thêm state cho modal chỉnh sửa
+  const [editRouteId, setEditRouteId] = useState<string | undefined>(undefined)
+  const [editTripDate, setEditTripDate] = useState<string>('')
+  const [editSession, setEditSession] = useState<'morning' | 'afternoon' | undefined>(undefined)
+  const [editStatus, setEditStatus] = useState<string>('')
+  const [editStartTime, setEditStartTime] = useState<string>('')
+  const [editDriverId, setEditDriverId] = useState<string | undefined>(undefined)
+  const [editBusId, setEditBusId] = useState<string | undefined>(undefined)
+  const [editLoading, setEditLoading] = useState(false) // Thêm state loading cho modal edit
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled': return 'bg-blue-100 text-blue-800'
@@ -62,11 +71,9 @@ export default function ScheduleManagement() {
   const getTypeText = (type: string) => {
     return type === 'morning' ? 'Sáng' : 'Chiều'
   }
-
   const getTypeColor = (type: string) => {
     return type === 'morning' ? 'bg-orange-100 text-orange-800' : 'bg-purple-100 text-purple-800'
   }
-
   const filteredSchedules = schedules.filter(schedule => {
     const matchesSearch = schedule.routeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       schedule.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,12 +83,57 @@ export default function ScheduleManagement() {
     const matchesType = typeFilter === 'all' || schedule.type === typeFilter
     return matchesSearch && matchesDate && matchesStatus && matchesType
   })
-
   const handleEditSchedule = (schedule: Schedule) => {
     setEditingSchedule(schedule)
+    const currentRoute = routes.find(r => r.name === schedule.routeName)
+    const currentDriver = drivers.find(d => d.name === schedule.driverName)
+    const currentBus = buses.find(b => b.licensePlate === schedule.busLicensePlate)
+    setEditRouteId(currentRoute?.id)
+    setEditTripDate(schedule.date)
+    setEditSession(schedule.type)
+    setEditStatus(schedule.status)
+    setEditDriverId(currentDriver?.id)
+    setEditBusId(currentBus?.id)
+    setEditRouteId(currentRoute?.id)
+    setEditingSchedule(schedule)
+    setEditStartTime(schedule.startTime || '');
     setShowEditModal(true)
   }
-
+  const handleSaveEditSchedule = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingSchedule || !editRouteId) return alert('Dữ liệu không hợp lệ.')
+    setEditLoading(true); setError(null);
+    try {
+      const updateData = {
+        routeId: editRouteId,
+        driverId: editDriverId,
+        busId: editBusId,
+        tripDate: editTripDate,
+        session: editSession,
+        status: editStatus,
+        startTime: editStartTime
+      }
+      await updateTrip(editingSchedule.id, updateData as any) // Gọi API cập nhật
+      setShowEditModal(false)
+      setEditingSchedule(null)
+      await loadData() // Tải lại danh sách
+    } catch (err: any) {
+      const msg = (err && err.message) ? String(err.message) : 'Cập nhật lịch trình thất bại!'
+      alert(msg)
+    } finally { setEditLoading(false) }
+  }
+  // Thêm hàm này vào cùng nơi với handleEditSchedule
+  const handleDeleteSchedule = async (schedule: Schedule) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa lịch trình của tuyến "${schedule.routeName}" ngày ${schedule.date}?`)) {
+      return
+    }
+    try {
+      await deleteTrip(schedule.id) // Gọi API xóa
+      await loadData() // Tải lại danh sách lịch trình
+    } catch (e: any) {
+      alert(e.message || 'Xóa lịch trình thất bại!')
+    }
+  }
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('vi-VN', {
@@ -91,12 +143,8 @@ export default function ScheduleManagement() {
       day: 'numeric'
     })
   }
-
-  // live reload state
   const [autoRefresh] = useState(true)
   const POLL_INTERVAL_MS = 8000
-
-  // fetch function used by initial load, manual refresh and polling
   const loadData = async () => {
     setLoading(true); setError(null)
     try {
@@ -106,31 +154,33 @@ export default function ScheduleManagement() {
         fetch('/api/buses'),
         fetch('/api/routes')
       ])
-
       if (sRes.status === 401 || dRes.status === 401 || bRes.status === 401 || rRes.status === 401) {
         setError('Unauthorized. Please sign in (manager role) to load data.')
         return
       }
-
       if (!sRes.ok || !dRes.ok || !bRes.ok || !rRes.ok) {
         const texts = await Promise.all([sRes.text(), dRes.text(), bRes.text(), rRes.text()])
         throw new Error('Lỗi khi tải dữ liệu: ' + (texts.find(t => t && t.length > 0) || 'Unknown error'))
       }
-
       const [sData, dData, bData, rData] = await Promise.all([sRes.json(), dRes.json(), bRes.json(), rRes.json()])
-
-      const mappedSchedules: Schedule[] = Array.isArray(sData) ? sData.map((t: any) => ({
-        id: String(t.id),
-        routeName: t.route?.name || t.routeName || t.route || '',
-        driverName: t.driver?.fullName || t.driverName || t.driver || '',
-        busLicensePlate: t.bus?.licensePlate || t.busLicensePlate || t.bus || '',
-        startTime: t.startTime || t.time || t.tripDate || '',
-        date: t.tripDate || t.date || t.day || '',
-        type: t.type || (t.session === 'morning' ? 'morning' : 'afternoon'),
-        status: t.status || 'scheduled',
-        studentsCount: t.studentsCount || t.studentCount || (t.students ? t.students.length : 0) || 0
-      })) : []
-
+      const mappedSchedules: Schedule[] = Array.isArray(sData) ? sData.map((t: any) => {
+        const session = (t.session === 'morning' || t.session === 'afternoon')
+          ? t.session
+          : (t.type === 'morning' || t.type === 'afternoon')
+            ? t.type
+            : 'morning'
+        return {
+          id: String(t.id),
+          routeName: t.route?.name || t.routeName || t.route || '',
+          driverName: t.driver?.fullName || t.driverName || t.driver || '',
+          busLicensePlate: t.bus?.licensePlate || t.busLicensePlate || t.bus || '',
+          startTime: t.startTime || t.time || '',
+          date: t.tripDate || t.date || t.day || '',
+          type: session,
+          status: t.status || 'scheduled',
+          studentsCount: t.studentsCount || t.studentCount || (t.students ? t.students.length : 0) || 0
+        }
+      }) : []
       setSchedules(mappedSchedules)
       setDrivers(Array.isArray(dData) ? dData.map((d: any) => ({ id: String(d.id), name: d.name || d.fullName || '' })) : [])
       setBuses(Array.isArray(bData) ? bData.map((b: any) => ({ id: String(b.id), licensePlate: b.licensePlate || b.plate || '' })) : [])
@@ -141,7 +191,6 @@ export default function ScheduleManagement() {
       setLoading(false)
     }
   }
-
   // initial load + polling
   useEffect(() => {
     let mounted = true
@@ -153,7 +202,6 @@ export default function ScheduleManagement() {
     }, POLL_INTERVAL_MS)
     return () => { mounted = false; clearInterval(iv) }
   }, [autoRefresh])
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -245,7 +293,9 @@ export default function ScheduleManagement() {
                 >
                   <Edit className="w-4 h-4" />
                 </button>
-                <button className="text-red-600 hover:text-red-900" aria-label="Xóa lịch trình">
+                <button
+                  onClick={() => handleDeleteSchedule(schedule)}
+                  className="text-red-600 hover:text-red-900" aria-label="Xóa lịch trình">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -255,7 +305,7 @@ export default function ScheduleManagement() {
               {/* Time */}
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <Clock className="w-4 h-4" />
-                <span>Bắt đầu: {schedule.startTime}</span>
+                <span>Bắt đầu: {schedule.startTime || '—'}</span>
               </div>
 
               {/* Driver */}
@@ -295,7 +345,7 @@ export default function ScheduleManagement() {
               if (!addTripDate) return alert('Chọn ngày');
               setAddLoading(true); setError(null);
               try {
-                await createTrip({ routeId: addRouteId, busId: addBusId, driverId: addDriverId, tripDate: addTripDate, session: addSession, type: addType })
+                await createTrip({ routeId: addRouteId, busId: addBusId, driverId: addDriverId, tripDate: addTripDate, session: addSession, type: addType, startTime: addStartTime })
                 setShowAddModal(false)
                 // reset form
                 setAddRouteId(undefined); setAddTripDate(''); setAddSession('morning'); setAddType('pickup'); setAddStartTime(''); setAddDriverId(undefined); setAddBusId(undefined)
@@ -431,7 +481,7 @@ export default function ScheduleManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Chỉnh sửa lịch trình</h3>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSaveEditSchedule}>
               {/* Basic Info */}
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">Thông tin cơ bản</h4>
@@ -441,13 +491,14 @@ export default function ScheduleManagement() {
                       Tuyến đường
                     </label>
                     <select
-                      defaultValue={editingSchedule.routeName}
+                      value={editRouteId || ''}
+                      onChange={e => setEditRouteId(e.target.value || undefined)}
                       aria-label="Tuyến đường"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="">Chọn tuyến đường</option>
                       {routes.map(route => (
-                        <option key={route.id} value={route.name}>{route.name}</option>
+                        <option key={route.id} value={route.id}>{route.name}</option>
                       ))}
                     </select>
                   </div>
@@ -457,7 +508,7 @@ export default function ScheduleManagement() {
                     </label>
                     <input
                       type="date"
-                      defaultValue={editingSchedule.date}
+                      value={editTripDate} onChange={e => setEditTripDate(e.target.value)}
                       aria-label="Ngày"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
@@ -467,7 +518,8 @@ export default function ScheduleManagement() {
                       Ca làm việc
                     </label>
                     <select
-                      defaultValue={editingSchedule.type}
+                      value={editSession}
+                      onChange={e => setEditSession(e.target.value as 'morning' | 'afternoon')}
                       aria-label="Ca làm việc"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
@@ -480,7 +532,7 @@ export default function ScheduleManagement() {
                       Trạng thái
                     </label>
                     <select
-                      defaultValue={editingSchedule.status}
+                      value={editStatus} onChange={e => setEditStatus(e.target.value)}
                       aria-label="Trạng thái"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
@@ -502,7 +554,7 @@ export default function ScheduleManagement() {
                   </label>
                   <input
                     type="time"
-                    defaultValue={editingSchedule.startTime}
+                    value={editStartTime} onChange={e => setEditStartTime(e.target.value)}
                     aria-label="Thời gian bắt đầu"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
@@ -518,13 +570,14 @@ export default function ScheduleManagement() {
                       Tài xế
                     </label>
                     <select
-                      defaultValue={editingSchedule.driverName}
+                      value={editDriverId || ''}
+                      onChange={e => setEditDriverId(e.target.value || undefined)}
                       aria-label="Tài xế"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="">Chọn tài xế</option>
                       {drivers.map(driver => (
-                        <option key={driver.id} value={driver.name}>{driver.name}</option>
+                        <option key={driver.id} value={driver.id}>{driver.name}</option>
                       ))}
                     </select>
                   </div>
@@ -533,13 +586,14 @@ export default function ScheduleManagement() {
                       Xe buýt
                     </label>
                     <select
-                      defaultValue={editingSchedule.busLicensePlate}
+                      value={editBusId || ''}
+                      onChange={e => setEditBusId(e.target.value || undefined)}
                       aria-label="Xe buýt"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     >
                       <option value="">Chọn xe buýt</option>
                       {buses.map(bus => (
-                        <option key={bus.id} value={bus.licensePlate}>{bus.licensePlate}</option>
+                        <option key={bus.id} value={bus.id}>{bus.licensePlate}</option>
                       ))}
                     </select>
                   </div>
@@ -560,8 +614,9 @@ export default function ScheduleManagement() {
                 <button
                   type="submit"
                   className="btn-primary"
+                  disabled={editLoading}
                 >
-                  Lưu thay đổi
+                  {editLoading ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </button>
               </div>
             </form>

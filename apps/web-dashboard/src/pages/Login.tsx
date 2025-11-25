@@ -27,6 +27,8 @@ export default function Login() {
       }
       const data = await res.json()
       localStorage.setItem('token', data.access_token)
+      // Also store under the standardized key used by other apps
+      localStorage.setItem('auth_token', data.access_token)
       navigate('/')
     } catch (e: any) {
       setError(e.message || 'Đăng nhập thất bại')

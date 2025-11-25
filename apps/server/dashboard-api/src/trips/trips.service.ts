@@ -144,8 +144,8 @@ export class TripsService {
                 const driverName = driverConflict.driver ? driverConflict.driver['fullName'] : 'N/A';
 
                 throw new BadRequestException(
-                    `Lỗi: Tài xế ${driverName} đã có lịch trình trùng sau khi cập nhật.\n` +
-                    `Trùng Lịch: Ngày ${newTripDate}, Buổi ${newSession}, Loại ${newType}.\n` +
+                    `Lỗi: Tài xế ${driverName} đã có lịch trình trùng sau khi cập nhật.` +
+                    `Trùng Lịch: Ngày ${newTripDate}, Buổi ${newSession}, Loại ${newType}.` +
                     `Chuyến trùng: Tuyến ${routeName}, Xe ${busLicense}.`
                 );
             }
@@ -170,8 +170,8 @@ export class TripsService {
                 const driverName = busConflict.driver ? busConflict.driver['fullName'] : 'N/A';
 
                 throw new BadRequestException(
-                    `Lỗi: Xe buýt ${busLicense} đã được phân công trùng lịch sau khi cập nhật.\n` +
-                    `Trùng Lịch: Ngày ${newTripDate}, Buổi ${newSession}, Loại ${newType}.\n` +
+                    `Lỗi: Xe buýt ${busLicense} đã được phân công trùng lịch sau khi cập nhật.` +
+                    `Trùng Lịch: Ngày ${newTripDate}, Buổi ${newSession}, Loại ${newType}.` +
                     `Chuyến trùng: Tuyến ${routeName}, Tài xế ${driverName}.`
                 );
             }

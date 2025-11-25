@@ -42,11 +42,24 @@ export interface Student {
     createdAt?: string
     updatedAt?: string
 }
-
+export interface Trip {
+    id: string;
+    route: { id: string; name: string };
+    bus: { id: string; licensePlate: string };
+    driver: { id: string; fullName: string };
+    tripDate: string; // YYYY-MM-DD
+    session: 'morning' | 'afternoon';
+    type: 'pickup' | 'dropoff';
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    actualStartTime?: string;
+    actualEndTime?: string;
+    // Có thể thêm các trường khác như studentCount...
+}
 const API_BASE = (import.meta as any).env?.VITE_DASHBOARD_API_URL || `${window.location.protocol}//${window.location.hostname}:3001/api`
 
 function authHeaders(): HeadersInit {
-    const token = localStorage.getItem('token')
+    // Support multiple token keys used across different apps: auth_token (standardized), token (legacy), access_token (some flows)
+    const token = localStorage.getItem('auth_token')
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
@@ -205,6 +218,31 @@ export const deleteRoute = async (id: string) => {
 }
 
 // Trip APIs
+export const getTrips = async (): Promise<Trip[]> => {
+    try {
+        const res = await fetch(`${API_BASE}/trips`, { headers: { ...authHeaders() } })
+        return await handleResponse<Trip[]>(res, 'Failed to fetch trips')
+    } catch { return [] }
+}
+
+// Hàm cập nhật chuyến đi (cho nút Chỉnh sửa)
+export const updateTrip = async (id: string, data: Partial<Trip>): Promise<Trip> => {
+    const res = await fetch(`${API_BASE}/trips/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+    })
+    return handleResponse<Trip>(res, 'Failed to update trip')
+}
+
+// Hàm xóa chuyến đi (cho nút Xóa)
+export const deleteTrip = async (id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/trips/${id}`, {
+        method: 'DELETE',
+        headers: { ...authHeaders() }
+    })
+    await handleResponse(res, 'Failed to delete trip')
+}
 export const createTrip = async (data: { routeId?: string; busId?: string; driverId?: string; tripDate: string; session: 'morning' | 'afternoon'; type: 'pickup' | 'dropoff' }) => {
     const res = await fetch(`${API_BASE}/trips`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(data) })
     return handleResponse<any>(res, 'Failed to create trip')
