@@ -203,3 +203,9 @@ export const deleteRoute = async (id: string) => {
     const res = await fetch(`${API_BASE}/routes/${id}`, { method: 'DELETE', headers: { ...authHeaders() } })
     await handleResponse(res, 'Failed to delete route')
 }
+
+// Trip APIs
+export const createTrip = async (data: { routeId?: string; busId?: string; driverId?: string; tripDate: string; session: 'morning' | 'afternoon'; type: 'pickup' | 'dropoff' }) => {
+    const res = await fetch(`${API_BASE}/trips`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(data) })
+    return handleResponse<any>(res, 'Failed to create trip')
+}
