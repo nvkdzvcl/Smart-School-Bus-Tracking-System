@@ -15,6 +15,108 @@ import { Input } from "../../components/ui/Input"
 // --- CẤU HÌNH API ---
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
 
+// 1. ĐỊNH NGHĨA TỪ ĐIỂN NGÔN NGỮ (STATIC TEXT)
+const TRANSLATIONS = {
+  vi: {
+    pageTitle: "Báo cáo sự cố",
+    subTitle: "Quản lý sự cố",
+    btnReport: "Báo cáo",
+    newReportTitle: "Báo cáo sự cố mới",
+    labelType: "Loại sự cố",
+    labelDesc: "Mô tả chi tiết",
+    placeholderDesc: "Nhập mô tả chi tiết về sự cố...",
+    labelImage: "Đính kèm ảnh (tối đa 1 ảnh)",
+    btnSelectImage: "Chọn/Chụp ảnh",
+    btnDelete: "Xóa",
+    btnCancel: "Hủy",
+    btnSubmit: "Gửi báo cáo",
+    submitting: "Đang gửi...",
+    quickReport: "Báo cáo nhanh",
+    historyTitle: "Lịch sử sự cố",
+    
+    // Status
+    statusResolved: "Đã xử lý",
+    statusPending: "Đang xử lý",
+    
+    // Messages
+    loading: "Đang tải lịch sử sự cố...",
+    errorLoad: "Không thể tải lịch sử báo cáo.",
+    emptyList: "Chưa có sự cố nào được báo cáo",
+    alertSize: "Kích thước ảnh không được vượt quá 5MB.",
+    alertMissing: "Vui lòng chọn loại sự cố và nhập mô tả",
+    alertSuccess: "Báo cáo sự cố đã được gửi thành công!",
+    
+    // Safety Tips
+    tip1: "Dừng xe an toàn trước khi báo cáo sự cố",
+    tip2: "Liên hệ quản lý ngay khi có sự cố nghiêm trọng",
+    tip3: "Chụp ảnh hiện trường nếu cần thiết",
+    safetyTitle: "Lưu ý an toàn"
+  },
+  en: {
+    pageTitle: "Incident Report",
+    subTitle: "Manage incidents",
+    btnReport: "Report",
+    newReportTitle: "New Incident Report",
+    labelType: "Incident Type",
+    labelDesc: "Description",
+    placeholderDesc: "Enter detailed description...",
+    labelImage: "Attach Image (max 1)",
+    btnSelectImage: "Select/Take Photo",
+    btnDelete: "Delete",
+    btnCancel: "Cancel",
+    btnSubmit: "Submit Report",
+    submitting: "Sending...",
+    quickReport: "Quick Report",
+    historyTitle: "Incident History",
+    
+    // Status
+    statusResolved: "Resolved",
+    statusPending: "Pending",
+    
+    // Messages
+    loading: "Loading incident history...",
+    errorLoad: "Unable to load history.",
+    emptyList: "No incidents reported yet",
+    alertSize: "Image size must not exceed 5MB.",
+    alertMissing: "Please select incident type and enter description",
+    alertSuccess: "Incident report sent successfully!",
+    
+    // Safety Tips
+    tip1: "Stop safely before reporting",
+    tip2: "Contact manager immediately for serious incidents",
+    tip3: "Take photos of the scene if necessary",
+    safetyTitle: "Safety Tips"
+  }
+}
+
+// 2. ĐỊNH NGHĨA LABEL CHO TỪNG LOẠI SỰ CỐ (DYNAMIC DATA)
+// Cái này dùng để map từ 'type' trong DB ra Text hiển thị
+const INCIDENT_TYPE_LABELS = {
+  vi: {
+    incident_traffic: "Kẹt xe",
+    student_absent: "Học sinh vắng",
+    incident_vehicle: "Xe hỏng",
+    incident_accident: "Tai nạn nhẹ",
+    other: "Khác",
+  },
+  en: {
+    incident_traffic: "Traffic Jam",
+    student_absent: "Student Absent",
+    incident_vehicle: "Vehicle Breakdown",
+    incident_accident: "Minor Accident",
+    other: "Other",
+  }
+}
+
+// Icon giữ nguyên không đổi theo ngôn ngữ
+const INCIDENT_ICONS: Record<string, string> = {
+  incident_traffic: "🚦",
+  student_absent: "👤",
+  incident_vehicle: "🔧",
+  incident_accident: "⚠️",
+  other: "📝",
+}
+
 // Enum này phải khớp với 'report.enums.ts' của BE
 enum ReportTypeBE {
   STUDENT_ABSENT = 'student_absent',
@@ -28,7 +130,7 @@ enum ReportTypeBE {
 // --- INTERFACE KHỚP VỚI BE ---
 interface Incident {
   id: string
-  type: ReportTypeBE | string
+  type: ReportTypeBE | string // Đây là key quan trọng để map
   title: string
   content: string
   createdAt: string
@@ -36,16 +138,7 @@ interface Incident {
   imageUrl?: string
 }
 
-// --- ID LOẠI SỰ CỐ CỦA FE ---
-const incidentTypes = [
-  { id: "incident_traffic", label: "Kẹt xe", icon: "🚦" },
-  { id: "student_absent", label: "Học sinh vắng", icon: "👤" },
-  { id: "incident_vehicle", label: "Xe hỏng", icon: "🔧" },
-  { id: "incident_accident", label: "Tai nạn nhẹ", icon: "⚠️" },
-  { id: "other", label: "Khác", icon: "📝" },
-]
-
-// Chuẩn hoá URL ảnh từ BE để luôn render được
+// Chuẩn hoá URL ảnh
 const toImgSrc = (u?: string) => {
   if (!u) return undefined
   if (u.startsWith('http://') || u.startsWith('https://')) return u
@@ -66,21 +159,22 @@ const basenameFromUrl = (u?: string) => {
   }
 }
 
-// --- Dịch 'type' từ FE sang BE ---
-const translateFeTypeToBeType = (feType: string): ReportTypeBE => {
-  if (feType === "student_absent") return ReportTypeBE.STUDENT_ABSENT
-  if (feType === "other") return ReportTypeBE.OTHER
-  if (feType === "incident_traffic") return ReportTypeBE.INCIDENT_TRAFFIC
-  if (feType === "incident_vehicle") return ReportTypeBE.INCIDENT_VEHICLE
-  if (feType === "incident_accident") return ReportTypeBE.INCIDENT_ACCIDENT
-  return ReportTypeBE.OTHER // Mặc định
-}
-
 export default function IncidentsPage() {
   const navigate = useNavigate()
+  
+  // 3. Khởi tạo Language State
+  const [language] = useState<'vi' | 'en'>(() => {
+    const saved = localStorage.getItem("language")
+    return saved === 'en' ? 'en' : 'vi'
+  })
+  const t = TRANSLATIONS[language]
+  const typeLabels = INCIDENT_TYPE_LABELS[language]
+
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [showReportForm, setShowReportForm] = useState(false)
-  const [selectedType, setSelectedType] = useState("")
+  
+  // Lưu ý: selectedType giờ sẽ lưu ID (vd: "incident_traffic")
+  const [selectedType, setSelectedType] = useState("") 
   const [description, setDescription] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -93,6 +187,13 @@ export default function IncidentsPage() {
   // Lightbox preview
   const [previewSrc, setPreviewSrc] = useState<string | null>(null)
 
+  // Tạo danh sách options cho form từ dictionary
+  const incidentOptions = Object.entries(INCIDENT_ICONS).map(([id, icon]) => ({
+    id,
+    icon,
+    label: typeLabels[id as keyof typeof typeLabels] || typeLabels.other
+  }))
+
   // ESC để đóng lightbox
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -102,7 +203,6 @@ export default function IncidentsPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Chặn cuộn body khi mở lightbox
   useEffect(() => {
     if (!previewSrc) return
     const prev = document.body.style.overflow
@@ -110,11 +210,10 @@ export default function IncidentsPage() {
     return () => { document.body.style.overflow = prev }
   }, [previewSrc])
 
-  // Xử lý chọn file ảnh
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && file.size > 5 * 1024 * 1024) {
-      alert("Kích thước ảnh không được vượt quá 5MB.")
+      alert(t.alertSize)
       setSelectedImage(null)
       e.target.value = ''
       return
@@ -129,7 +228,6 @@ export default function IncidentsPage() {
     setShowReportForm(false)
   }
 
-  // --- Tải lịch sử báo cáo ---
   const fetchIncidents = useCallback(async () => {
     const token = localStorage.getItem("access_token")
     if (!token) return navigate("/")
@@ -143,11 +241,11 @@ export default function IncidentsPage() {
       setError(null)
     } catch (err) {
       console.error("Lỗi khi tải lịch sử báo cáo:", err)
-      setError("Không thể tải lịch sử báo cáo.")
+      setError(t.errorLoad) // Dùng t ở đây hơi risk nếu đổi ngôn ngữ runtime, nhưng ok cho init
     } finally {
       setIsLoading(false)
     }
-  }, [navigate])
+  }, [navigate]) // Bỏ t ra khỏi dep để tránh loop nếu không cần thiết
 
   useEffect(() => {
     const authenticated = localStorage.getItem("driver_authenticated")
@@ -158,26 +256,24 @@ export default function IncidentsPage() {
     }
   }, [navigate, fetchIncidents])
 
-  // --- Gửi báo cáo (dùng FormData) ---
   const handleSubmitIncident = async () => {
     const token = localStorage.getItem("access_token")
     if (!token) return navigate("/")
 
     if (!selectedType || !description.trim()) {
-      alert("Vui lòng chọn loại sự cố và nhập mô tả")
+      alert(t.alertMissing)
       return
     }
 
-    const feTypeInfo = incidentTypes.find((t) => t.id === selectedType)
-    if (!feTypeInfo) {
-      alert("Loại sự cố không hợp lệ")
-      return
-    }
+    // Lấy label đúng theo ngôn ngữ hiện tại để gửi lên (nếu BE cần title)
+    // Tuy nhiên quan trọng nhất là gửi đúng 'type' Enum
+    const label = typeLabels[selectedType as keyof typeof typeLabels] || "Other"
 
     const formData = new FormData()
-    formData.append("title", feTypeInfo.label)
+    formData.append("title", label) // Gửi title hiện tại (optional, BE nên dùng type)
     formData.append("content", description.trim())
-    formData.append("type", `${translateFeTypeToBeType(feTypeInfo.id)}`)
+    formData.append("type", selectedType) // Gửi type code (vd: incident_traffic)
+    
     if (selectedImage) {
       formData.append("image", selectedImage, selectedImage.name)
     }
@@ -188,27 +284,26 @@ export default function IncidentsPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      alert("Báo cáo sự cố đã được gửi thành công!")
+      alert(t.alertSuccess)
       resetForm()
       await fetchIncidents()
     } catch (err: any) {
       console.error("Lỗi khi gửi báo cáo:", err)
       if (axios.isAxiosError(err) && err.response) {
-        alert((err.response.data as any)?.message || "Không thể gửi báo cáo.")
+        alert((err.response.data as any)?.message || "Error.")
       } else {
-        alert("Không thể gửi báo cáo. Vui lòng thử lại.")
+        alert("Error.")
       }
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // --- Render danh sách ---
   const renderIncidentList = () => {
     if (isLoading) {
       return (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">Đang tải lịch sử sự cố...</p>
+          <p className="text-muted-foreground">{t.loading}</p>
         </div>
       )
     }
@@ -216,7 +311,7 @@ export default function IncidentsPage() {
     if (error) {
       return (
         <div className="text-center py-8">
-          <p className="text-destructive">{error}</p>
+          <p className="text-destructive">{error || t.errorLoad}</p>
         </div>
       )
     }
@@ -237,15 +332,18 @@ export default function IncidentsPage() {
               d="M9 12l2 2 4-4m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <p className="text-muted-foreground">Chưa có sự cố nào được báo cáo</p>
+          <p className="text-muted-foreground">{t.emptyList}</p>
         </div>
       )
     }
 
     return incidents.map((incident) => {
-      // const feType = incidentTypes.find(t => translateFeTypeToBeType(t.id) === incident.type)
-      const feType = incidentTypes.find(t => t.label === incident.title)
-      const icon = feType ? feType.icon : '📝'
+      // 🔥 LOGIC QUAN TRỌNG: Map từ 'type' code sang Label ngôn ngữ
+      // Nếu incident.type khớp key trong typeLabels, lấy label đó.
+      // Nếu không, fallback về incident.title (cho các trường hợp legacy)
+      const displayTitle = typeLabels[incident.type as keyof typeof typeLabels] || incident.title
+      
+      const icon = INCIDENT_ICONS[incident.type as string] || INCIDENT_ICONS['other']
       const imgSrc = toImgSrc(incident.imageUrl)
 
       return (
@@ -257,7 +355,7 @@ export default function IncidentsPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xl mr-1">{icon}</span>
-                <h3 className="font-semibold text-foreground">{incident.title}</h3>
+                <h3 className="font-semibold text-foreground">{displayTitle}</h3>
                 <Badge
                   className={
                     incident.status === "resolved"
@@ -265,20 +363,19 @@ export default function IncidentsPage() {
                       : "bg-destructive text-destructive-foreground"
                   }
                 >
-                  {incident.status === "resolved" ? "Đã xử lý" : "Đang xử lý"}
+                  {incident.status === "resolved" ? t.statusResolved : t.statusPending}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground">{incident.content}</p>
             </div>
           </div>
 
-          {/* HIỂN THỊ HÌNH ẢNH NẾU CÓ */}
           {imgSrc && (
             <div className="mt-3 group relative overflow-hidden rounded-md border border-border/70">
               <img
                 src={imgSrc}
                 loading="lazy"
-                alt={`Ảnh sự cố: ${incident.title}`}
+                alt={`Incident: ${displayTitle}`}
                 className="w-full h-auto max-h-48 object-cover transform-gpu transition-transform duration-300 ease-out group-hover:scale-105 cursor-zoom-in"
                 onClick={() => setPreviewSrc(imgSrc)}
                 onError={(e) => {
@@ -308,7 +405,7 @@ export default function IncidentsPage() {
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span>{new Date(incident.createdAt).toLocaleString("vi-VN")}</span>
+              <span>{new Date(incident.createdAt).toLocaleString(language === 'vi' ? "vi-VN" : "en-US")}</span>
             </div>
           </div>
         </div>
@@ -318,7 +415,6 @@ export default function IncidentsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
       <header className="bg-card border-b border-border/50 sticky top-0 z-40 backdrop-blur-lg">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
@@ -334,8 +430,8 @@ export default function IncidentsPage() {
                 </svg>
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Báo cáo sự cố</h1>
-                <p className="text-xs text-muted-foreground">Quản lý sự cố</p>
+                <h1 className="text-lg font-semibold text-foreground">{t.pageTitle}</h1>
+                <p className="text-xs text-muted-foreground">{t.subTitle}</p>
               </div>
             </div>
             {!showReportForm && (
@@ -347,7 +443,7 @@ export default function IncidentsPage() {
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                Báo cáo
+                {t.btnReport}
               </Button>
             )}
           </div>
@@ -360,7 +456,7 @@ export default function IncidentsPage() {
           <Card className="border-destructive/30 bg-gradient-to-br from-card to-destructive/5 rounded-lg">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base text-foreground">Báo cáo sự cố mới</CardTitle>
+                <CardTitle className="text-base text-foreground">{t.newReportTitle}</CardTitle>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -374,11 +470,11 @@ export default function IncidentsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Loại sự cố */}
+              {/* Loại sự cố (Render từ options động) */}
               <div className="space-y-2">
-                <Label className="text-foreground">Loại sự cố</Label>
+                <Label className="text-foreground">{t.labelType}</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {incidentTypes.map((type) => (
+                  {incidentOptions.map((type) => (
                     <Button
                       key={type.id}
                       variant="outline"
@@ -395,14 +491,13 @@ export default function IncidentsPage() {
                 </div>
               </div>
 
-              {/* Mô tả chi tiết */}
               <div className="space-y-2">
                 <Label htmlFor="description" className="text-foreground">
-                  Mô tả chi tiết
+                  {t.labelDesc}
                 </Label>
                 <Textarea
                   id="description"
-                  placeholder="Nhập mô tả chi tiết về sự cố..."
+                  placeholder={t.placeholderDesc}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
@@ -410,9 +505,8 @@ export default function IncidentsPage() {
                 />
               </div>
 
-              {/* Đính kèm ảnh */}
               <div className="space-y-2">
-                <Label className="text-foreground">Đính kèm ảnh (tối đa 1 ảnh)</Label>
+                <Label className="text-foreground">{t.labelImage}</Label>
 
                 {selectedImage ? (
                   <div className="flex items-center justify-between p-3 border border-border/70 rounded-lg bg-muted/50">
@@ -423,7 +517,7 @@ export default function IncidentsPage() {
                       onClick={() => setSelectedImage(null)}
                       className="flex-shrink-0"
                     >
-                      Xóa
+                      {t.btnDelete}
                     </Button>
                   </div>
                 ) : (
@@ -455,7 +549,7 @@ export default function IncidentsPage() {
                           d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                      Chọn/Chụp ảnh
+                      {t.btnSelectImage}
                     </Button>
                   </>
                 )}
@@ -467,14 +561,14 @@ export default function IncidentsPage() {
                   onClick={resetForm}
                   className="flex-1 border-border text-foreground hover:bg-muted bg-transparent rounded-lg"
                 >
-                  Hủy
+                  {t.btnCancel}
                 </Button>
                 <Button
                   onClick={handleSubmitIncident}
                   disabled={isSubmitting}
                   className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg"
                 >
-                  {isSubmitting ? "Đang gửi..." : "Gửi báo cáo"}
+                  {isSubmitting ? t.submitting : t.btnSubmit}
                 </Button>
               </div>
             </CardContent>
@@ -485,11 +579,11 @@ export default function IncidentsPage() {
         {!showReportForm && (
           <Card className="border-border/50 rounded-lg">
             <CardHeader>
-              <CardTitle className="text-base text-foreground">Báo cáo nhanh</CardTitle>
+              <CardTitle className="text-base text-foreground">{t.quickReport}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-2">
-                {incidentTypes.slice(0, 4).map((type) => (
+                {incidentOptions.slice(0, 4).map((type) => (
                   <Button
                     key={type.id}
                     variant="outline"
@@ -511,7 +605,7 @@ export default function IncidentsPage() {
         {/* Incidents List */}
         <Card className="border-border/50 rounded-lg">
           <CardHeader>
-            <CardTitle className="text-base text-foreground">Lịch sử sự cố</CardTitle>
+            <CardTitle className="text-base text-foreground">{t.historyTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {renderIncidentList()}
@@ -521,7 +615,7 @@ export default function IncidentsPage() {
         {/* Safety Tips */}
         <Card className="border-border/50 bg-gradient-to-br from-card to-accent/5 rounded-lg">
           <CardHeader>
-            <CardTitle className="text-base text-foreground">Lưu ý an toàn</CardTitle>
+            <CardTitle className="text-base text-foreground">{t.safetyTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <div className="flex items-start gap-2">
@@ -533,7 +627,7 @@ export default function IncidentsPage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p>Dừng xe an toàn trước khi báo cáo sự cố</p>
+              <p>{t.tip1}</p>
             </div>
             <div className="flex items-start gap-2">
               <svg
@@ -544,7 +638,7 @@ export default function IncidentsPage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p>Liên hệ quản lý ngay khi có sự cố nghiêm trọng</p>
+              <p>{t.tip2}</p>
             </div>
             <div className="flex items-start gap-2">
               <svg
@@ -555,13 +649,13 @@ export default function IncidentsPage() {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p>Chụp ảnh hiện trường nếu cần thiết</p>
+              <p>{t.tip3}</p>
             </div>
           </CardContent>
         </Card>
       </main>
 
-      {/* Lightbox Preview – đặt ngoài danh sách, chỉ 1 modal */}
+      {/* Lightbox Preview */}
       {previewSrc && (
         <div
           className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"

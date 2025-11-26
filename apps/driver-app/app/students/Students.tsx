@@ -12,6 +12,96 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Ta
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+// 1. Định nghĩa từ điển ngôn ngữ
+const TRANSLATIONS = {
+  vi: {
+    studentList: "Danh sách học sinh",
+    searchPlaceholder: "Tìm kiếm học sinh...",
+    morning: "Ca sáng",
+    afternoon: "Ca chiều",
+    startShiftMorning: "Bắt đầu ca sáng",
+    startShiftAfternoon: "Bắt đầu ca chiều",
+    completeShiftMorning: "Hoàn thành ca sáng",
+    completeShiftAfternoon: "Hoàn thành ca chiều",
+    
+    // Stats
+    total: "Tổng",
+    pickedUp: "Đã đón",
+    droppedOff: "Đã trả",
+    remaining: "Còn lại",
+
+    // Status badges / buttons
+    statusAttended: "Đã đón", // hoặc Đã trả (dynamic)
+    statusAbsent: "Vắng",
+    statusPendingPickup: "Chưa đón",
+    statusPendingDropoff: "Chưa trả",
+    
+    btnAttendedPickup: "Đã đón",
+    btnAttendedDropoff: "Đã trả",
+    btnUndo: "Hoàn tác",
+
+    // Loading / Error / Empty
+    loadingMorning: "Đang tải dữ liệu ca sáng...",
+    loadingAfternoon: "Đang tải dữ liệu ca chiều...",
+    errorNoData: "Không có dữ liệu.",
+    errorLoad: "Không thể tải danh sách học sinh.",
+    emptyList: "Không tìm thấy học sinh nào.",
+    
+    // Actions messages
+    attendedAt: "Đã đón lúc", // hoặc Đã trả lúc
+    attendedAtDropoff: "Đã trả lúc",
+
+    // Errors alert
+    errorStart: "Không thể bắt đầu ca.",
+    errorComplete: "Không thể hoàn thành ca.",
+    errorAttend: "Lỗi điểm danh, vui lòng thử lại.",
+    errorUndo: "Lỗi hoàn tác, vui lòng thử lại.",
+  },
+  en: {
+    studentList: "Student List",
+    searchPlaceholder: "Search students...",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    startShiftMorning: "Start Morning Shift",
+    startShiftAfternoon: "Start Afternoon Shift",
+    completeShiftMorning: "Complete Morning Shift",
+    completeShiftAfternoon: "Complete Afternoon Shift",
+
+    // Stats
+    total: "Total",
+    pickedUp: "Picked Up",
+    droppedOff: "Dropped Off",
+    remaining: "Remaining",
+
+    // Status badges / buttons
+    statusAttended: "Attended",
+    statusAbsent: "Absent",
+    statusPendingPickup: "Pending Pickup",
+    statusPendingDropoff: "Pending Dropoff",
+    
+    btnAttendedPickup: "Picked Up",
+    btnAttendedDropoff: "Dropped Off",
+    btnUndo: "Undo",
+
+    // Loading / Error / Empty
+    loadingMorning: "Loading morning data...",
+    loadingAfternoon: "Loading afternoon data...",
+    errorNoData: "No data available.",
+    errorLoad: "Unable to load student list.",
+    emptyList: "No students found.",
+
+    // Actions messages
+    attendedAt: "Picked up at",
+    attendedAtDropoff: "Dropped off at",
+
+    // Errors alert
+    errorStart: "Unable to start shift.",
+    errorComplete: "Unable to complete shift.",
+    errorAttend: "Attendance error, please try again.",
+    errorUndo: "Undo error, please try again.",
+  },
+};
+
 interface StudentBE {
   id: string;
   fullName: string;
@@ -32,12 +122,19 @@ type ShiftKey = "pickup" | "dropoff";   // BE
 type TripStatus = "scheduled" | "in_progress" | "completed" | "cancelled" | string;
 
 const getDefaultTab = (): TabKey => {
-  const hourLocal = new Date().getHours(); // Lấy giờ hiện tại của máy
+  const hourLocal = new Date().getHours();
   return hourLocal < 12 ? "morning" : "afternoon";
 };
 
 export default function StudentsPage() {
   const navigate = useNavigate();
+
+  // 2. Khởi tạo Language State
+  const [language] = useState<'vi' | 'en'>(() => {
+    const saved = localStorage.getItem("language");
+    return saved === 'en' ? 'en' : 'vi';
+  });
+  const t = TRANSLATIONS[language];
 
   const [tab, setTab] = useState<TabKey>(getDefaultTab);
   const apiShift: ShiftKey = tab === "morning" ? "pickup" : "dropoff";
@@ -88,6 +185,10 @@ export default function StudentsPage() {
     } catch (err: any) {
       if (axios.isCancel(err)) return;
       console.error(`Lỗi khi tải ${apiShift}:`, err);
+      // t có thể bị stale trong callback này nếu language đổi, nhưng vì fetchStudents phụ thuộc apiShift 
+      // (tab change) và navigate, nên vẫn ổn. Để chắc chắn, dùng t từ scope component render.
+      // Tuy nhiên trong catch block này ta dùng string cứng hoặc mã lỗi để render sau.
+      
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
           navigate("/");
@@ -96,10 +197,10 @@ export default function StudentsPage() {
         if (err.response?.status === 404 && err.response.data?.message) {
           setError(err.response.data.message);
         } else {
-          setError("Không thể tải danh sách học sinh.");
+          setError("ERROR_LOAD"); // Mã lỗi đặc biệt
         }
       } else {
-        setError("Không thể tải danh sách học sinh.");
+        setError("ERROR_LOAD");
       }
       setStats({ total: 0, pickedUp: 0, droppedOff: 0, remaining: 0 });
       setStudents([]);
@@ -127,7 +228,7 @@ export default function StudentsPage() {
       await fetchStudents();
     } catch (err: any) {
       console.error("Lỗi bắt đầu ca:", err);
-      alert(err.response?.data?.message || "Không thể bắt đầu ca.");
+      alert(err.response?.data?.message || t.errorStart);
     }
   };
 
@@ -145,7 +246,7 @@ export default function StudentsPage() {
       window.dispatchEvent(new Event('trip-status-updated'));
     } catch (err: any) {
       console.error("Lỗi hoàn thành ca:", err);
-      alert(err.response?.data?.message || "Không thể hoàn thành ca.");
+      alert(err.response?.data?.message || t.errorComplete);
     }
   };
 
@@ -170,7 +271,7 @@ export default function StudentsPage() {
       await fetchStudents();
     } catch (err: any) {
       console.error("Lỗi khi điểm danh:", err);
-      alert(err.response?.data?.message || "Lỗi điểm danh, vui lòng thử lại.");
+      alert(err.response?.data?.message || t.errorAttend);
     } finally {
       busyIds.current.delete(studentId);
     }
@@ -194,7 +295,7 @@ export default function StudentsPage() {
       await fetchStudents();
     } catch (err: any) {
       console.error("Lỗi khi hoàn tác:", err);
-      alert(err.response?.data?.message || "Lỗi hoàn tác, vui lòng thử lại.");
+      alert(err.response?.data?.message || t.errorUndo);
     } finally {
       busyIds.current.delete(studentId);
     }
@@ -209,7 +310,7 @@ export default function StudentsPage() {
     <Card className="border-border/50 rounded-lg">
       <CardContent className="p-8 text-center">
         <p className="text-muted-foreground">
-          Đang tải dữ liệu ca {tab === "morning" ? "sáng" : "chiều"}...
+          {tab === "morning" ? t.loadingMorning : t.loadingAfternoon}
         </p>
       </CardContent>
     </Card>
@@ -218,36 +319,45 @@ export default function StudentsPage() {
   const renderError = () => (
     <Card className="border-border/50 rounded-lg">
       <CardContent className="p-8 text-center">
-        <p className="text-destructive">{error || "Không có dữ liệu."}</p>
+        <p className="text-destructive">{error === "ERROR_LOAD" ? t.errorLoad : error || t.errorNoData}</p>
       </CardContent>
     </Card>
   );
 
   const renderStudentList = () => {
-  if (isLoading && students.length === 0) return renderLoading();
-  if (error && students.length === 0) return renderError();
+    if (isLoading && students.length === 0) return renderLoading();
+    if (error && students.length === 0) return renderError();
     if (filteredStudents.length === 0) {
       return (
         <Card className="border-border/50 rounded-lg">
           <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Không tìm thấy học sinh nào.</p>
+            <p className="text-muted-foreground">{t.emptyList}</p>
           </CardContent>
         </Card>
       );
     }
 
-    const isPickup = apiShift === "pickup";
-
     return filteredStudents.map((student) => {
       const isBusy = busyIds.current.has(student.id);
       const isPickup = apiShift === "pickup";
-        const attendedTime =
-    student.status === "attended" && student.attendedAt
-      ? new Date(student.attendedAt).toLocaleTimeString("vi-VN", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : null;
+      const attendedTime =
+        student.status === "attended" && student.attendedAt
+          ? new Date(student.attendedAt).toLocaleTimeString(language === 'vi' ? "vi-VN" : "en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : null;
+
+      // Logic hiển thị Badge Status
+      let badgeText = "";
+      if (student.status === "attended") {
+          badgeText = isPickup ? t.btnAttendedPickup : t.btnAttendedDropoff;
+      } else if (student.status === "absent") {
+          badgeText = t.statusAbsent;
+      } else {
+          badgeText = isPickup ? t.statusPendingPickup : t.statusPendingDropoff;
+      }
+
       return (
         <Card key={student.id} className="border-border/50 rounded-lg">
           <CardContent className="p-4 px-5 pt-5">
@@ -270,15 +380,7 @@ export default function StudentsPage() {
                         : "bg-muted text-muted-foreground") + " rounded-full px-3 py-0.5"
                     }
                   >
-                    {student.status === "attended"
-                      ? isPickup
-                        ? "Đã đón"
-                        : "Đã trả"
-                      : student.status === "absent"
-                      ? "Vắng"
-                      : isPickup
-                      ? "Chưa đón"
-                      : "Chưa trả"}
+                    {badgeText}
                   </Badge>
                 </div>
 
@@ -291,27 +393,27 @@ export default function StudentsPage() {
                     <span className="flex-1">{student.address}</span>
                   </div>
                   {attendedTime && (
-    <div className="flex items-center gap-2 text-xs text-emerald-600">
-      <svg
-        className="w-4 h-4 flex-shrink-0"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M12 8v4l2.5 2.5M12 22a10 10 0 100-20 10 10 0 000 20z"
-        />
-      </svg>
-      <span>
-        {isPickup
-          ? `Đã đón lúc ${attendedTime}`
-          : `Đã trả lúc ${attendedTime}`}
-      </span>
-    </div>
-  )}
+                    <div className="flex items-center gap-2 text-xs text-emerald-600">
+                      <svg
+                        className="w-4 h-4 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4l2.5 2.5M12 22a10 10 0 100-20 10 10 0 000 20z"
+                        />
+                      </svg>
+                      <span>
+                        {isPickup
+                          ? `${t.attendedAt} ${attendedTime}`
+                          : `${t.attendedAtDropoff} ${attendedTime}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 px-4 pt-4">
@@ -329,7 +431,7 @@ export default function StudentsPage() {
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      {isPickup ? "Đã đón" : "Đã trả"}
+                      {isPickup ? t.btnAttendedPickup : t.btnAttendedDropoff}
                     </Button>
                   )}
 
@@ -344,7 +446,7 @@ export default function StudentsPage() {
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                       </svg>
-                      Hoàn tác
+                      {t.btnUndo}
                     </Button>
                   )}
                 </div>
@@ -374,26 +476,25 @@ export default function StudentsPage() {
                 </svg>
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Danh sách học sinh</h1>
-                {/* Có thể thêm tên tuyến ở đây nếu cần */}
+                <h1 className="text-lg font-semibold text-foreground">{t.studentList}</h1>
               </div>
             </div>
 
-            {/* Nút điều khiển ca – áp dụng cho cả sáng & chiều */}
+            {/* Nút điều khiển ca */}
             <div className="flex items-center gap-2">
               {tripStatus === "scheduled" && (
                 <Button size="sm" onClick={handleStartTrip} className="rounded-lg">
-                  Bắt đầu ca {tab === "morning" ? "sáng" : "chiều"}
+                  {tab === "morning" ? t.startShiftMorning : t.startShiftAfternoon}
                 </Button>
               )}
-              {tripStatus !== "completed" && (
+              {tripStatus !== "completed" && tripStatus !== "scheduled" && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={handleCompleteTrip}
                   className="rounded-lg"
                 >
-                  Hoàn thành ca {tab === "morning" ? "sáng" : "chiều"}
+                  {tab === "morning" ? t.completeShiftMorning : t.completeShiftAfternoon}
                 </Button>
               )}
             </div>
@@ -406,7 +507,7 @@ export default function StudentsPage() {
             </svg>
             <Input
               type="text"
-              placeholder="Tìm kiếm học sinh..."
+              placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-background border-border text-foreground rounded-lg"
@@ -417,75 +518,73 @@ export default function StudentsPage() {
 
       <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Stats */}
-{/* Stats */}
-<div className="grid grid-cols-3 gap-3">
-  {/* Tổng */}
-  <Card className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 shadow-sm">
-    <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
-      <div className="text-xs font-medium text-slate-500">Tổng</div>
-      <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
-    </CardContent>
-  </Card>
+        <div className="grid grid-cols-3 gap-3">
+          {/* Tổng */}
+          <Card className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100 shadow-sm">
+            <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
+              <div className="text-xs font-medium text-slate-500">{t.total}</div>
+              <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
+            </CardContent>
+          </Card>
 
-  {/* Đã đón (ca sáng) / Đã trả (ca chiều) */}
-  <Card
-    className={`rounded-lg border shadow-sm bg-gradient-to-br ${
-      isPickupShift
-        ? "border-sky-200 from-sky-50 to-sky-100"
-        : "border-emerald-200 from-emerald-50 to-emerald-100"
-    }`}
-  >
-    <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
-      <div
-        className={`text-xs font-medium ${
-          isPickupShift ? "text-sky-600" : "text-emerald-600"
-        }`}
-      >
-        {isPickupShift ? "Đã đón" : "Đã trả"}
-      </div>
-      <div
-        className={`text-2xl font-bold ${
-          isPickupShift ? "text-sky-700" : "text-emerald-700"
-        }`}
-      >
-        {isPickupShift ? stats.pickedUp : stats.droppedOff}
-      </div>
-    </CardContent>
-  </Card>
+          {/* Đã đón/trả */}
+          <Card
+            className={`rounded-lg border shadow-sm bg-gradient-to-br ${
+              isPickupShift
+                ? "border-sky-200 from-sky-50 to-sky-100"
+                : "border-emerald-200 from-emerald-50 to-emerald-100"
+            }`}
+          >
+            <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
+              <div
+                className={`text-xs font-medium ${
+                  isPickupShift ? "text-sky-600" : "text-emerald-600"
+                }`}
+              >
+                {isPickupShift ? t.pickedUp : t.droppedOff}
+              </div>
+              <div
+                className={`text-2xl font-bold ${
+                  isPickupShift ? "text-sky-700" : "text-emerald-700"
+                }`}
+              >
+                {isPickupShift ? stats.pickedUp : stats.droppedOff}
+              </div>
+            </CardContent>
+          </Card>
 
-  {/* Còn lại */}
-  <Card
-    className={`rounded-lg border shadow-sm bg-gradient-to-br ${
-      stats.remaining > 0
-        ? "border-amber-200 from-amber-50 to-amber-100"
-        : "border-zinc-200 from-zinc-50 to-zinc-100"
-    }`}
-  >
-    <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
-      <div
-        className={`text-xs font-medium ${
-          stats.remaining > 0 ? "text-amber-600" : "text-zinc-500"
-        }`}
-      >
-        Còn lại
-      </div>
-      <div
-        className={`text-2xl font-bold ${
-          stats.remaining > 0 ? "text-amber-700" : "text-zinc-700"
-        }`}
-      >
-        {stats.remaining}
-      </div>
-    </CardContent>
-  </Card>
-</div>
-
+          {/* Còn lại */}
+          <Card
+            className={`rounded-lg border shadow-sm bg-gradient-to-br ${
+              stats.remaining > 0
+                ? "border-amber-200 from-amber-50 to-amber-100"
+                : "border-zinc-200 from-zinc-50 to-zinc-100"
+            }`}
+          >
+            <CardContent className="px-5 pt-5 p-3 text-center space-y-1">
+              <div
+                className={`text-xs font-medium ${
+                  stats.remaining > 0 ? "text-amber-600" : "text-zinc-500"
+                }`}
+              >
+                {t.remaining}
+              </div>
+              <div
+                className={`text-2xl font-bold ${
+                  stats.remaining > 0 ? "text-amber-700" : "text-zinc-700"
+                }`}
+              >
+                {stats.remaining}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 rounded-lg">
-            <TabsTrigger className="rounded-lg" value="morning">Ca sáng</TabsTrigger>
-            <TabsTrigger className="rounded-lg" value="afternoon">Ca chiều</TabsTrigger>
+            <TabsTrigger className="rounded-lg" value="morning">{t.morning}</TabsTrigger>
+            <TabsTrigger className="rounded-lg" value="afternoon">{t.afternoon}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="morning" className="space-y-3 mt-4">

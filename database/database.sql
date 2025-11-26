@@ -598,7 +598,7 @@ IF v_trip_dropoff_afternoon IS NOT NULL THEN
       (v_driver_id, v_trip_dropoff_afternoon, NULL, 
        'Xe hỏng', 
        'Xe phụ huynh hỏng không chở học sinh tới điểm đón được.', 
-       'complaint', 
+       'incident_vehicle', 
        'resolved',
        'http://localhost:3000/static/uploads/incidents/1763268349971-753592888.png'); -- << Báo cáo này không có ảnh
   END IF;
@@ -829,7 +829,7 @@ BEGIN
       'Kẹt xe', 'Giờ cao điểm đông xe nên đi trễ 30 phút.', 'incident_traffic', 'pending',
       'http://localhost:3000/static/uploads/incidents/1762936384743-665078944.jpg'),
     (v_driver1, v_dropoff_afternoon, NULL,
-      'Khác', 'Phụ huynh góp ý tài xế gọi trước 5 phút.', 'complaint', 'resolved', NULL)
+      'Khác', 'Phụ huynh góp ý tài xế gọi trước 5 phút.', 'other', 'resolved', NULL)
   ON CONFLICT DO NOTHING;
 
   -- Route B (driver2)
