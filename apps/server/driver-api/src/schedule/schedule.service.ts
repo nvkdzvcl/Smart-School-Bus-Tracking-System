@@ -143,26 +143,45 @@ export class ScheduleService {
   }
   // ----- Hết Helpers -----
 
-  // ========== API 1: Lịch hôm nay (Giữ nguyên) ==========
+  // ========== API 1: Lịch hôm nay (Cập nhật logic remaining) ==========
   async getDriverTodaySchedule(filter: ScheduleFilter) {
     const trip = await this.findCurrentDriverTrip(filter);
-    // ... (logic của bạn giữ nguyên)
+
+    // 1. Tổng số học sinh active trong chuyến
     const total = await this.tripStudentRepository.count({
-      where: { 
+      where: {
         tripId: trip.id,
-        student: { status: 'active' } as any // Lọc học sinh active
-      }, 
-      relations: ['student'], // Cần join bảng student để lọc status
-    });
-const attended = await this.tripStudentRepository.count({
-      where: { 
-        tripId: trip.id, 
-        status: attendance_status.ATTENDED,
-        student: { status: 'active' } as any // Cũng lọc active cho chắc
+        student: { status: 'active' } as any,
       },
       relations: ['student'],
-    });
+    });
+
+    // 2. Số học sinh đã điểm danh (ATTENDED)
+    const attended = await this.tripStudentRepository.count({
+      where: {
+        tripId: trip.id,
+        status: attendance_status.ATTENDED,
+        student: { status: 'active' } as any,
+      },
+      relations: ['student'],
+    });
+
+    // 3. Số học sinh vắng (ABSENT) - CẦN THÊM ĐỂ TÍNH REMAINING CHÍNH XÁC
+    const absent = await this.tripStudentRepository.count({
+      where: {
+        tripId: trip.id,
+        status: attendance_status.ABSENT,
+        student: { status: 'active' } as any,
+      },
+      relations: ['student'],
+    });
+
     const isPickup = trip.type === TripType.PICKUP;
+    
+    // Logic Remaining mới: Tổng - (Đã đón + Vắng)
+    // Nghĩa là: Chỉ đếm những em còn đang PENDING
+    const remaining = total - attended - absent;
+
     return {
       shift: isPickup ? 'Ca sáng' : 'Ca chiều',
       route: trip.route ? trip.route.name : 'Chưa có tuyến',
@@ -173,20 +192,18 @@ const attended = await this.tripStudentRepository.count({
       totalStudents: total,
       pickedUp: isPickup ? attended : 0,
       droppedOff: !isPickup ? attended : 0,
-      remaining: total - attended,
+      remaining: remaining, // Số liệu chính xác để hiển thị badge 'Còn lại'
     };
   }
 
-  // ========== API 2: Điểm dừng đang chạy (ĐÃ CẬP NHẬT) ==========
+  // ========== API 2: Điểm dừng đang chạy (Cập nhật logic completed stop) ==========
   async getActiveRouteStops(filter: ScheduleFilter) {
     const { driverId, shift, session } = filter;
     let trip: Trip;
 
     if (shift || session) {
-      // 1. Nếu có filter (từ StudentsPage) -> Tìm chuyến CỤ THỂ
       trip = await this.findCurrentDriverTrip(filter);
     } else {
-      // 2. Nếu không có filter (từ RoutePage) -> Tìm chuyến HOẠT ĐỘNG
       trip = await this.findActiveTrip(driverId);
     }
 
@@ -197,17 +214,16 @@ const attended = await this.tripStudentRepository.count({
       ? format(new Date(trip.actualEndTime), 'HH:mm')
       : null;
 
-    // --- Logic bên dưới giữ nguyên y hệt phiên bản trước ---
     const tripId = trip.id;
     const routeId = trip.routeId;
 
-const studentsOnThisTrip = await this.tripStudentRepository.find({
-      where: { 
+    const studentsOnThisTrip = await this.tripStudentRepository.find({
+      where: {
         tripId,
-        student: { status: 'active' } as any // Chỉ lấy học sinh active
+        student: { status: 'active' } as any,
       },
-      relations: ['student', 'student.pickupStop', 'student.dropoffStop'],
-    });
+      relations: ['student', 'student.pickupStop', 'student.dropoffStop'],
+    });
 
     if (!routeId) {
       return { tripStatus: trip.status, stops: [] };
@@ -235,6 +251,9 @@ const studentsOnThisTrip = await this.tripStudentRepository.find({
       if (trip.status === TripStatus.SCHEDULED) {
         stopStatus = 'pending';
       } else if (trip.status === TripStatus.IN_PROGRESS && !currentStopFound) {
+        // Logic kiểm tra stop hoàn thành:
+        // Stop xong khi TẤT CẢ học sinh tại đó KHÔNG CÒN là PENDING
+        // (tức là đã ATTENDED hoặc ABSENT hết rồi)
         const allProcessed = studentsAtThisStop.every(
           (s) => s.status !== attendance_status.PENDING,
         );
@@ -271,20 +290,17 @@ const studentsOnThisTrip = await this.tripStudentRepository.find({
     };
   }
 
-  // ========== API 3: Bắt đầu chuyến (ĐÃ CẬP NHẬT) ==========
+  // ========== API 3: Bắt đầu chuyến (Giữ nguyên) ==========
   async startDriverTrip(filter: ScheduleFilter) {
     const { driverId, shift, session } = filter;
     let trip: Trip;
 
     if (shift || session) {
-      // 1. Nếu có filter (từ StudentsPage) -> Tìm chuyến CỤ THỂ
       trip = await this.findCurrentDriverTrip(filter);
     } else {
-      // 2. Nếu không có filter (từ RoutePage) -> Tìm chuyến HOẠT ĐỘNG
       trip = await this.findActiveTrip(driverId);
     }
 
-    // --- Logic check status giữ nguyên y hệt phiên bản trước ---
     if (trip.status === TripStatus.IN_PROGRESS) {
       throw new ConflictException('Chuyến đi này đã bắt đầu.');
     }
@@ -303,66 +319,71 @@ const studentsOnThisTrip = await this.tripStudentRepository.find({
     };
   }
 
-// ========== API 3.5: Hoàn thành chuyến (ĐÃ FIX LOGIC ACTIVE) ==========
-  async completeDriverTrip(filter: ScheduleFilter) {
-    const { driverId, shift, session } = filter;
-    let trip: Trip;
+  // ========== API 3.5: Hoàn thành chuyến (Cập nhật logic đếm remaining) ==========
+  async completeDriverTrip(filter: ScheduleFilter) {
+    const { driverId, shift, session } = filter;
+    let trip: Trip;
 
-    if (shift || session) {
-      trip = await this.findCurrentDriverTrip(filter);
-    } else {
-      trip = await this.findActiveTrip(driverId);
-    }
+    if (shift || session) {
+      trip = await this.findCurrentDriverTrip(filter);
+    } else {
+      trip = await this.findActiveTrip(driverId);
+    }
 
-    // 1. Kiểm tra trạng thái chuyến đi
-    if (trip.status !== TripStatus.IN_PROGRESS) {
-      if (trip.status === TripStatus.COMPLETED)
-        throw new ConflictException('Chuyến đi đã được hoàn thành từ trước.');
-      if (trip.status === TripStatus.SCHEDULED)
-        throw new ConflictException('Chuyến đi chưa bắt đầu (Vui lòng bấm Bắt đầu trước).');
-      throw new ConflictException('Không thể hoàn thành chuyến đi này.');
-    }
+    // 1. Kiểm tra trạng thái chuyến đi
+    if (trip.status !== TripStatus.IN_PROGRESS) {
+      if (trip.status === TripStatus.COMPLETED)
+        throw new ConflictException('Chuyến đi đã được hoàn thành từ trước.');
+      if (trip.status === TripStatus.SCHEDULED)
+        throw new ConflictException(
+          'Chuyến đi chưa bắt đầu (Vui lòng bấm Bắt đầu trước).',
+        );
+      throw new ConflictException('Không thể hoàn thành chuyến đi này.');
+    }
 
-    // 2. Kiểm tra học sinh chưa điểm danh (CHỈ ĐẾM HỌC SINH ACTIVE)
-    // Sửa đoạn này dùng createQueryBuilder để lọc chính xác
-    const remaining = await this.tripStudentRepository
+    // 2. Kiểm tra học sinh chưa điểm danh (CHỈ ĐẾM PENDING)
+    // Học sinh ABSENT (vắng) sẽ KHÔNG bị tính vào đây -> Cho phép hoàn thành chuyến
+    const remainingPending = await this.tripStudentRepository
       .createQueryBuilder('ts')
       .leftJoin('ts.student', 'student')
       .where('ts.tripId = :tripId', { tripId: trip.id })
-      .andWhere('ts.status = :pendingStatus', { pendingStatus: attendance_status.PENDING })
-      .andWhere('student.status = :activeStatus', { activeStatus: 'active' }) // <--- QUAN TRỌNG: Chỉ chặn nếu học sinh Active chưa điểm danh
+      .andWhere('ts.status = :pendingStatus', {
+        pendingStatus: attendance_status.PENDING,
+      })
+      .andWhere('student.status = :activeStatus', { activeStatus: 'active' })
       .getCount();
 
-    if (remaining > 0) {
-      throw new ConflictException(
-        `Vẫn còn ${remaining} học sinh chưa được điểm danh. Vui lòng kiểm tra lại.`,
-      );
-    }
+    if (remainingPending > 0) {
+      throw new ConflictException(
+        `Vẫn còn ${remainingPending} học sinh chưa được xử lý (chưa điểm danh hoặc báo vắng).`,
+      );
+    }
 
-    // 3. Cập nhật thành công
-    await this.tripRepository.update(trip.id, {
-      status: TripStatus.COMPLETED,
-      actualEndTime: new Date(),
-    });
+    // 3. Cập nhật thành công
+    await this.tripRepository.update(trip.id, {
+      status: TripStatus.COMPLETED,
+      actualEndTime: new Date(),
+    });
 
-    return {
-      message: 'Chuyến đi đã hoàn thành!',
-      newStatus: TripStatus.COMPLETED,
-    };
-  }
+    return {
+      message: 'Chuyến đi đã hoàn thành!',
+      newStatus: TripStatus.COMPLETED,
+    };
+  }
 
-  // ========== API 4: Danh sách học sinh (Giữ nguyên) ==========
+  // ========== API 4: Danh sách học sinh (Cập nhật logic remaining) ==========
   async getStudentsForTrip(filter: ScheduleFilter) {
     const trip = await this.findCurrentDriverTrip(filter);
-    // ... (logic của bạn giữ nguyên)
-const studentsOnTrip = await this.tripStudentRepository.find({
-      where: { 
+
+    const studentsOnTrip = await this.tripStudentRepository.find({
+      where: {
         tripId: trip.id,
-        student: { status: 'active' } as any // Chỉ hiện học sinh active
+        student: { status: 'active' } as any,
       },
-      relations: ['student', 'student.pickupStop', 'student.dropoffStop'],
-      order: { student: { fullName: 'ASC' } },
-    });
+      relations: ['student', 'student.pickupStop', 'student.dropoffStop'],
+      order: { student: { fullName: 'ASC' } },
+    });
+
     const total = studentsOnTrip.length;
     const attended = studentsOnTrip.filter(
       (s) => s.status === attendance_status.ATTENDED,
@@ -370,13 +391,17 @@ const studentsOnTrip = await this.tripStudentRepository.find({
     const absent = studentsOnTrip.filter(
       (s) => s.status === attendance_status.ABSENT,
     ).length;
+
     const isPickup = trip.type === TripType.PICKUP;
+
+    // Logic Remaining mới: Tổng - (Đã đón + Vắng)
     const stats = {
       total,
       pickedUp: isPickup ? attended : 0,
       droppedOff: !isPickup ? attended : 0,
       remaining: total - attended - absent,
     };
+
     const formattedStudents = studentsOnTrip.map((ts) => {
       const st = ts.student;
       const address = isPickup
@@ -393,19 +418,27 @@ const studentsOnTrip = await this.tripStudentRepository.find({
     return { stats, students: formattedStudents };
   }
 
-  // ========== API 5: Điểm danh (Giữ nguyên) ==========
+  // ========== API 5: Điểm danh (Cập nhật chặn nếu đã vắng) ==========
   async attendStudent(filter: ScheduleFilter, checkInDto: CheckInDto) {
     const trip = await this.findCurrentDriverTrip(filter);
-    // ... (logic của bạn giữ nguyên)
+
     const studentId = checkInDto.studentId;
     const attendanceRecord = await this.tripStudentRepository.findOne({
       where: { tripId: trip.id, studentId },
     });
+
     if (!attendanceRecord)
       throw new NotFoundException('Không tìm thấy học sinh này trong chuyến đi.');
+
     if (attendanceRecord.status === attendance_status.ATTENDED) {
       throw new ConflictException('Học sinh này đã được điểm danh.');
     }
+
+    // Thêm: Chặn điểm danh nếu đã báo vắng (tránh ghi đè logic báo cáo)
+    if (attendanceRecord.status === attendance_status.ABSENT) {
+        throw new ConflictException('Học sinh này đã được báo vắng. Vui lòng kiểm tra lại báo cáo.');
+    }
+
     await this.tripStudentRepository.update(
       { tripId: trip.id, studentId },
       { status: attendance_status.ATTENDED, attendedAt: new Date() },
@@ -413,21 +446,30 @@ const studentsOnTrip = await this.tripStudentRepository.find({
     return { ...attendanceRecord, status: attendance_status.ATTENDED };
   }
 
-  // ========== API 6: Hoàn tác (Giữ nguyên) ==========
+  // ========== API 6: Hoàn tác (Cập nhật chặn nếu đã vắng) ==========
   async undoAttendStudent(filter: ScheduleFilter, checkInDto: CheckInDto) {
     const trip = await this.findCurrentDriverTrip(filter);
-    // ... (logic của bạn giữ nguyên)
+    
     const studentId = checkInDto.studentId;
     const attendanceRecord = await this.tripStudentRepository.findOne({
       where: { tripId: trip.id, studentId },
     });
+
     if (!attendanceRecord)
       throw new NotFoundException(
         'Không tìm thấy học sinh này trong chuyến đi.',
       );
+
     if (attendanceRecord.status === attendance_status.PENDING) {
       throw new ConflictException('Học sinh này chưa được điểm danh.');
     }
+
+    // Thêm: Chặn hoàn tác nếu là trạng thái VẮNG (ABSENT)
+    // Việc sửa trạng thái vắng nên được thực hiện qua quy trình khác hoặc admin
+    if (attendanceRecord.status === attendance_status.ABSENT) {
+        throw new ConflictException('Không thể hoàn tác trạng thái vắng mặt từ đây.');
+    }
+
     await this.tripStudentRepository.update(
       { tripId: trip.id, studentId },
       { status: attendance_status.PENDING, attendedAt: null },
@@ -435,67 +477,68 @@ const studentsOnTrip = await this.tripStudentRepository.find({
     return { ...attendanceRecord, status: attendance_status.PENDING };
   }
 
-async getWeeklySchedule(driverId: string, startDate: string, endDate: string) {
-    // startDate, endDate format: YYYY-MM-DD
-    const trips = await this.tripRepository
-      .createQueryBuilder('trip')
-      .leftJoinAndSelect('trip.route', 'route')
-      .leftJoinAndSelect('route.routeStops', 'routeStop') // <--- MỚI: Lấy bảng nối
-      .leftJoinAndSelect('routeStop.stop', 'stop')       // <--- MỚI: Lấy thông tin điểm dừng
-      .leftJoinAndSelect('trip.bus', 'bus')
-      .where('trip.driverId = :driverId', { driverId })
-      .andWhere('trip.tripDate >= :startDate', { startDate })
-      .andWhere('trip.tripDate <= :endDate', { endDate })
-      .orderBy('trip.tripDate', 'ASC')
-      .addOrderBy('trip.session', 'ASC')
-      .getMany();
+  // ========== API 7: Lịch tuần (Giữ nguyên) ==========
+  async getWeeklySchedule(driverId: string, startDate: string, endDate: string) {
+    const trips = await this.tripRepository
+      .createQueryBuilder('trip')
+      .leftJoinAndSelect('trip.route', 'route')
+      .leftJoinAndSelect('route.routeStops', 'routeStop')
+      .leftJoinAndSelect('routeStop.stop', 'stop')
+      .leftJoinAndSelect('trip.bus', 'bus')
+      .where('trip.driverId = :driverId', { driverId })
+      .andWhere('trip.tripDate >= :startDate', { startDate })
+      .andWhere('trip.tripDate <= :endDate', { endDate })
+      .orderBy('trip.tripDate', 'ASC')
+      .addOrderBy('trip.session', 'ASC')
+      .getMany();
 
-    // Map dữ liệu về format frontend cần (TripItem)
-    return trips.map(trip => {
-      // Xử lý danh sách điểm dừng
-let stops: { id: string; name: string; address: string }[] = []; 
+    return trips.map((trip) => {
+      let stops: { id: string; name: string; address: string }[] = [];
 
-if (trip.route && trip.route.routeStops) {
-  stops = trip.route.routeStops
-    .sort((a, b) => a.stopOrder - b.stopOrder)
-    .map(rs => ({
-      id: rs.stop.id,
-      name: rs.stop.name,
-      address: rs.stop.address
-    }));
-}
+      if (trip.route && trip.route.routeStops) {
+        stops = trip.route.routeStops
+          .sort((a, b) => a.stopOrder - b.stopOrder)
+          .map((rs) => ({
+            id: rs.stop.id,
+            name: rs.stop.name,
+            address: rs.stop.address,
+          }));
+      }
 
-      return {
-        id: trip.id,
-        tripDate: trip.tripDate, 
-        session: trip.session, 
-        type: trip.type,       
-        route: trip.route ? trip.route.name : 'Chưa xếp tuyến',
-        startTime: trip.actualStartTime 
-          ? format(new Date(trip.actualStartTime), 'HH:mm') 
-          : 'Dự kiến',
-        status: trip.status,
-        busLicense: trip.bus ? trip.bus.licensePlate : 'N/A',
-        stops: stops, // <--- Trả về thêm danh sách stops
-      };
-    });
-  }
+      return {
+        id: trip.id,
+        tripDate: trip.tripDate,
+        session: trip.session,
+        type: trip.type,
+        route: trip.route ? trip.route.name : 'Chưa xếp tuyến',
+        startTime: trip.actualStartTime
+          ? format(new Date(trip.actualStartTime), 'HH:mm')
+          : 'Dự kiến',
+        status: trip.status,
+        busLicense: trip.bus ? trip.bus.licensePlate : 'N/A',
+        stops: stops,
+      };
+    });
+  }
 
-// ========== API 8: Lấy danh sách học sinh chi tiết theo tuần (ĐÃ SỬA LỖI) ==========
-  async getWeeklyStudents(driverId: string, startDate: string, endDate: string) {
-    // 1. Lấy tất cả các chuyến trong tuần
+  // ========== API 8: Lấy danh sách học sinh tuần (Giữ nguyên logic đã sửa trước đó) ==========
+  async getWeeklyStudents(
+    driverId: string,
+    startDate: string,
+    endDate: string,
+  ) {
     const trips = await this.tripRepository.find({
       where: {
         driverId,
-        tripDate: Between(startDate, endDate) as any, // Sửa lỗi 1: Đã import Between
+        tripDate: Between(startDate, endDate) as any,
       },
       relations: [
-        'route', // <--- QUAN TRỌNG: Thêm dòng này để lấy tên tuyến
-        'bus',   // <--- Thêm dòng này để lấy biển số xe (nếu cần hiển thị)
-        'tripStudents', 
-        'tripStudents.student', 
-        'tripStudents.student.pickupStop', 
-        'tripStudents.student.dropoffStop'
+        'route',
+        'bus',
+        'tripStudents',
+        'tripStudents.student',
+        'tripStudents.student.pickupStop',
+        'tripStudents.student.dropoffStop',
       ],
       order: {
         tripDate: 'ASC',
@@ -504,23 +547,18 @@ if (trip.route && trip.route.routeStops) {
       },
     });
 
-    // Định nghĩa kiểu cho object group
     const groupedByDate: Record<string, any[]> = {};
 
     trips.forEach((trip) => {
-      // 2. SỬA LỖI DATE INDEX: Chuyển Date object thành String 'YYYY-MM-DD'
-      // Dù DB trả về Date hay String, ta đều ép về Date rồi chuyển sang chuỗi ISO
       const dateObj = new Date(trip.tripDate);
-      // Lấy phần ngày '2025-11-26' để làm key (String)
-      const dateKey = dateObj.toISOString().split('T')[0]; 
+      const dateKey = dateObj.toISOString().split('T')[0];
 
       if (!groupedByDate[dateKey]) {
         groupedByDate[dateKey] = [];
       }
 
-      // 3. SỬA LỖI MAP: Ép kiểu (Cast) sang mảng TripStudent[]
-      // "as unknown as TripStudent[]" bảo TS hãy coi nó là mảng, đừng cãi.
-      const studentsList = (trip.tripStudents as unknown as TripStudent[]) || [];
+      const studentsList =
+        (trip.tripStudents as unknown as TripStudent[]) || [];
 
       const formattedStudents = studentsList.map((ts) => {
         const isPickup = trip.type === TripType.PICKUP;
@@ -545,7 +583,6 @@ if (trip.route && trip.route.routeStops) {
       });
     });
 
-    // Chuyển object thành array trả về cho FE
     return Object.keys(groupedByDate).map((date) => ({
       date: date,
       shifts: groupedByDate[date],

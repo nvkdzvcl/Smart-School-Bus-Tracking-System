@@ -380,6 +380,9 @@ export default function StudentsPage() {
   );
 
   // Render: Daily List
+// ... (các phần trên giữ nguyên)
+
+  // Render: Daily List
   const renderDailyList = () => {
     if (filteredStudents.length === 0) {
       return (
@@ -395,25 +398,40 @@ export default function StudentsPage() {
       const attendedTime = student.status === "attended" && student.attendedAt
           ? new Date(student.attendedAt).toLocaleTimeString(language === 'vi' ? "vi-VN" : "en-US", { hour: "2-digit", minute: "2-digit" }) : null;
 
+      const isTripCompleted = tripStatus === "completed";
+
       let badgeText = "";
       if (student.status === "attended") badgeText = isPickup ? t.btnAttendedPickup : t.btnAttendedDropoff;
       else if (student.status === "absent") badgeText = t.statusAbsent;
       else badgeText = isPickup ? t.statusPendingPickup : t.statusPendingDropoff;
 
+      // --- [MOD] Logic kiểm tra xem có được phép thao tác không ---
+      // Nếu đã Vắng (absent) -> Coi như xong, không cho đón nữa.
+      const isAbsent = student.status === "absent";
+      const isCompleted = tripStatus === "completed";
+      
       return (
-        <Card key={student.id} className="border-border/50 rounded-lg">
+        <Card key={student.id} className={`border-border/50 rounded-lg transition-colors ${isAbsent ? 'bg-muted/30 opacity-75' : 'bg-card'}`}>
           <CardContent className="p-4 px-5 pt-5">
             <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                <span className="text-lg font-semibold text-secondary-foreground">{student.fullName.charAt(0)}</span>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${isAbsent ? 'bg-gray-200 text-gray-500' : 'bg-secondary text-secondary-foreground'}`}>
+                <span className="text-lg font-semibold">{student.fullName.charAt(0)}</span>
               </div>
+              
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-semibold text-foreground">{student.fullName}</h3>
-                  <Badge className={(student.status === "attended" ? "bg-primary text-primary-foreground" : student.status === "absent" ? "bg-destructive text-destructive-foreground" : "bg-muted text-muted-foreground") + " rounded-full px-3 py-0.5"}>
+                  <h3 className={`font-semibold ${isAbsent ? 'text-muted-foreground line-through decoration-slate-400' : 'text-foreground'}`}>
+                    {student.fullName}
+                  </h3>
+                  <Badge className={(
+                    student.status === "attended" ? "bg-primary text-primary-foreground" : 
+                    student.status === "absent" ? "bg-red-100 text-red-700 border-red-200" : // Style riêng cho Vắng
+                    "bg-muted text-muted-foreground"
+                    ) + " rounded-full px-3 py-0.5"}>
                     {badgeText}
                   </Badge>
                 </div>
+                
                 <div className="space-y-1 mb-3">
                   <div className="flex items-start gap-2 text-xs text-muted-foreground">
                     <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -425,19 +443,82 @@ export default function StudentsPage() {
                         <span>{isPickup ? `${t.attendedAt} ${attendedTime}` : `${t.attendedAtDropoff} ${attendedTime}`}</span>
                     </div>
                   )}
-                </div>
-                <div className="flex gap-2 px-4 pt-4">
-                  {student.status === "pending" && (
-                    <Button onClick={() => handleAttend(student.id)} size="sm" disabled={isBusy || tripStatus === "completed"} className={`flex-1 rounded-xl ${isPickup ? "bg-primary" : "bg-accent text-accent-foreground"}`}>
-                      {isPickup ? t.btnAttendedPickup : t.btnAttendedDropoff}
-                    </Button>
-                  )}
-                  {student.status === "attended" && (
-                    <Button onClick={() => handleUndoAttend(student.id)} size="sm" disabled={isBusy || tripStatus === "completed"} variant="outline" className="flex-1 border-border text-foreground rounded-xl">
-                      {t.btnUndo}
-                    </Button>
+                  {/* --- [MOD] Hiển thị thông báo nếu Vắng --- */}
+                  {isAbsent && (
+                     <div className="flex items-center gap-2 text-xs text-red-500 italic">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Học sinh đã báo vắng mặt.</span>
+                     </div>
                   )}
                 </div>
+
+<div className="flex gap-2 px-4 pt-4">
+  {/* TRƯỜNG HỢP 1: CHUYẾN ĐI ĐÃ HOÀN THÀNH (COMPLETED) */}
+  {isCompleted ? (
+    // 👇 LOGIC MỚI: Phân biệt Vắng và Đi học ngay cả khi chuyến đã xong
+    isAbsent ? (
+<Button 
+  disabled 
+  variant="ghost" 
+  className="flex-1 bg-red-100 text-red-700 border border-dashed border-red-200 rounded-xl cursor-not-allowed opacity-100"
+>
+  Đã báo vắng
+</Button>
+    ) : (
+      <Button 
+        disabled 
+        variant="outline" 
+        className="flex-1 border-emerald-200 bg-emerald-50 text-emerald-600 rounded-xl opacity-100 cursor-default"
+      >
+        {t.completed || "Đã hoàn thành"}
+      </Button>
+    )
+  ) : (
+    /* TRƯỜNG HỢP 2: CHUYẾN ĐANG CHẠY (IN PROGRESS / SCHEDULED) */
+    <>
+{/* Nút Đón/Trả (Chỉ hiện khi chưa xử lý) */}
+{student.status === "pending" && (
+  <Button 
+    onClick={() => handleAttend(student.id)} 
+    disabled={isBusy} 
+    variant="ghost"
+    className={`flex-1 rounded-xl border ${
+      isPickup 
+        ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200"   // Màu Xanh cho Đón
+        : "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-200" // Màu Cam cho Trả
+    }`}
+  >
+    {isPickup ? t.btnAttendedPickup : t.btnAttendedDropoff}
+  </Button>
+)}
+
+{/* Nút Hoàn tác (Chỉ hiện khi Đã đón) */}
+{student.status === "attended" && (
+  <Button 
+    onClick={() => handleUndoAttend(student.id)} 
+    disabled={isBusy} 
+    variant="ghost" 
+    className="flex-1 rounded-xl border bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+  >
+    {t.btnUndo}
+  </Button>
+)}
+      
+{/* Nút Vắng (Chỉ hiện khi Đã báo vắng) */}
+{isAbsent && (
+  <Button 
+    disabled 
+    variant="ghost" 
+    className="flex-1 bg-red-100 text-red-700 border border-dashed border-red-200 rounded-xl cursor-not-allowed opacity-100"
+  >
+      Đã báo vắng
+  </Button>
+)}
+    </>
+  )}
+</div>
               </div>
             </div>
           </CardContent>
