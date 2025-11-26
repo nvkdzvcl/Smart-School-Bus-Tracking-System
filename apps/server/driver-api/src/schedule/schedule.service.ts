@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { format } from 'date-fns';
 
 import { Trip } from '../trip/trip.entity';
@@ -433,5 +433,122 @@ const studentsOnTrip = await this.tripStudentRepository.find({
       { status: attendance_status.PENDING, attendedAt: null },
     );
     return { ...attendanceRecord, status: attendance_status.PENDING };
+  }
+
+async getWeeklySchedule(driverId: string, startDate: string, endDate: string) {
+    // startDate, endDate format: YYYY-MM-DD
+    const trips = await this.tripRepository
+      .createQueryBuilder('trip')
+      .leftJoinAndSelect('trip.route', 'route')
+      .leftJoinAndSelect('route.routeStops', 'routeStop') // <--- MỚI: Lấy bảng nối
+      .leftJoinAndSelect('routeStop.stop', 'stop')       // <--- MỚI: Lấy thông tin điểm dừng
+      .leftJoinAndSelect('trip.bus', 'bus')
+      .where('trip.driverId = :driverId', { driverId })
+      .andWhere('trip.tripDate >= :startDate', { startDate })
+      .andWhere('trip.tripDate <= :endDate', { endDate })
+      .orderBy('trip.tripDate', 'ASC')
+      .addOrderBy('trip.session', 'ASC')
+      .getMany();
+
+    // Map dữ liệu về format frontend cần (TripItem)
+    return trips.map(trip => {
+      // Xử lý danh sách điểm dừng
+let stops: { id: string; name: string; address: string }[] = []; 
+
+if (trip.route && trip.route.routeStops) {
+  stops = trip.route.routeStops
+    .sort((a, b) => a.stopOrder - b.stopOrder)
+    .map(rs => ({
+      id: rs.stop.id,
+      name: rs.stop.name,
+      address: rs.stop.address
+    }));
+}
+
+      return {
+        id: trip.id,
+        tripDate: trip.tripDate, 
+        session: trip.session, 
+        type: trip.type,       
+        route: trip.route ? trip.route.name : 'Chưa xếp tuyến',
+        startTime: trip.actualStartTime 
+          ? format(new Date(trip.actualStartTime), 'HH:mm') 
+          : 'Dự kiến',
+        status: trip.status,
+        busLicense: trip.bus ? trip.bus.licensePlate : 'N/A',
+        stops: stops, // <--- Trả về thêm danh sách stops
+      };
+    });
+  }
+
+// ========== API 8: Lấy danh sách học sinh chi tiết theo tuần (ĐÃ SỬA LỖI) ==========
+  async getWeeklyStudents(driverId: string, startDate: string, endDate: string) {
+    // 1. Lấy tất cả các chuyến trong tuần
+    const trips = await this.tripRepository.find({
+      where: {
+        driverId,
+        tripDate: Between(startDate, endDate) as any, // Sửa lỗi 1: Đã import Between
+      },
+      relations: [
+        'route', // <--- QUAN TRỌNG: Thêm dòng này để lấy tên tuyến
+        'bus',   // <--- Thêm dòng này để lấy biển số xe (nếu cần hiển thị)
+        'tripStudents', 
+        'tripStudents.student', 
+        'tripStudents.student.pickupStop', 
+        'tripStudents.student.dropoffStop'
+      ],
+      order: {
+        tripDate: 'ASC',
+        session: 'ASC',
+        type: 'ASC',
+      },
+    });
+
+    // Định nghĩa kiểu cho object group
+    const groupedByDate: Record<string, any[]> = {};
+
+    trips.forEach((trip) => {
+      // 2. SỬA LỖI DATE INDEX: Chuyển Date object thành String 'YYYY-MM-DD'
+      // Dù DB trả về Date hay String, ta đều ép về Date rồi chuyển sang chuỗi ISO
+      const dateObj = new Date(trip.tripDate);
+      // Lấy phần ngày '2025-11-26' để làm key (String)
+      const dateKey = dateObj.toISOString().split('T')[0]; 
+
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = [];
+      }
+
+      // 3. SỬA LỖI MAP: Ép kiểu (Cast) sang mảng TripStudent[]
+      // "as unknown as TripStudent[]" bảo TS hãy coi nó là mảng, đừng cãi.
+      const studentsList = (trip.tripStudents as unknown as TripStudent[]) || [];
+
+      const formattedStudents = studentsList.map((ts) => {
+        const isPickup = trip.type === TripType.PICKUP;
+        return {
+          id: ts.student.id,
+          fullName: ts.student.fullName,
+          address: isPickup
+            ? ts.student.pickupStop?.name
+            : ts.student.dropoffStop?.name,
+          status: ts.status,
+          attendedAt: ts.attendedAt,
+        };
+      });
+
+      groupedByDate[dateKey].push({
+        tripId: trip.id,
+        session: trip.session,
+        type: trip.type,
+        route: trip.route ? trip.route.name : 'Chưa xếp',
+        status: trip.status,
+        students: formattedStudents,
+      });
+    });
+
+    // Chuyển object thành array trả về cho FE
+    return Object.keys(groupedByDate).map((date) => ({
+      date: date,
+      shifts: groupedByDate[date],
+    }));
   }
 }

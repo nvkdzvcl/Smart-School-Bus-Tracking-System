@@ -360,225 +360,239 @@ export default function RoutePage() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
+<main className="max-w-lg mx-auto px-4 py-4 space-y-4">
 
-        <Tabs
+  {/* Tabs giữ nguyên như cũ */}
+<Tabs
           value={tab}
           onValueChange={(v) => setTab(v as TabKey)}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted p-1">
+          {/* --- SỬA ĐỔI STYLE Ở ĐÂY --- */}
+          <TabsList className="grid w-full grid-cols-2 h-auto p-1.5 gap-2 bg-transparent border border-border/60 rounded-full mb-4">
             <TabsTrigger
-              className="rounded-lg text-sm py-2.5 font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               value="morning"
+              className="rounded-full py-2 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-700 data-[state=active]:shadow-sm transition-all duration-300"
             >
               {t.morning}
             </TabsTrigger>
             <TabsTrigger
-              className="rounded-lg text-sm py-2.5 font-medium data-[state=active]:bg-background data-[state=active]:shadow-sm"
               value="afternoon"
+              className="rounded-full py-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all duration-300"
             >
               {t.afternoon}
             </TabsTrigger>
           </TabsList>
+          {/* --- HẾT PHẦN SỬA ĐỔI --- */}
         </Tabs>
 
-        {/* Bản đồ placeholder + nút */}
-        <Card className="border-border/50 overflow-hidden rounded-lg">
-          <div className="relative h-64 bg-gradient-to-br from-secondary to-accent/20">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <svg className="w-16 h-16 mx-auto text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                  />
-                </svg>
-                <p className="text-sm text-muted-foreground">{t.gpsMap}</p>
-              </div>
-            </div>
+  {/* --- BẮT ĐẦU PHẦN HIỆU ỨNG --- */}
+  {/* Thêm div này bao quanh các Card. key={tab} để reset animation khi đổi tab */}
+  <div 
+    key={tab} 
+    className="space-y-4 animate-in fade-in-50 zoom-in-95 duration-300"
+  >
 
-            <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg px-4 py-2 border border-border/50">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary tabular-nums">{currentSpeed}</div>
-                <div className="text-xs text-muted-foreground">km/h</div>
-              </div>
+    {/* Bản đồ placeholder + nút */}
+    <Card className="border-border/50 overflow-hidden rounded-lg">
+      <div className="relative h-64 bg-gradient-to-br from-secondary to-accent/20">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center space-y-2">
+            <svg className="w-16 h-16 mx-auto text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+              />
+            </svg>
+            <p className="text-sm text-muted-foreground">{t.gpsMap}</p>
+          </div>
+        </div>
+
+        <div className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm rounded-lg px-4 py-2 border border-border/50">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary tabular-nums">{currentSpeed}</div>
+            <div className="text-xs text-muted-foreground">km/h</div>
+          </div>
+        </div>
+      </div>
+
+      <CardContent className="p-4 bg-card">
+        <div className="flex gap-2">
+          {tripStatus === "scheduled" && (
+            <Button
+              onClick={handleStartTrip}
+              className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {t.startTrip}
+            </Button>
+          )}
+
+          {tripStatus === "in_progress" && (
+            <>
+              <Button
+                onClick={handlePauseTrip}
+                variant="outline"
+                className="flex-1 border-border text-foreground hover:bg-muted/70 bg-transparent rounded-lg transition-colors duration-200"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t.pauseTrip}
+              </Button>
+              <Button
+                onClick={handleNavigate}
+                className="flex-1 bg-accent hover:bg-accent/80 text-accent-foreground rounded-lg transition-colors duration-200"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                {t.directions}
+              </Button>
+            </>
+          )}
+
+          {tripStatus === "paused" && (
+            <Button
+              onClick={handleResumeTrip}
+              className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {t.resumeTrip}
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Current Stop Info */}
+    <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5 rounded-lg">
+      <CardContent className="px-4 pt-6 p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Badge className="bg-primary text-primary-foreground rounded-lg">
+                {tripStatus === "completed"
+                  ? t.tripCompletedLabel
+                  : currentStop.status === "current"
+                  ? t.currentStop
+                  : t.nextStop}
+              </Badge>
             </div>
+            <h3 className="font-semibold text-foreground">
+              {tripStatus === "completed" ? t.routeEnded : currentStop.name}
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {tripStatus === "completed" ? "" : currentStop.address}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-3 border-t border-border/50">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span>{currentStop.students} {t.students}</span>
           </div>
 
-          <CardContent className="p-4 bg-card">
-            <div className="flex gap-2">
-              {tripStatus === "scheduled" && (
-                <Button
-                  onClick={handleStartTrip}
-                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {t.startTrip}
-                </Button>
-              )}
+          <Button
+            onClick={() => navigate("/students")}
+            size="sm"
+            disabled={tripStatus !== "in_progress"}
+            className="bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
+          >
+            {t.attendance}
+          </Button>
+        </div>
 
-              {tripStatus === "in_progress" && (
-                <>
-                  <Button
-                    onClick={handlePauseTrip}
-                    variant="outline"
-                    className="flex-1 border-border text-foreground hover:bg-muted/70 bg-transparent rounded-lg transition-colors duration-200"
+        <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-border/50 text-xs">
+          <div>
+            <p className="text-muted-foreground font-medium">{t.actualStart}</p>
+            <p className={`text-sm font-semibold ${tripTimes.start ? 'text-primary' : 'text-muted-foreground/70'}`}>
+                {tripTimes.start || '--:--'}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground font-medium">{t.actualEnd}</p>
+            <p className={`text-sm font-semibold ${tripTimes.end ? 'text-primary' : 'text-muted-foreground/70'}`}>
+                {tripTimes.end || '--:--'}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Route Progress */}
+    <Card className="border-border/50 rounded-lg">
+      <CardContent className="px-4 pt-6 pb-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-foreground">{t.routeProgress}</h3>
+          <span className="text-sm text-muted-foreground">
+            {progressCount}/{stops.length}
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-0">
+          {stops.map((stop, index) => {
+            const isDone = stop.status === "completed";
+            const isCurrent = stop.status === "current";
+            return (
+              <div key={stop.id} className="flex items-start gap-3">
+                <div className="flex flex-col items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      isDone
+                        ? "bg-primary border-primary text-primary-foreground"
+                        : isCurrent
+                        ? "bg-accent border-accent text-accent-foreground"
+                        : "bg-muted border-border text-muted-foreground"
+                    }`}
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {t.pauseTrip}
-                  </Button>
-                  <Button
-                    onClick={handleNavigate}
-                    className="flex-1 bg-accent hover:bg-accent/80 text-accent-foreground rounded-lg transition-colors duration-200"
-                  >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    {t.directions}
-                  </Button>
-                </>
-              )}
-
-              {tripStatus === "paused" && (
-                <Button
-                  onClick={handleResumeTrip}
-                  className="flex-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {t.resumeTrip}
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Current Stop Info */}
-        <Card className="border-primary/30 bg-gradient-to-br from-card to-primary/5 rounded-lg">
-          <CardContent className="px-4 pt-6 p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge className="bg-primary text-primary-foreground rounded-lg">
-                    {tripStatus === "completed"
-                      ? t.tripCompletedLabel
-                      : currentStop.status === "current"
-                      ? t.currentStop
-                      : t.nextStop}
-                  </Badge>
-                </div>
-                <h3 className="font-semibold text-foreground">
-                  {tripStatus === "completed" ? t.routeEnded : currentStop.name}
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {tripStatus === "completed" ? "" : currentStop.address}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-border/50">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span>{currentStop.students} {t.students}</span>
-              </div>
-
-              <Button
-                onClick={() => navigate("/students")}
-                size="sm"
-                disabled={tripStatus !== "in_progress"}
-                className="bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg transition-colors duration-200"
-              >
-                {t.attendance}
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-border/50 text-xs">
-              <div>
-                <p className="text-muted-foreground font-medium">{t.actualStart}</p>
-                <p className={`text-sm font-semibold ${tripTimes.start ? 'text-primary' : 'text-muted-foreground/70'}`}>
-                    {tripTimes.start || '--:--'}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground font-medium">{t.actualEnd}</p>
-                <p className={`text-sm font-semibold ${tripTimes.end ? 'text-primary' : 'text-muted-foreground/70'}`}>
-                    {tripTimes.end || '--:--'}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Route Progress */}
-        <Card className="border-border/50 rounded-lg">
-          <CardContent className="px-4 pt-6 pb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-foreground">{t.routeProgress}</h3>
-              <span className="text-sm text-muted-foreground">
-                {progressCount}/{stops.length}
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-0">
-              {stops.map((stop, index) => {
-                const isDone = stop.status === "completed";
-                const isCurrent = stop.status === "current";
-                return (
-                  <div key={stop.id} className="flex items-start gap-3">
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                          isDone
-                            ? "bg-primary border-primary text-primary-foreground"
-                            : isCurrent
-                            ? "bg-accent border-accent text-accent-foreground"
-                            : "bg-muted border-border text-muted-foreground"
-                        }`}
-                      >
-                        {isDone ? (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <span className="text-xs font-medium">{index + 1}</span>
-                        )}
-                      </div>
-                      {index < stops.length - 1 && (
-                        <div className={`w-0.5 h-9 ${stop.status !== "pending" ? "bg-primary" : "bg-border"}`} />
-                      )}
-                    </div>
-
-                    <div className="flex-1 pb-2">
-                      <div className="flex items-center justify-between">
-                        <p className={`text-sm font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}>
-                          {stop.name}
-                        </p>
-                        <span className="text-xs text-muted-foreground">{stop.eta}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{stop.address}</p>
-                      {stop.students > 0 && (
-                        <p className="text-xs text-muted-foreground mt-1">{stop.students} {t.students}</p>
-                      )}
-                    </div>
+                    {isDone ? (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <span className="text-xs font-medium">{index + 1}</span>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </main>
+                  {index < stops.length - 1 && (
+                    <div className={`w-0.5 h-9 ${stop.status !== "pending" ? "bg-primary" : "bg-border"}`} />
+                  )}
+                </div>
+
+                <div className="flex-1 pb-2">
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-medium ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}>
+                      {stop.name}
+                    </p>
+                    <span className="text-xs text-muted-foreground">{stop.eta}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{stop.address}</p>
+                  {stop.students > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">{stop.students} {t.students}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+
+  </div>
+  {/* --- KẾT THÚC PHẦN HIỆU ỨNG --- */}
+
+</main>
 
       <MobileNav />
     </div>

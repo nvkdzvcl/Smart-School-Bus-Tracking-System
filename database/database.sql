@@ -385,11 +385,11 @@ BEGIN
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 40 minutes');
 
   -- Chiều (Đón Huy)
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '12 hours 30 minutes'))
-  RETURNING id INTO v_trip_pickup_afternoon;
+  -- INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
+  -- VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '12 hours 30 minutes'))
+  -- RETURNING id INTO v_trip_pickup_afternoon;
 
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '12 hours 35 minutes');
+  -- INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '12 hours 35 minutes');
 
   -- Chiều (Trả 3 bé)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
@@ -412,13 +412,8 @@ BEGIN
 
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', CURRENT_DATE + interval '6 hours 35 minutes');
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', CURRENT_DATE + interval '6 hours 40 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'attended', CURRENT_DATE + interval '6 hours 45 minutes');
 
-  -- Chiều (Đón Huy) -> Sắp chạy (Scheduled)
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'afternoon', 'pickup', 'scheduled', (CURRENT_DATE + interval '12 hours 30 minutes'))
-  RETURNING id INTO v_trip_pickup_afternoon;
-
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'pending', NULL);
 
   -- Chiều (Trả 3 bé) -> Sắp chạy (Scheduled)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
@@ -441,13 +436,6 @@ BEGIN
 
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'pending', NULL);
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'pending', NULL);
-
-  -- Chiều (Đón Huy)
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'afternoon', 'pickup', 'scheduled', ((CURRENT_DATE + 1) + interval '12 hours 30 minutes'))
-  RETURNING id INTO v_trip_pickup_afternoon;
-
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'pending', NULL);
 
   -- Chiều (Trả 3 bé)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
@@ -724,18 +712,18 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  SELECT id INTO v_pickup_afternoon
-  FROM "Trips"
-  WHERE driver_id=v_driver1 AND trip_date=CURRENT_DATE AND session='afternoon' AND type='pickup'
-  LIMIT 1;
-  IF v_pickup_afternoon IS NULL THEN
-    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status)
-    VALUES (v_route_1, v_bus_1, v_driver1, CURRENT_DATE, 'afternoon', 'pickup', 'scheduled');
-    SELECT id INTO v_pickup_afternoon
-    FROM "Trips"
-    WHERE driver_id=v_driver1 AND trip_date=CURRENT_DATE AND session='afternoon' AND type='pickup'
-    LIMIT 1;
-  END IF;
+  -- SELECT id INTO v_pickup_afternoon
+  -- FROM "Trips"
+  -- WHERE driver_id=v_driver1 AND trip_date=CURRENT_DATE AND session='afternoon' AND type='pickup'
+  -- LIMIT 1;
+  -- IF v_pickup_afternoon IS NULL THEN
+  --   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status)
+  --   VALUES (v_route_1, v_bus_1, v_driver1, CURRENT_DATE, 'afternoon', 'pickup', 'scheduled');
+  --   SELECT id INTO v_pickup_afternoon
+  --   FROM "Trips"
+  --   WHERE driver_id=v_driver1 AND trip_date=CURRENT_DATE AND session='afternoon' AND type='pickup'
+  --   LIMIT 1;
+  -- END IF;
 
   SELECT id INTO v_dropoff_afternoon
   FROM "Trips"
@@ -789,10 +777,10 @@ BEGIN
   END IF;
 
   -- Route A chiều đón: Huy
-  PERFORM 1 FROM "Trip_Students" WHERE trip_id=v_pickup_afternoon AND student_id=v_student_huy;
-  IF NOT FOUND THEN
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_pickup_afternoon, v_student_huy, 'pending');
-  END IF;
+  -- PERFORM 1 FROM "Trip_Students" WHERE trip_id=v_pickup_afternoon AND student_id=v_student_huy;
+  -- IF NOT FOUND THEN
+  --   INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_pickup_afternoon, v_student_huy, 'pending');
+  -- END IF;
 
   -- Route A chiều trả: An, Bình, Huy
   FOREACH v_student_an IN ARRAY ARRAY[v_student_an, v_student_binh, v_student_huy] LOOP
@@ -844,15 +832,3 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
 END $$;
-
--- ALTERs for existing database (run manually if migrating):
--- ALTER TYPE student_status ADD VALUE IF NOT EXISTS 'active'; -- enum created above
--- ALTER TYPE student_status ADD VALUE IF NOT EXISTS 'inactive';
--- ALTER TABLE "Students" ADD COLUMN IF NOT EXISTS "class" VARCHAR(20);
--- ALTER TABLE "Students" ADD COLUMN IF NOT EXISTS "status" student_status DEFAULT 'active';
--- ALTER TABLE "Students" ADD COLUMN IF NOT EXISTS "route_id" UUID REFERENCES "Routes"("id") ON DELETE SET NULL;
--- CREATE INDEX IF NOT EXISTS students_status_idx ON "Students"("status");
--- CREATE INDEX IF NOT EXISTS students_route_idx ON "Students"("route_id");
--- ALTER TABLE "Routes" ADD COLUMN IF NOT EXISTS description VARCHAR(255);
--- ALTER TABLE "Routes" ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';
--- CREATE INDEX IF NOT EXISTS routes_status_idx ON "Routes"("status");
