@@ -12,6 +12,7 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
+
 const ApiFile = (fileName = 'image'): MethodDecorator => (target: any, key, desc) => {
   ApiBody({
     schema: {

@@ -21,8 +21,23 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
-  ApiQuery, // <-- Thêm ApiQuery để làm rõ
+  ApiQuery,
+  ApiProperty, // <-- Thêm cái này để định nghĩa DTO cho Swagger
 } from '@nestjs/swagger';
+import { IsDateString, IsNotEmpty } from 'class-validator';
+
+// --- 1. ĐỊNH NGHĨA DTO NGAY TẠI ĐÂY (hoặc tách ra file riêng) ---
+class DateRangeDto {
+  @ApiProperty({ example: '2023-11-20', description: 'Ngày bắt đầu (YYYY-MM-DD)' })
+  @IsNotEmpty()
+  @IsDateString()
+  startDate: string;
+
+  @ApiProperty({ example: '2023-11-26', description: 'Ngày kết thúc (YYYY-MM-DD)' })
+  @IsNotEmpty()
+  @IsDateString()
+  endDate: string;
+}
 
 @ApiTags('Schedule (Driver)')
 @ApiBearerAuth()
@@ -50,26 +65,22 @@ export class ScheduleController {
     });
   }
 
-  // --- SỬA LẠI HÀM NÀY ---
   @Get('active-trip-details')
   @ApiOperation({
     summary: 'Lấy chi tiết lộ trình (các điểm dừng) của chuyến đi',
-    description:
-      'Nếu không có query, tự tìm chuyến active. Nếu có, tìm chuyến cụ thể.',
+    description: 'Nếu không có query, tự tìm chuyến active. Nếu có, tìm chuyến cụ thể.',
   })
   @ApiQuery({ name: 'shift', enum: TripType, required: false })
   @ApiQuery({ name: 'session', enum: DayPart, required: false })
   @ApiResponse({ status: 200, description: 'Trả về trạng thái chuyến và danh sách điểm dừng.' })
   getActiveTripDetails(
     @Req() req,
-    // Thêm lại Query
     @Query('shift', new ParseEnumPipe(TripType, { optional: true }))
     shiftQuery?: TripType,
     @Query('session', new ParseEnumPipe(DayPart, { optional: true }))
     sessionQuery?: DayPart,
   ) {
     const driverId: string = req.user.userId;
-    // Truyền cả object filter xuống service
     return this.scheduleService.getActiveRouteStops({
       driverId,
       shift: shiftQuery,
@@ -77,7 +88,6 @@ export class ScheduleController {
     });
   }
 
-  // --- SỬA LẠI HÀM NÀY ---
   @Patch('start-trip')
   @ApiOperation({ summary: 'Bắt đầu chuyến đi' })
   @ApiQuery({ name: 'shift', enum: TripType, required: false })
@@ -86,14 +96,12 @@ export class ScheduleController {
   @HttpCode(HttpStatus.OK)
   startTrip(
     @Req() req,
-    // Thêm lại Query
     @Query('shift', new ParseEnumPipe(TripType, { optional: true }))
     shiftQuery?: TripType,
     @Query('session', new ParseEnumPipe(DayPart, { optional: true }))
     sessionQuery?: DayPart,
   ) {
     const driverId: string = req.user.userId;
-    // Truyền cả object filter xuống service
     return this.scheduleService.startDriverTrip({
       driverId,
       shift: shiftQuery,
@@ -101,7 +109,6 @@ export class ScheduleController {
     });
   }
 
-  // --- API MỚI ---
   @Patch('complete-trip')
   @ApiOperation({ summary: 'Hoàn thành chuyến đi' })
   @ApiQuery({ name: 'shift', enum: TripType, required: false })
@@ -122,7 +129,6 @@ export class ScheduleController {
       session: sessionQuery,
     });
   }
-  // --- HẾT API MỚI ---
 
   @Get('students')
   @ApiOperation({ summary: 'Lấy danh sách học sinh cho một chuyến' })
@@ -180,6 +186,37 @@ export class ScheduleController {
     return this.scheduleService.undoAttendStudent(
       { driverId, shift: shiftQuery, session: sessionQuery },
       checkInDto,
+    );
+  }
+
+  // --- 2. SỬA LẠI HÀM RANGE CHO ĐỒNG BỘ ---
+  @Get('range')
+  @ApiOperation({ summary: 'Lấy lịch trình theo tuần (khoảng thời gian)' })
+  getWeeklySchedule(
+    @Req() req, // Dùng @Req cho đồng bộ với các hàm trên
+    @Query(new ValidationPipe({ transform: true })) query: DateRangeDto, // Validate input
+  ) {
+    const driverId: string = req.user.userId;
+    return this.scheduleService.getWeeklySchedule(
+      driverId,
+      query.startDate,
+      query.endDate,
+    );
+  }
+
+  // 8. GET /schedule/weekly-students
+  // Lấy danh sách học sinh chi tiết theo tuần
+  @Get('weekly-students')
+  @ApiOperation({ summary: 'Lấy danh sách học sinh chi tiết theo tuần' })
+  getWeeklyStudentList(
+    @Req() req,
+    @Query(new ValidationPipe({ transform: true })) query: DateRangeDto,
+  ) {
+    const driverId: string = req.user.userId;
+    return this.scheduleService.getWeeklyStudents(
+      driverId,
+      query.startDate,
+      query.endDate,
     );
   }
 }

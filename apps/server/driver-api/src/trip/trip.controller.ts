@@ -1,12 +1,27 @@
+// apps/driver-api/src/trip/trip.controller.ts
+
 import { Controller, Get, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { TripService } from './trip.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { TripHistoryBE, HistorySummary } from './trip.service'; // << IMPORT INTERFACE ĐÃ ĐƯỢC EXPORT
+import { TripHistoryBE, HistorySummary } from './trip.service';
 
 @Controller('trips')
 export class TripController {
   constructor(private readonly tripService: TripService) {}
+
+  // 👇👇👇 THÊM ĐOẠN NÀY VÀO ĐÂY (Route lấy học sinh) 👇👇👇
+  @ApiTags('Trips (Driver)')
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Get('current/students')
+  @ApiOperation({ summary: 'Lấy danh sách học sinh của chuyến đi đang chạy (Active)' })
+  async getCurrentTripStudents(@Req() req: any) {
+    // Gọi hàm bên Service (đảm bảo bạn đã thêm hàm này bên trip.service.ts rồi nhé)
+    return this.tripService.getStudentsInCurrentTrip(req.user.id);
+  }
+  // 👆👆👆 HẾT PHẦN THÊM MỚI 👆👆👆
+
 
   @ApiTags('Trips (Driver)')
   @ApiBearerAuth()

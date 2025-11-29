@@ -43,10 +43,45 @@ export interface Student {
     updatedAt?: string
 }
 
+export interface Trip {
+    id: string;
+    route: { id: string; name: string };
+    bus: { id: string; licensePlate: string };
+    driver: { id: string; fullName: string };
+    tripDate: string; // YYYY-MM-DD
+    session: 'morning' | 'afternoon';
+    type: 'pickup' | 'dropoff';
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    actualStartTime?: string;
+    actualEndTime?: string;
+    // Có thể thêm các trường khác như studentCount...
+}
+
+export interface Conversation {
+    id: string
+    participant1Id: string
+    participant2Id: string
+    lastMessagePreview?: string
+    lastMessageAt: string
+    participant1?: { id: string; fullName: string }
+    participant2?: { id: string; fullName: string }
+}
+
+export interface ChatMessage {
+    id: string
+    conversationId: string
+    senderId?: string
+    recipientId?: string
+    content: string
+    isRead: boolean
+    createdAt: string
+}
+
 const API_BASE = (import.meta as any).env?.VITE_DASHBOARD_API_URL || `${window.location.protocol}//${window.location.hostname}:3001/api`
 
 function authHeaders(): HeadersInit {
-    const token = localStorage.getItem('token')
+    // Support multiple token keys used across different apps: auth_token (standardized), token (legacy), access_token (some flows)
+    const token = localStorage.getItem('auth_token')
     return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
@@ -202,4 +237,81 @@ export const updateRoute = async (id: string, data: { name?: string; stopIds?: s
 export const deleteRoute = async (id: string) => {
     const res = await fetch(`${API_BASE}/routes/${id}`, { method: 'DELETE', headers: { ...authHeaders() } })
     await handleResponse(res, 'Failed to delete route')
+}
+
+// Trip APIs
+export const getTrips = async (): Promise<Trip[]> => {
+    try {
+        const res = await fetch(`${API_BASE}/trips`, { headers: { ...authHeaders() } })
+        return await handleResponse<Trip[]>(res, 'Failed to fetch trips')
+    } catch { return [] }
+}
+
+// Hàm cập nhật chuyến đi (cho nút Chỉnh sửa)
+export const updateTrip = async (id: string, data: Partial<Trip>): Promise<Trip> => {
+    const res = await fetch(`${API_BASE}/trips/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+    })
+    return handleResponse<Trip>(res, 'Failed to update trip')
+}
+
+// Hàm xóa chuyến đi (cho nút Xóa)
+export const deleteTrip = async (id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/trips/${id}`, {
+        method: 'DELETE',
+        headers: { ...authHeaders() }
+    })
+    await handleResponse(res, 'Failed to delete trip')
+}
+export const createTrip = async (data: { routeId?: string; busId?: string; driverId?: string; tripDate: string; session: 'morning' | 'afternoon'; type: 'pickup' | 'dropoff' }) => {
+    const res = await fetch(`${API_BASE}/trips`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(data) })
+    return handleResponse<any>(res, 'Failed to create trip')
+}
+
+// Messages APIs
+export const listNotifications = async (): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/messages/notifications`, { headers: { ...authHeaders() } })
+    return handleResponse<any[]>(res, 'Failed to fetch notifications')
+}
+
+export const sendNotification = async (data: { title: string; content: string; priority: 'normal' | 'important' | 'urgent'; targetGroup: 'all' | 'drivers' | 'parents'; senderId?: string }) => {
+    const res = await fetch(`${API_BASE}/messages/notification`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(data) })
+    return handleResponse<any>(res, 'Failed to send notification')
+}
+
+export const getConversationsForUser = async (userId: string): Promise<Conversation[]> => {
+    const res = await fetch(`${API_BASE}/conversations/user/${userId}`, { headers: { ...authHeaders() } })
+    return handleResponse<Conversation[]>(res, 'Failed to fetch conversations')
+}
+
+export const getOrCreateConversation = async (userAId: string, userBId: string): Promise<Conversation> => {
+    const res = await fetch(`${API_BASE}/conversations/get-or-create`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ userAId, userBId }) })
+    return handleResponse<Conversation>(res, 'Failed to get or create conversation')
+}
+
+export const getConversationMessages = async (conversationId: string): Promise<ChatMessage[]> => {
+    const res = await fetch(`${API_BASE}/messages/conversation/${conversationId}`, { headers: { ...authHeaders() } })
+    return handleResponse<ChatMessage[]>(res, 'Failed to fetch messages')
+}
+
+export const sendChatMessage = async (data: { conversationId: string; senderId: string; recipientId: string; content: string }): Promise<ChatMessage> => {
+    const res = await fetch(`${API_BASE}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(data) })
+    return handleResponse<ChatMessage>(res, 'Failed to send message')
+}
+
+export const markMessageRead = async (id: string) => {
+    const res = await fetch(`${API_BASE}/messages/${id}/read`, { method: 'PATCH', headers: { ...authHeaders() } })
+    return handleResponse<any>(res, 'Failed to mark message read')
+}
+
+export const markConversationRead = async (conversationId: string, userId: string) => {
+    const res = await fetch(`${API_BASE}/messages/conversation/${conversationId}/read/${userId}`, { method: 'PATCH', headers: { ...authHeaders() } })
+    return handleResponse<any>(res, 'Failed to mark conversation read')
+}
+
+export const getUsers = async (): Promise<any[]> => {
+    const res = await fetch(`${API_BASE}/users`, { headers: { ...authHeaders() } })
+    return handleResponse<any[]>(res, 'Failed to fetch users')
 }

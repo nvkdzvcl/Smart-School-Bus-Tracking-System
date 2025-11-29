@@ -1,19 +1,21 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, UsePipes, ValidationPipe } from '@nestjs/common'
 import { MessagesService } from './messages.service'
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'
-import { RolesGuard } from '../auth/roles.guard'
-import { Roles } from '../auth/roles.decorator'
-import { SendMessageDto } from './dto/send-message.dto'
+import { CreateMessageDto } from './dto/create-message.dto'
 
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('manager')
 @Controller('messages')
 export class MessagesController {
-    constructor(private readonly service: MessagesService) { }
+    constructor(private readonly messagesService: MessagesService) { }
 
-    @Get() findAll() { return this.service.findAll() }
-    @Get(':id') findOne(@Param('id') id: string) { return this.service.findOne(id) }
-    @Post() send(@Body() dto: SendMessageDto) { return this.service.send(dto) }
-    @Patch(':id/read') markRead(@Param('id') id: string) { return this.service.markRead(id) }
-    @Delete(':id') remove(@Param('id') id: string) { return this.service.remove(id) }
+    @Post()
+    @UsePipes(new ValidationPipe())
+    create(@Body() dto: CreateMessageDto) { return this.messagesService.create(dto) }
+
+    @Get('recipient/:id')
+    getByRecipient(@Param('id') id: string) { return this.messagesService.getByRecipientId(id) }
+
+    @Get('conversation/:conversationId')
+    getByConversation(@Param('conversationId') conversationId: string) { return this.messagesService.getByConversationId(conversationId) }
+
+    @Get('conversations')
+    getConversations() { return this.messagesService.getConversations() }
 }

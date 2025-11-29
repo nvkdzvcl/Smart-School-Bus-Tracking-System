@@ -20,6 +20,10 @@ export class UsersService {
         return all.map(u => this.stripPassword(u))
     }
 
+    async findAllSimple() {
+        return this.repo.find({ select: ['id', 'fullName', 'role', 'phone'] })
+    }
+
     async createDriver(dto: CreateDriverDto) {
         const existing = await this.repo.findOne({ where: { phone: dto.phone } })
         if (existing) throw new BadRequestException('Số điện thoại đã tồn tại')

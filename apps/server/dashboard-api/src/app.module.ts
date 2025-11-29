@@ -14,6 +14,7 @@ import { MessagesModule } from './messages/messages.module'
 import { ReportsModule } from './reports/reports.module'
 import { BusLocationsModule } from './bus-locations/bus-locations.module'
 import { UsersModule } from './user/users.module'
+import { ConversationsModule } from './conversations/conversations.module'
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { UsersModule } from './user/users.module'
         ReportsModule,
         BusLocationsModule,
         UsersModule,
+        ConversationsModule,
     ],
     controllers: [AppController],
     providers: [AppService],

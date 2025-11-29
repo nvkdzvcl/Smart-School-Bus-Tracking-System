@@ -1,4 +1,4 @@
-// MessagesPage.tsx (Hoàn chỉnh, đã sửa hết lỗi cú pháp)
+// MessagesPage.tsx
 import { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { io, Socket } from "socket.io-client"
@@ -13,6 +13,90 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Ta
 
 // --- LẤY API URL TỪ .ENV ---
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
+
+// 1. Định nghĩa từ điển ngôn ngữ
+const TRANSLATIONS = {
+  vi: {
+    pageTitle: "Tin nhắn",
+    unreadMsgCount: "tin nhắn chưa đọc",
+    noNewMsg: "Không có tin nhắn mới",
+    
+    // Tabs
+    tabNotifications: "Thông báo",
+    tabConversations: "Hội thoại",
+    
+    // States
+    loadingNoti: "Đang tải thông báo...",
+    noNoti: "Không có thông báo nào.",
+    loadingContacts: "Đang tải danh bạ...",
+    noContacts: "Không tìm thấy liên hệ nào.",
+    errorTitle: "Lỗi!",
+    errorLoad: "Lỗi khi tải dữ liệu",
+    
+    // Chat UI
+    loadingChat: "Đang tải...",
+    quickResponseLabel: "Phản hồi nhanh:",
+    inputPlaceholder: "Nhập tin nhắn...",
+    
+    // Quick Replies List
+    quickReplies: ["Đã hiểu", "Trễ 5 phút", "Đã đến điểm dừng", "Đang trên đường", "Cần hỗ trợ"],
+
+    // TimeAgo
+    yearsAgo: " năm trước",
+    monthsAgo: " tháng trước",
+    daysAgo: " ngày trước",
+    hoursAgo: " giờ trước",
+    minsAgo: " phút trước",
+    secsAgo: " giây trước",
+  },
+  en: {
+    pageTitle: "Messages",
+    unreadMsgCount: "unread messages",
+    noNewMsg: "No new messages",
+    
+    // Tabs
+    tabNotifications: "Notifications",
+    tabConversations: "Messages",
+    
+    // States
+    loadingNoti: "Loading notifications...",
+    noNoti: "No notifications.",
+    loadingContacts: "Loading contacts...",
+    noContacts: "No contacts found.",
+    errorTitle: "Error!",
+    errorLoad: "Error loading data",
+    
+    // Chat UI
+    loadingChat: "Loading...",
+    quickResponseLabel: "Quick Replies:",
+    inputPlaceholder: "Type a message...",
+    
+    // Quick Replies List
+    quickReplies: ["Got it", "5 mins late", "Arrived at stop", "On the way", "Need support"],
+
+    // TimeAgo
+    yearsAgo: " years ago",
+    monthsAgo: " months ago",
+    daysAgo: " days ago",
+    hoursAgo: " hours ago",
+    minsAgo: " mins ago",
+    secsAgo: " secs ago",
+  },
+};
+
+// 2. Cập nhật util timeAgo
+function timeAgo(dateString: string, lang: 'vi' | 'en'): string {
+  const date = new Date(dateString);
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  const t = TRANSLATIONS[lang];
+
+  let i = seconds / 31536000; if (i > 1) return Math.floor(i) + t.yearsAgo;
+  i = seconds / 2592000; if (i > 1) return Math.floor(i) + t.monthsAgo;
+  i = seconds / 86400; if (i > 1) return Math.floor(i) + t.daysAgo;
+  i = seconds / 3600; if (i > 1) return Math.floor(i) + t.hoursAgo;
+  i = seconds / 60; if (i > 1) return Math.floor(i) + t.minsAgo;
+  return Math.floor(seconds) + t.secsAgo;
+}
 
 // --- Interface cho Socket.IO (Chat) ---
 interface SocketMessage {
@@ -49,21 +133,16 @@ interface Notification {
   createdAt: string
 }
 
-function timeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  let i = seconds / 31536000; if (i > 1) return Math.floor(i) + " năm trước";
-  i = seconds / 2592000; if (i > 1) return Math.floor(i) + " tháng trước";
-  i = seconds / 86400; if (i > 1) return Math.floor(i) + " ngày trước";
-  i = seconds / 3600; if (i > 1) return Math.floor(i) + " giờ trước";
-  i = seconds / 60; if (i > 1) return Math.floor(i) + " phút trước";
-  return Math.floor(seconds) + " giây trước";
-}
-
-const quickReplies = ["Đã hiểu", "Trễ 5 phút", "Đã đến điểm dừng", "Đang trên đường", "Cần hỗ trợ"]
-
 export default function MessagesPage() {
   const navigate = useNavigate()
+  
+  // 3. Khởi tạo Language State
+  const [language] = useState<'vi' | 'en'>(() => {
+    const saved = localStorage.getItem("language");
+    return saved === 'en' ? 'en' : 'vi';
+  });
+  const t = TRANSLATIONS[language];
+
   const [messageInput, setMessageInput] = useState("")
 
   // Socket state
@@ -73,7 +152,6 @@ export default function MessagesPage() {
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   // Conversations & notifications
-  // const [conversations, setConversations] = useState<ChatContact[]>([])
   const [conversations, setConversations] = useState<ConversationState[]>([])
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [isLoadingContacts, setIsLoadingContacts] = useState(true)
@@ -121,14 +199,13 @@ export default function MessagesPage() {
 
         if (!contactsRes.ok) throw new Error("Không thể tải danh bạ")
         const contactsData: ConversationState[] = await contactsRes.json()
-        // setConversations(contactsData)
         setConversations(contactsData)
 
         if (!notificationsRes.ok) throw new Error("Không thể tải thông báo")
         const notificationsData: Notification[] = await notificationsRes.json()
         setNotifications(notificationsData)
       } catch (err: any) {
-        setError(err?.message || "Lỗi khi tải dữ liệu")
+        setError(err?.message || t.errorLoad)
         console.error(err)
       } finally {
         setIsLoadingContacts(false)
@@ -137,7 +214,7 @@ export default function MessagesPage() {
     }
 
     fetchAllData()
-  }, [driverId])
+  }, [driverId]) // language ko cần vào deps vì chỉ load lần đầu
 
   // 3. Init socket
   useEffect(() => {
@@ -151,7 +228,6 @@ export default function MessagesPage() {
     setSocket(newSocket)
 
     newSocket.on("connect", () => console.log("Socket.IO: Đã kết nối!", newSocket.id))
-    newSocket.on("connected", (data) => console.log("Socket.IO: Server xác nhận:", data?.userId))
     newSocket.on("error", (err: any) => {
       console.error("Socket.IO: Lỗi:", err)
       if (typeof err === "string" && err.includes("hết hạn")) navigate("/")
@@ -178,7 +254,6 @@ export default function MessagesPage() {
         setChatHistory((prev) => [...prev, receivedMessage])
       }
       else {
-        // --- FIX: Nếu không xem, tăng unreadCount ---
         setConversations(prevConvos =>
           prevConvos.map(convo =>
             convo.id === receivedMessage.sender_id
@@ -212,7 +287,6 @@ export default function MessagesPage() {
   // Send message
   const handleSendMessage = () => {
     if (!socket || !messageInput.trim() || !selectedContactId) {
-      console.error("Socket chưa kết nối hoặc thiếu thông tin gửi")
       return
     }
 
@@ -233,56 +307,41 @@ export default function MessagesPage() {
   }
 
 const handleNotificationClick = async (notificationId: string) => {
-    // 1. Tìm thông báo trong state
-    const notification = notifications.find(n => n.id === notificationId);
-    
-    // 2. Nếu đã đọc rồi, không làm gì cả
-    if (notification?.isRead) {
-      console.log("Thông báo đã được đọc.");
-      return;
-    }
+    const notification = notifications.find(n => n.id === notificationId);
+    
+    if (notification?.isRead) return;
 
-    // 3. Cập nhật state (Optimistic UI - Cập nhật giao diện ngay)
-    setNotifications(prev => 
-      prev.map(n => 
-        n.id === notificationId ? { ...n, isRead: true } : n
-      )
-    );
+    setNotifications(prev => 
+      prev.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      )
+    );
 
-    // 4. Gọi API
-    const token = localStorage.getItem("access_token");
-    try {
-      const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, { // <--- Gán kết quả cho 'response'
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+    const token = localStorage.getItem("access_token");
+    try {
+      const response = await fetch(`${API_URL}/notifications/${notificationId}/read`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-      // 5. KIỂM TRA LỖI API (Rất quan trọng)
       if (!response.ok) {
-        // Nếu server trả về 4xx, 5xx, nó sẽ vào đây
         const errData = await response.json();
         throw new Error(errData.message || `API Error ${response.status}`);
       }
 
-      // (Nếu response.ok = true, API thành công, không cần làm gì cả)
-
-    } catch (err) {
-      console.error("Lỗi khi đánh dấu đã đọc:", err);
-
-      // 6. ROLLBACK UI (Rất quan trọng)
-      // Nếu API lỗi, trả lại state cũ (hiện lại là chưa đọc)
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, isRead: false } : n // <--- Trả lại 'false'
-        )
-      );
-    }
-  }
+    } catch (err) {
+      console.error("Lỗi khi đánh dấu đã đọc:", err);
+      setNotifications(prev => 
+        prev.map(n => 
+          n.id === notificationId ? { ...n, isRead: false } : n
+        )
+      );
+    }
+  }
 
   const unreadNotifCount = notifications.filter((n) => !n.isRead).length
-  // const unreadChatCount = 0
   const unreadChatCount = conversations.reduce((acc, convo) => acc + (convo.unreadCount || 0), 0)
 
   const getSelectedContact = () => conversations.find((c) => c.id === selectedContactId)
@@ -304,11 +363,11 @@ const handleNotificationClick = async (notificationId: string) => {
                 </svg>
               </Button>
               <div>
-                <h1 className="text-lg font-semibold text-foreground">Tin nhắn</h1>
+                <h1 className="text-lg font-semibold text-foreground">{t.pageTitle}</h1>
                 <p className="text-xs text-muted-foreground">
                   {unreadNotifCount + unreadChatCount > 0
-                    ? `${unreadNotifCount + unreadChatCount} tin nhắn chưa đọc`
-                    : "Không có tin nhắn mới"}
+                    ? `${unreadNotifCount + unreadChatCount} ${t.unreadMsgCount}`
+                    : t.noNewMsg}
                 </p>
               </div>
             </div>
@@ -320,7 +379,7 @@ const handleNotificationClick = async (notificationId: string) => {
         <Tabs defaultValue="conversations" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4 rounded-lg overflow-hidden border border-border/50">
             <TabsTrigger value="notifications" className="relative rounded-lg">
-              Thông báo
+              {t.tabNotifications}
               {unreadNotifCount > 0 && (
                 <Badge className="mr-1 absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs rounded-full">
                   {unreadNotifCount}
@@ -328,7 +387,7 @@ const handleNotificationClick = async (notificationId: string) => {
               )}
             </TabsTrigger>
             <TabsTrigger value="conversations" className="relative rounded-lg">
-              Hội thoại
+              {t.tabConversations}
               {unreadChatCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs rounded-full">
                   {unreadChatCount}
@@ -339,16 +398,16 @@ const handleNotificationClick = async (notificationId: string) => {
 
           {error && (
             <div className="p-4 mb-4 text-center text-sm text-red-500 bg-red-500/10 rounded-lg">
-              <p className="font-semibold">Lỗi!</p>
+              <p className="font-semibold">{t.errorTitle}</p>
               <p>{error}</p>
             </div>
           )}
 
           <TabsContent value="notifications" className="space-y-3 mt-0">
             {isLoadingNotifications ? (
-              <p className="text-muted-foreground text-center">Đang tải thông báo...</p>
+              <p className="text-muted-foreground text-center">{t.loadingNoti}</p>
             ) : notifications.length === 0 ? (
-              <p className="text-muted-foreground text-center">Không có thông báo nào.</p>
+              <p className="text-muted-foreground text-center">{t.noNoti}</p>
             ) : (
               notifications.map((n) => (
                 <Card
@@ -375,7 +434,7 @@ const handleNotificationClick = async (notificationId: string) => {
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{n.message}</p>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
-                            {timeAgo(n.createdAt)}
+                            {timeAgo(n.createdAt, language)}
                           </span>
                         </div>
                       </div>
@@ -410,7 +469,7 @@ const handleNotificationClick = async (notificationId: string) => {
                       </span>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-foreground">{getSelectedContact()?.fullName ?? "Đang tải..."}</h3>
+                      <h3 className="font-semibold text-foreground">{getSelectedContact()?.fullName ?? t.loadingChat}</h3>
                       <p className="text-xs text-muted-foreground capitalize">{getSelectedContact()?.role}</p>
                     </div>
                   </div>
@@ -432,7 +491,7 @@ const handleNotificationClick = async (notificationId: string) => {
                               msg.sender_id === driverId ? "text-primary-foreground/70" : "text-muted-foreground"
                             }`}
                           >
-                            {new Date(msg.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(msg.created_at).toLocaleTimeString(language === 'vi' ? "vi-VN" : "en-US", { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         </div>
                       </div>
@@ -441,9 +500,10 @@ const handleNotificationClick = async (notificationId: string) => {
                   </div>
 
                   <div className="p-3 border-t border-border/50 bg-muted/30 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-2">Phản hồi nhanh:</p>
+                    <p className="text-xs text-muted-foreground mb-2">{t.quickResponseLabel}</p>
                     <div className="flex gap-2 flex-wrap">
-                      {quickReplies.map((reply) => (
+                      {/* Render Quick Replies từ từ điển */}
+                      {t.quickReplies.map((reply) => (
                         <Button
                           key={reply}
                           size="sm"
@@ -460,7 +520,7 @@ const handleNotificationClick = async (notificationId: string) => {
                   <div className="p-4 border-t border-border/50 flex gap-2">
                     <Input
                       type="text"
-                      placeholder="Nhập tin nhắn..."
+                      placeholder={t.inputPlaceholder}
                       value={messageInput}
                       onChange={(e) => setMessageInput((e.target as HTMLInputElement).value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
@@ -480,88 +540,76 @@ const handleNotificationClick = async (notificationId: string) => {
               </Card>
             ) : (
               <>
-                {isLoadingContacts && <p className="text-muted-foreground text-center">Đang tải danh bạ...</p>}
+                {isLoadingContacts && <p className="text-muted-foreground text-center">{t.loadingContacts}</p>}
                 {error && (
                   <div className="p-4 text-center text-sm text-red-500 bg-red-500/10 rounded-lg">
-                    <p className="font-semibold">Lỗi!</p>
+                    <p className="font-semibold">{t.errorTitle}</p>
                     <p>{error}</p>
                   </div>
                 )}
                 {!isLoadingContacts && !error && conversations.length === 0 && (
-                  <p className="text-muted-foreground text-center">Không tìm thấy liên hệ nào.</p>
+                  <p className="text-muted-foreground text-center">{t.noContacts}</p>
                 )}
 
                 {conversations.map((contact) => (
                   <Card
                     key={contact.id}
                     className="border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
-                    // onClick={() => {
-                    //   setSelectedContactId(contact.id)
-                    // }}
                     onClick={() => {
-                    setSelectedContactId(contact.id)
-                    
-                    // --- THÊM LOGIC MỚI ---
-                    // 1. Gửi sự kiện lên server để cập nhật DB
-                    if (socket && contact.unreadCount > 0) {
-                      socket.emit('markAsRead', { senderId: contact.id });
-                    }
+                      setSelectedContactId(contact.id)
+                      
+                      if (socket && contact.unreadCount > 0) {
+                        socket.emit('markAsRead', { senderId: contact.id });
+                      }
 
-                    // 2. Cập nhật UI ngay lập tức (giữ logic cũ)
-                    if (contact.unreadCount > 0) {
-                      setConversations(prevConvos =>
-                        prevConvos.map(convo =>
-                          convo.id === contact.id
-                            ? { ...convo, unreadCount: 0 }
-                            : convo
-                        )
-                      );
-                    }
-                  }}
+                      if (contact.unreadCount > 0) {
+                        setConversations(prevConvos =>
+                          prevConvos.map(convo =>
+                            convo.id === contact.id
+                              ? { ...convo, unreadCount: 0 }
+                              : convo
+                          )
+                        );
+                      }
+                    }}
                   >
-<div className="p-4">
-  <div className="flex items-center gap-3">
-    
-    {/* Avatar (Giữ nguyên) */}
-    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-      <span className="text-lg font-semibold text-secondary-foreground">
-        {contact.fullName?.charAt(0) ?? "?"}
-      </span>
-    </div>
+                    <div className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg font-semibold text-secondary-foreground">
+                            {contact.fullName?.charAt(0) ?? "?"}
+                          </span>
+                        </div>
 
-    {/* Khối nội dung chính (Đã sửa) */}
-    <div className="flex-1 min-w-0">
-      
-      {/* Dòng 1: Tên (trái) và Thời gian (phải) */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-foreground truncate">
-          {contact.fullName}
-        </h3>
-      </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-foreground truncate">
+                              {contact.fullName}
+                            </h3>
+                          </div>
 
-      {/* Dòng 2: Vai trò (trái) và Badge (phải) */}
-      <div className="flex items-center justify-between mt-1">
-        <p className="text-sm text-muted-foreground capitalize truncate">
-          {contact.role}
-        </p>
-        {contact.unreadCount > 0 && (
-          <Badge className="h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs rounded-full flex-shrink-0 ml-2">
-            {contact.unreadCount}
-          </Badge>
-        )}
-      </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-sm text-muted-foreground capitalize truncate">
+                              {contact.role}
+                            </p>
+                            {contact.unreadCount > 0 && (
+                              <Badge className="h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs rounded-full flex-shrink-0 ml-2">
+                                {contact.unreadCount}
+                              </Badge>
+                            )}
+                          </div>
 
-      <div className="flex items-center justify-between mt-1">
-                {contact.lastMessageTimestamp && (
-          <span className="text-xs text-muted-foreground">
-            {timeAgo(contact.lastMessageTimestamp)}
-          </span>
-        )}
-      </div>
+                          <div className="flex items-center justify-between mt-1">
+                                {contact.lastMessageTimestamp && (
+                              <span className="text-xs text-muted-foreground">
+                                {timeAgo(contact.lastMessageTimestamp, language)}
+                              </span>
+                            )}
+                          </div>
 
-    </div>
-  </div>
-</div>
+                        </div>
+                      </div>
+                    </div>
                   </Card>
                 ))}
               </>

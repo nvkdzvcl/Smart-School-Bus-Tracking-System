@@ -1,7 +1,7 @@
 // apps/driver-api/src/trip/trip.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Raw } from 'typeorm';
 
 import { Trip } from './trip.entity';
 import { Route } from '../route/route.entity';
@@ -236,5 +236,30 @@ export class TripService {
 
         .getMany()
     );
+  }
+  async getStudentsInCurrentTrip(driverId: string) {
+    // Tìm chuyến đi đang IN_PROGRESS của tài xế hôm nay
+    const activeTrip = await this.tripRepository.findOne({
+      where: {
+        driverId: driverId,
+        tripDate: Raw((alias) => `${alias} = CURRENT_DATE`),
+        status: TripStatus.IN_PROGRESS,
+      },
+      // Join bảng tripStudents và bảng student để lấy thông tin
+      relations: ['tripStudents', 'tripStudents.student'], 
+    });
+
+    // Nếu không có chuyến nào đang chạy -> Trả về rỗng
+    if (!activeTrip) {
+      return [];
+    }
+    const students = activeTrip.tripStudents as any;
+    // Map dữ liệu để trả về format gọn nhẹ cho Frontend
+    return students.map((ts: any) => ({
+      id: ts.student.id,
+      full_name: ts.student.fullName,
+      status: ts.status, 
+      imageUrl: ts.student.imageUrl || null,
+    }));
   }
 }

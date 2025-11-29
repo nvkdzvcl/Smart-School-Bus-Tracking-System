@@ -13,7 +13,7 @@ import { User } from '../user/user.entity';
 import { Stop } from '../route/stop.entity';
 import { TripStudent } from 'src/trip/trip-student.entity';
 
-@Entity('Students') // Khớp tên bảng "Students"
+@Entity('Students')
 export class Student {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -25,10 +25,25 @@ export class Student {
   parentId: string;
 
   @Column({ name: 'pickup_stop_id', nullable: true })
-  pickupStopId: string; // ID của điểm đón
+  pickupStopId: string;
 
   @Column({ name: 'dropoff_stop_id', nullable: true })
-  dropoffStopId: string; // ID của điểm trả
+  dropoffStopId: string;
+
+  @Column({ name: 'class', nullable: true }) // (Tùy chọn) Thêm class nếu DB có
+  class: string;
+
+  // --- THÊM PHẦN NÀY ---
+  @Column({
+    type: 'enum',
+    enum: ['active', 'inactive'],
+    default: 'active',
+  })
+  status: string;
+  // ---------------------
+
+  @Column({ name: 'route_id', nullable: true }) // (Nên thêm) Để biết học sinh thuộc tuyến nào
+  routeId: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -45,7 +60,6 @@ export class Student {
   @JoinColumn({ name: 'pickup_stop_id' })
   pickupStop: Stop;
 
-  // --- SỬA LỖI 1: THÊM QUAN HỆ CÒN THIẾU ---
   @ManyToOne(() => Stop)
   @JoinColumn({ name: 'dropoff_stop_id' })
   dropoffStop: Stop;
