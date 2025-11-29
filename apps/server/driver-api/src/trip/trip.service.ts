@@ -255,11 +255,15 @@ export class TripService {
     }
     const students = activeTrip.tripStudents as any;
     // Map dữ liệu để trả về format gọn nhẹ cho Frontend
-    return students.map((ts: any) => ({
-      id: ts.student.id,
-      full_name: ts.student.fullName,
-      status: ts.status, 
-      imageUrl: ts.student.imageUrl || null,
-    }));
+return students
+      // 1. Thêm hàm filter để lọc status là 'pending'
+      .filter((ts: any) => ts.status === 'pending') 
+      // 2. Sau đó mới map dữ liệu
+      .map((ts: any) => ({
+        id: ts.student.id,
+        full_name: ts.student.fullName,
+        status: ts.status, 
+        imageUrl: ts.student.imageUrl || null,
+      }));
   }
 }

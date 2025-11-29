@@ -352,7 +352,7 @@ export default function DashboardPage() {
 
   {/* --- KHỐI CHUYỂN ĐỔI CHẾ ĐỘ XEM --- */}
   {/* Bỏ Card bao ngoài để giao diện thoáng hơn, Tabs tự đứng một mình */}
-  <Tabs value={viewScope} onValueChange={(v) => setViewScope(v as "daily" | "weekly")} className="w-full" unmount={false}>
+  <Tabs value={viewScope} onValueChange={(v) => setViewScope(v as "daily" | "weekly")} className="w-full">
     
 {/* Tabs Lớn: Ngày vs Tuần (Style Viên thuốc + Màu sắc + Hiệu ứng nảy) */}
     <TabsList className="grid w-full grid-cols-2 h-auto p-1.5 gap-2 bg-transparent border border-border/60 rounded-full mb-6 shadow-lg">
@@ -394,7 +394,7 @@ export default function DashboardPage() {
 
 
         {/* Tabs Nhỏ: Sáng vs Chiều (Style Viên thuốc màu) */}
-        <Tabs value={mode} onValueChange={(v) => setMode(v as ViewMode)} className="w-full" unmount={false}>
+        <Tabs value={mode} onValueChange={(v) => setMode(v as ViewMode)} className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-auto p-1.5 gap-2 bg-transparent border border-border/60 rounded-full shadow-lg">
             <TabsTrigger 
               value="morning"
@@ -513,12 +513,63 @@ export default function DashboardPage() {
                   {t.startTrip}
                 </Button>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button onClick={handleViewStudents} variant="outline" className="h-12 border-border text-foreground hover:bg-muted bg-background rounded-xl">
-                    {t.students}
-                  </Button>
-                  <Button onClick={handleReportIncident} variant="outline" className="h-12 border-destructive/30 text-destructive hover:bg-destructive/5 bg-background rounded-xl">
-                    {t.reportIncident}
-                  </Button>
+<Button 
+  onClick={handleViewStudents} 
+  variant="outline" 
+  className="
+    h-12 rounded-xl gap-2 transition-all duration-300
+    border-border text-foreground bg-background
+    /* Hiệu ứng Hover: Viền sáng lên màu xanh (primary), nền hơi xám nhẹ, nổi lên xíu */
+hover:border-primary/50 hover:bg-accent hover:text-accent-foreground  "
+>
+  {/* Icon Graduation Cap (Đại diện cho Học sinh) */}
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="20" 
+    height="20" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
+    <path d="M22 10v6" />
+    <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+  </svg>
+
+  {t.students}
+</Button>
+<Button 
+  onClick={handleReportIncident} 
+  variant="outline" 
+  className="
+    h-12 rounded-xl gap-2 transition-all duration-300
+    border-destructive/30 text-destructive bg-background
+    /* Hiệu ứng Hover: Đổi nền đỏ, chữ trắng, viền đỏ, bóng đổ và hơi to lên */
+    hover:bg-destructive hover:text-white hover:border-destructive
+  "
+>
+  {/* Icon Alert Triangle (Cảnh báo) */}
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width="20" 
+    height="20" 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke="currentColor" 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+  </svg>
+  
+  {t.reportIncident}
+</Button>
                 </div>
             </div>
             </Card>

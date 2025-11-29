@@ -404,7 +404,7 @@ const fetchTripStudents = useCallback(async () => {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xl mr-1">{icon}</span>
                 <h3 className="font-semibold text-foreground">{displayTitle}</h3>
-                <Badge className={incident.status === "resolved" ? "bg-accent text-accent-foreground" : "bg-destructive text-destructive-foreground"}>
+                <Badge className={incident.status === "resolved" ? "bg-accent text-accent-foreground rounded-lg" : "bg-destructive text-destructive-foreground rounded-lg"}>
                   {incident.status === "resolved" ? t.statusResolved : t.statusPending}
                 </Badge>
               </div>
@@ -465,7 +465,7 @@ const fetchTripStudents = useCallback(async () => {
               </div>
             </div>
             {!showReportForm && (
-              <Button onClick={() => setShowReportForm(true)} size="sm" className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
+              <Button onClick={() => setShowReportForm(true)} size="sm" className="rounded-lg bg-destructive hover:bg-destructive/90 text-destructive-foreground">
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>

@@ -377,8 +377,8 @@ BEGIN
 
   RAISE NOTICE '--- Seeding Trips ---';
   -- Gán các chuyến cho Tài xế 1
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'))
+  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '12 hours 47 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
 
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 35 minutes');
@@ -392,8 +392,8 @@ BEGIN
   -- INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '12 hours 35 minutes');
 
   -- Chiều (Trả 3 bé)
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'))
+  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '20 hours 21 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
 
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 35 minutes');
@@ -406,8 +406,8 @@ BEGIN
   -- ====================================================
 
   -- Sáng (Đón An & Bình) -> Đã xong
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'))
+  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
 
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', CURRENT_DATE + interval '6 hours 35 minutes');

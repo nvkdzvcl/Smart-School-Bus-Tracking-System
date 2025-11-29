@@ -409,11 +409,15 @@ const handleNotificationClick = async (notificationId: string) => {
             ) : notifications.length === 0 ? (
               <p className="text-muted-foreground text-center">{t.noNoti}</p>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n, index) => (
                 <Card
                   key={n.id}
                   onClick={() => handleNotificationClick(n.id)}
-                  className={`border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors ${
+                  style={{ 
+      animationDelay: `${index * 75}ms`, 
+      animationFillMode: 'both' 
+    }}
+                  className={`animate-in fade-in slide-in-from-bottom-3 duration-500 border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors ${
                     !n.isRead ? "bg-gradient-to-br from-card to-primary/5" : ""
                   }`}
                 >
@@ -475,10 +479,14 @@ const handleNotificationClick = async (notificationId: string) => {
                   </div>
 
                   <div className="p-4 space-y-4 min-h-[300px] max-h-[400px] overflow-y-auto">
-                    {chatHistory.map((msg) => (
+                    {chatHistory.map((msg, index) => (
                       <div
                         key={msg.id}
-                        className={`flex ${msg.sender_id === driverId ? "justify-end" : "justify-start"}`}
+                        style={{ 
+      animationDelay: `${index * 30}ms`, 
+      animationFillMode: 'both' 
+    }}
+                        className={`animate-in zoom-in-95 fade-in slide-in-from-bottom-2 duration-300 flex ${msg.sender_id === driverId ? "justify-end" : "justify-start"}`}
                       >
                         <div
                           className={`max-w-[80%] rounded-lg p-3 ${
@@ -551,10 +559,14 @@ const handleNotificationClick = async (notificationId: string) => {
                   <p className="text-muted-foreground text-center">{t.noContacts}</p>
                 )}
 
-                {conversations.map((contact) => (
+                {conversations.map((contact, index) => (
                   <Card
                     key={contact.id}
-                    className="border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
+                    style={{ 
+      animationDelay: `${index * 75}ms`, 
+      animationFillMode: 'both' 
+    }}
+                    className="animate-in fade-in slide-in-from-bottom-3 duration-500 border-border/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors"
                     onClick={() => {
                       setSelectedContactId(contact.id)
                       
