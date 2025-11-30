@@ -44,7 +44,7 @@ class DateRangeDto {
 @UseGuards(AuthGuard('jwt'))
 @Controller('schedule')
 export class ScheduleController {
-  constructor(private readonly scheduleService: ScheduleService) {}
+  constructor(private readonly scheduleService: ScheduleService) { }
 
   @Get('today')
   @ApiOperation({ summary: 'Lấy lịch làm việc trong ngày (sáng/chiều) của tài xế' })

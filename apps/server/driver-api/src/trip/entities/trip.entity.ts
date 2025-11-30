@@ -16,7 +16,7 @@ export class Trip {
   id: string;
 
   @Column({ name: 'route_id', nullable: true }) routeId: string | null;
-  @Column({ name: 'bus_id', nullable: true })   busId: string | null;
+  @Column({ name: 'bus_id', nullable: true }) busId: string | null;
   @Column({ name: 'driver_id', nullable: true }) driverId: string | null;
 
   @Column({ name: 'trip_date', type: 'date' }) tripDate: Date;
@@ -31,14 +31,14 @@ export class Trip {
   status: TripStatus;
 
   @Column({ name: 'actual_start_time', type: 'timestamptz', nullable: true }) actualStartTime: Date | null;
-  @Column({ name: 'actual_end_time', type: 'timestamptz', nullable: true })   actualEndTime: Date | null;
+  @Column({ name: 'actual_end_time', type: 'timestamptz', nullable: true }) actualEndTime: Date | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' }) createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' }) updatedAt: Date;
 
   @ManyToOne(() => Route) @JoinColumn({ name: 'route_id' }) route: Route;
-  @ManyToOne(() => Bus)   @JoinColumn({ name: 'bus_id' })   bus: Bus;
-  @ManyToOne(() => User)  @JoinColumn({ name: 'driver_id' }) driver: User;
+  @ManyToOne(() => Bus) @JoinColumn({ name: 'bus_id' }) bus: Bus;
+  @ManyToOne(() => User) @JoinColumn({ name: 'driver_id' }) driver: User;
 
   // 👇 thêm 2 quan hệ ngược
   @OneToMany(() => TripStudent, (ts) => ts.trip)

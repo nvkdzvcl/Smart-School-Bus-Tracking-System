@@ -30,5 +30,7 @@ export class Trip extends TimestampedEntity {
   @Column({ name: 'actual_start_time', type: 'timestamptz', nullable: true }) actualStartTime?: Date
   @Column({ name: 'actual_end_time', type: 'timestamptz', nullable: true }) actualEndTime?: Date
 
+  @Column({ name: 'scheduled_start_time', type: 'timestamptz', nullable: true }) plannedStartTime?: Date
+
   @OneToMany(() => TripStudent, ts => ts.trip) students: TripStudent[]
 }

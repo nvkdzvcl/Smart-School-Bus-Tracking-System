@@ -7,6 +7,8 @@ export interface Bus {
     status?: 'active' | 'maintenance' | 'inactive' // lowercase match DB enum
     createdAt?: string
     updatedAt?: string
+    gpsDeviceId?: string;
+    insuranceExpiry?: string; // ISO date YYYY-MM-DD hoặc ISO full
 }
 
 export interface BusStop {
@@ -26,6 +28,8 @@ export interface Driver {
     phone: string
     email?: string
     licenseNumber?: string
+    licenseClass?: string
+    licenseExpiry?: string // ISO date string
     createdAt?: string
     updatedAt?: string
 }
@@ -51,10 +55,18 @@ export interface Trip {
     tripDate: string; // YYYY-MM-DD
     session: 'morning' | 'afternoon';
     type: 'pickup' | 'dropoff';
-    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
     actualStartTime?: string;
     actualEndTime?: string;
+    plannedStartTime?: string; // mapped from scheduled_start_time
     // Có thể thêm các trường khác như studentCount...
+}
+
+export interface TripAlert {
+    time: string;
+    type: 'delay' | 'pickup_complete' | 'dropoff_complete' | 'trip_complete';
+    message: string;
+    licensePlate?: string;
 }
 
 export interface Conversation {
@@ -164,13 +176,21 @@ export const getDrivers = async (): Promise<Driver[]> => {
     return handleResponse<Driver[]>(res, 'Failed to fetch drivers')
 }
 
-export const createDriver = async (d: { fullName: string; phone: string; email?: string; licenseNumber: string; password: string }): Promise<Driver> => {
-    const res = await fetch(`${API_BASE}/drivers`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(d) })
+export const createDriver = async (driver: Partial<Driver> & { fullName: string; phone: string; licenseNumber: string; password: string }): Promise<Driver> => {
+    const res = await fetch(`${API_BASE}/drivers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(driver)
+    })
     return handleResponse<Driver>(res, 'Failed to create driver')
 }
 
-export const updateDriver = async (id: string, d: Partial<{ fullName: string; phone: string; email?: string; licenseNumber?: string; password?: string }>): Promise<Driver> => {
-    const res = await fetch(`${API_BASE}/drivers/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(d) })
+export const updateDriver = async (id: string, driver: Partial<Driver>): Promise<Driver> => {
+    const res = await fetch(`${API_BASE}/drivers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(driver)
+    })
     return handleResponse<Driver>(res, 'Failed to update driver')
 }
 
@@ -247,12 +267,32 @@ export const getTrips = async (): Promise<Trip[]> => {
     } catch { return [] }
 }
 
+export const getTripAlerts = async (): Promise<TripAlert[]> => {
+    try {
+        const res = await fetch(`${API_BASE}/trips/alerts`, { headers: { ...authHeaders() } })
+        if (!res.ok) {
+            // Nuốt lỗi và trả về danh sách rỗng
+            return []
+        }
+        return await handleResponse<TripAlert[]>(res, 'Failed to fetch trip alerts')
+    } catch {
+        return []
+    }
+}
+
 // Hàm cập nhật chuyến đi (cho nút Chỉnh sửa)
-export const updateTrip = async (id: string, data: Partial<Trip>): Promise<Trip> => {
+export const updateTrip = async (id: string, data: Partial<Trip> & { startTime?: string }): Promise<Trip> => {
+    const body: any = { ...data }
+    if (data.startTime && data.tripDate) {
+        // Convert HH:mm (local) -> ISO time (assume local day) for plannedStartTime
+        const iso = new Date(`${data.tripDate}T${data.startTime}:00`).toISOString()
+        body.plannedStartTime = iso
+        delete body.startTime
+    }
     const res = await fetch(`${API_BASE}/trips/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        body: JSON.stringify(data)
+        body: JSON.stringify(body)
     })
     return handleResponse<Trip>(res, 'Failed to update trip')
 }
@@ -265,8 +305,13 @@ export const deleteTrip = async (id: string): Promise<void> => {
     })
     await handleResponse(res, 'Failed to delete trip')
 }
-export const createTrip = async (data: { routeId?: string; busId?: string; driverId?: string; tripDate: string; session: 'morning' | 'afternoon'; type: 'pickup' | 'dropoff' }) => {
-    const res = await fetch(`${API_BASE}/trips`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(data) })
+export const createTrip = async (data: { routeId?: string; busId?: string; driverId?: string; tripDate: string; session: 'morning' | 'afternoon'; type: 'pickup' | 'dropoff'; startTime?: string }) => {
+    const body: any = { ...data }
+    if (data.startTime && data.tripDate) {
+        body.plannedStartTime = new Date(`${data.tripDate}T${data.startTime}:00`).toISOString()
+        delete body.startTime
+    }
+    const res = await fetch(`${API_BASE}/trips`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) })
     return handleResponse<any>(res, 'Failed to create trip')
 }
 

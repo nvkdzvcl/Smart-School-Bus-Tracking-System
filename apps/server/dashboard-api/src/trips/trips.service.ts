@@ -88,6 +88,7 @@ export class TripsService {
         // --- Bắt đầu tạo Trip nếu không có xung đột ---
 
         const trip = this.tripRepo.create({ tripDate: dto.tripDate, session: dto.session, type: dto.type })
+        if (dto.plannedStartTime) trip.plannedStartTime = new Date(dto.plannedStartTime)
 
         if (dto.routeId) {
             const route = await this.routeRepo.findOne({ where: { id: dto.routeId } }); if (!route) throw new NotFoundException('Không tìm thấy Tuyến đường.'); trip.route = route!
@@ -192,6 +193,7 @@ export class TripsService {
         if (dto.tripDate) trip.tripDate = dto.tripDate;
         if (dto.session) trip.session = dto.session;
         if (dto.type) trip.type = dto.type;
+        if (dto.plannedStartTime) trip.plannedStartTime = new Date(dto.plannedStartTime);
 
         if (dto.status) trip.status = dto.status as TripStatus
         if (dto.actualStartTime) trip.actualStartTime = new Date(dto.actualStartTime)
@@ -224,5 +226,105 @@ export class TripsService {
         if (!trip) throw new NotFoundException('Trip not found')
         await this.tripRepo.remove(trip)
         return { deleted: true }
+    }
+
+    async recentAlerts() {
+        const trips = await this.tripRepo.find({
+            relations: ['bus', 'route', 'route.stops', 'route.stops.stop', 'students', 'students.student']
+        })
+        const alerts: { time: string; type: string; message: string; licensePlate?: string }[] = []
+        const now = new Date()
+        for (const trip of trips) {
+            const license = trip.bus?.licensePlate || 'N/A'
+            // Delay alerts
+            if (trip.plannedStartTime) {
+                if (trip.actualStartTime) {
+                    const delayMs = trip.actualStartTime.getTime() - trip.plannedStartTime.getTime()
+                    if (delayMs > 0 && delayMs < 1000 * 60 * 180) { // dưới 3h
+                        const mins = Math.round(delayMs / 60000)
+                        alerts.push({
+                            time: trip.actualStartTime.toISOString(),
+                            type: 'delay',
+                            message: `Xe ${license} bắt đầu chậm ${mins} phút so với lịch trình`,
+                            licensePlate: license
+                        })
+                    }
+                } else if (trip.status === TripStatus.SCHEDULED && now > trip.plannedStartTime) {
+                    const delayMs = now.getTime() - trip.plannedStartTime.getTime()
+                    const mins = Math.round(delayMs / 60000)
+                    alerts.push({
+                        time: now.toISOString(),
+                        type: 'delay',
+                        message: `Xe ${license} đang chậm ${mins} phút (chưa khởi hành)`,
+                        licensePlate: license
+                    })
+                }
+            }
+            // Pickup / Dropoff stop completion alerts
+            if (trip.route?.stops?.length && trip.students?.length) {
+                const stopMap: Record<string, { pickupTotal: number; pickupAttended: number; dropTotal: number; dropAttended: number; lastPickup?: Date; lastDrop?: Date }> = {}
+                for (const rs of trip.route.stops as any[]) {
+                    const sid = rs.stop?.id || rs.stopId
+                    if (!sid) continue
+                    stopMap[sid] = { pickupTotal: 0, pickupAttended: 0, dropTotal: 0, dropAttended: 0 }
+                }
+                for (const ts of trip.students) {
+                    const stud = ts.student
+                    if (!stud) continue
+                    const pickupId = (stud as any).pickupStop?.id || (stud as any).pickupStopId
+                    const dropId = (stud as any).dropoffStop?.id || (stud as any).dropoffStopId
+                    if (pickupId && stopMap[pickupId]) {
+                        stopMap[pickupId].pickupTotal++
+                        if (ts.status === AttendanceStatus.ATTENDED) {
+                            stopMap[pickupId].pickupAttended++
+                            if (ts.attendedAt) stopMap[pickupId].lastPickup = ts.attendedAt
+                        }
+                    }
+                    if (dropId && stopMap[dropId]) {
+                        stopMap[dropId].dropTotal++
+                        if (ts.status === AttendanceStatus.ATTENDED) {
+                            stopMap[dropId].dropAttended++
+                            if (ts.attendedAt) stopMap[dropId].lastDrop = ts.attendedAt
+                        }
+                    }
+                }
+                for (const rs of trip.route.stops as any[]) {
+                    const sid = rs.stop?.id || rs.stopId
+                    const name = rs.stop?.name || rs.name || 'Điểm dừng'
+                    const agg = stopMap[sid]
+                    if (!agg) continue
+                    // Pickup completion
+                    if (trip.type === 'pickup' && agg.pickupTotal > 0 && agg.pickupAttended === agg.pickupTotal && agg.lastPickup) {
+                        alerts.push({
+                            time: agg.lastPickup.toISOString(),
+                            type: 'pickup_complete',
+                            message: `Xe ${license} đã đón xong học sinh tại ${name}`,
+                            licensePlate: license
+                        })
+                    }
+                    // Dropoff completion
+                    if (trip.type === 'dropoff' && agg.dropTotal > 0 && agg.dropAttended === agg.dropTotal && agg.lastDrop) {
+                        alerts.push({
+                            time: agg.lastDrop.toISOString(),
+                            type: 'dropoff_complete',
+                            message: `Xe ${license} đã trả xong học sinh tại ${name}`,
+                            licensePlate: license
+                        })
+                    }
+                }
+            }
+            // Trip completion
+            if (trip.status === TripStatus.COMPLETED && trip.actualEndTime) {
+                alerts.push({
+                    time: trip.actualEndTime.toISOString(),
+                    type: 'trip_complete',
+                    message: `Xe ${license} đã hoàn thành chuyến đi ${trip.session === 'morning' ? 'sáng' : 'chiều'}`,
+                    licensePlate: license
+                })
+            }
+        }
+        // Sắp xếp mới nhất trước và giới hạn 50
+        alerts.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        return alerts.slice(0, 50)
     }
 }

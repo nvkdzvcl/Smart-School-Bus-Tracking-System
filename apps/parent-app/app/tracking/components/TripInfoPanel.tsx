@@ -1,9 +1,11 @@
-import {useState} from "react"
-import {Card, CardContent} from "../../../components/ui/Card.tsx"
-import {Badge} from "../../../components/ui/Badge.tsx"
-import {Bus, User, ChevronUp, ChevronDown, Star, Calendar} from "lucide-react"
+import { useState } from "react"
+import { Card, CardContent } from "../../../components/ui/Card.tsx"
+import { Badge } from "../../../components/ui/Badge.tsx"
+import { Bus, User, ChevronUp, ChevronDown, Star, Calendar } from "lucide-react"
+import { formatTripStatus } from '../../../lib/utils/Utils.ts'
 
-type TripStatus = "Scheduled" | "In_progress" | "Completed" | "Cancelled"
+// Đổi kiểu TripStatus sang lowercase để đồng bộ backend
+type TripStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
 type TripType = "Pickup" | "Dropoff"
 
 export default function TripInfoPanel() {
@@ -12,11 +14,16 @@ export default function TripInfoPanel() {
     const [driverName, setDriverName] = useState("Nguyen Van A")
     const [tripDate, setTripDate] = useState("2025-11-18T00:00:00.000Z")
     const [tripType, setTripType] = useState<TripType>("Pickup")
-    const [tripStatus, setTripStatus] = useState<TripStatus>("Scheduled")
+    const [tripStatus, setTripStatus] = useState<TripStatus>('scheduled')
     const [actualStartTime, setActualStartTime] = useState("2025-11-18T00:00:00.000Z")
     const [actualEndTime, setActualEndTime] = useState("2025-11-18T00:00:00.000Z")
 
     const [isExpanded, setIsExpanded] = useState(false)
+
+    const statusLabel = (s: TripStatus) => {
+        // dùng helper chung
+        return formatTripStatus(s)
+    }
 
     return (
         <div className="absolute bottom-0 left-0 right-0 z-10">
@@ -27,9 +34,9 @@ export default function TripInfoPanel() {
                     className="w-full py-2 flex justify-center hover:bg-muted/50 transition-colors"
                 >
                     {isExpanded ? (
-                        <ChevronDown className="w-5 h-5 text-muted-foreground"/>
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
                     ) : (
-                        <ChevronUp className="w-5 h-5 text-muted-foreground"/>
+                        <ChevronUp className="w-5 h-5 text-muted-foreground" />
                     )}
                 </button>
 
@@ -39,14 +46,14 @@ export default function TripInfoPanel() {
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                                    <Bus className="w-6 h-6 text-primary"/>
+                                    <Bus className="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
                                     <h3 className="font-semibold">{busLicensePlate}</h3>
                                     <p className="text-sm text-muted-foreground">{routeName}</p>
                                 </div>
                             </div>
-                            <Badge>{tripStatus}</Badge>
+                            <Badge>{statusLabel(tripStatus)}</Badge>
                         </div>
 
                         {/* Expanded Content */}
@@ -55,14 +62,14 @@ export default function TripInfoPanel() {
                                 <div className="grid grid-cols-3 gap-3">
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm">
-                                            <Star className="w-4 h-4 text-muted-foreground"/>
+                                            <Star className="w-4 h-4 text-muted-foreground" />
                                             <span className="text-muted-foreground">Type:</span>
                                         </div>
                                         <p className="font-medium pl-6">{tripType}</p>
                                     </div>
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm">
-                                            <Calendar className="w-4 h-4 text-muted-foreground"/>
+                                            <Calendar className="w-4 h-4 text-muted-foreground" />
                                             <span className="text-muted-foreground">Date:</span>
                                         </div>
                                         <p className="font-medium pl-6">{tripDate}</p>
@@ -70,7 +77,7 @@ export default function TripInfoPanel() {
 
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm">
-                                            <User className="w-4 h-4 text-muted-foreground"/>
+                                            <User className="w-4 h-4 text-muted-foreground" />
                                             <span className="text-muted-foreground">Driver:</span>
                                         </div>
                                         <p className="font-medium pl-6">{driverName}</p>
@@ -92,8 +99,8 @@ export default function TripInfoPanel() {
                                     <div className="space-y-2">
                                         <div className="flex items-start gap-3">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-3 h-3 rounded-full bg-success"/>
-                                                <div className="w-0.5 h-8 bg-border"/>
+                                                <div className="w-3 h-3 rounded-full bg-success" />
+                                                <div className="w-0.5 h-8 bg-border" />
                                             </div>
                                             <div className="flex-1 pb-2">
                                                 <p className="text-sm font-medium">School Departure</p>
@@ -103,8 +110,8 @@ export default function TripInfoPanel() {
 
                                         <div className="flex items-start gap-3">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-3 h-3 rounded-full bg-primary animate-pulse"/>
-                                                <div className="w-0.5 h-8 bg-border"/>
+                                                <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+                                                <div className="w-0.5 h-8 bg-border" />
                                             </div>
                                             <div className="flex-1 pb-2">
                                                 <p className="text-sm font-medium">Your Stop</p>
@@ -113,7 +120,7 @@ export default function TripInfoPanel() {
 
                                         <div className="flex items-start gap-3">
                                             <div className="flex flex-col items-center">
-                                                <div className="w-3 h-3 rounded-full bg-muted"/>
+                                                <div className="w-3 h-3 rounded-full bg-muted" />
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-sm font-medium text-muted-foreground">Final Stop</p>

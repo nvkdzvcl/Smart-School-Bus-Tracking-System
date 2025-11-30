@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Search, Clock, User, Bus } from 'lucide-react'
-import { createTrip, updateTrip, deleteTrip } from '../lib/api'
+import { getTrips, getDrivers, getAllBuses, getRoutes, createTrip, updateTrip, deleteTrip, Trip } from '../lib/api'
 
 interface Schedule {
   id: string
@@ -111,7 +111,8 @@ export default function ScheduleManagement() {
         tripDate: editTripDate,
         session: editSession,
         status: editStatus,
-        startTime: editStartTime
+        startTime: editStartTime,
+        type: editingSchedule.type as any
       }
       await updateTrip(editingSchedule.id, updateData as any) // Gọi API cập nhật
       setShowEditModal(false)
@@ -148,48 +149,34 @@ export default function ScheduleManagement() {
   const loadData = async () => {
     setLoading(true); setError(null)
     try {
-      const [sRes, dRes, bRes, rRes] = await Promise.all([
-        fetch('/api/trips'),
-        fetch('/api/drivers'),
-        fetch('/api/buses'),
-        fetch('/api/routes')
+      const [tripList, driverList, busList, routeList] = await Promise.all([
+        getTrips(),
+        getDrivers(),
+        getAllBuses(),
+        getRoutes()
       ])
-      if (sRes.status === 401 || dRes.status === 401 || bRes.status === 401 || rRes.status === 401) {
-        setError('Unauthorized. Please sign in (manager role) to load data.')
-        return
-      }
-      if (!sRes.ok || !dRes.ok || !bRes.ok || !rRes.ok) {
-        const texts = await Promise.all([sRes.text(), dRes.text(), bRes.text(), rRes.text()])
-        throw new Error('Lỗi khi tải dữ liệu: ' + (texts.find(t => t && t.length > 0) || 'Unknown error'))
-      }
-      const [sData, dData, bData, rData] = await Promise.all([sRes.json(), dRes.json(), bRes.json(), rRes.json()])
-      const mappedSchedules: Schedule[] = Array.isArray(sData) ? sData.map((t: any) => {
-        const session = (t.session === 'morning' || t.session === 'afternoon')
-          ? t.session
-          : (t.type === 'morning' || t.type === 'afternoon')
-            ? t.type
-            : 'morning'
+      const mappedSchedules: Schedule[] = tripList.map((t: Trip) => {
+        const planned = (t as any).plannedStartTime || (t as any).scheduledStartTime || (t as any).startTime
+        const startTime = planned ? new Date(planned).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
         return {
           id: String(t.id),
-          routeName: t.route?.name || t.routeName || t.route || '',
-          driverName: t.driver?.fullName || t.driverName || t.driver || '',
-          busLicensePlate: t.bus?.licensePlate || t.busLicensePlate || t.bus || '',
-          startTime: t.startTime || t.time || '',
-          date: t.tripDate || t.date || t.day || '',
-          type: session,
-          status: t.status || 'scheduled',
-          studentsCount: t.studentsCount || t.studentCount || (t.students ? t.students.length : 0) || 0
+          routeName: t.route?.name || '',
+          driverName: t.driver?.fullName || '',
+          busLicensePlate: t.bus?.licensePlate || '',
+          startTime,
+          date: t.tripDate,
+          type: t.session,
+          status: t.status,
+          studentsCount: (t as any).studentCount || (t as any).students?.length || 0
         }
-      }) : []
+      })
       setSchedules(mappedSchedules)
-      setDrivers(Array.isArray(dData) ? dData.map((d: any) => ({ id: String(d.id), name: d.name || d.fullName || '' })) : [])
-      setBuses(Array.isArray(bData) ? bData.map((b: any) => ({ id: String(b.id), licensePlate: b.licensePlate || b.plate || '' })) : [])
-      setRoutes(Array.isArray(rData) ? rData.map((r: any) => ({ id: String(r.id), name: r.name || r.title || '' })) : [])
+      setDrivers(driverList.map(d => ({ id: String(d.id), name: d.fullName })))
+      setBuses(busList.map(b => ({ id: String(b.id), licensePlate: b.licensePlate })))
+      setRoutes(routeList.map(r => ({ id: String(r.id), name: r.name })))
     } catch (e: any) {
       setError(e?.message || 'Không thể tải dữ liệu')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
   // initial load + polling
   useEffect(() => {

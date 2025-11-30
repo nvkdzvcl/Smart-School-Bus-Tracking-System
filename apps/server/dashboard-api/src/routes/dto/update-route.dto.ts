@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsUUID, ArrayUnique } from 'class-validator'
+import { IsString, IsOptional, IsArray, IsUUID, ArrayUnique, IsIn } from 'class-validator'
 
 export class UpdateRouteDto {
   @IsString()
@@ -9,9 +9,9 @@ export class UpdateRouteDto {
   @IsOptional()
   description?: string
 
-  @IsString()
+  @IsIn(['active', 'inactive'])
   @IsOptional()
-  status?: 'active' | 'inactive'
+  status?: string
 
   @IsArray()
   @IsUUID('all', { each: true })

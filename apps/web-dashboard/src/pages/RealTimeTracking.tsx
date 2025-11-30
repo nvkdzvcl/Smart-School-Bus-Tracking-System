@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
+import { getTripAlerts, TripAlert } from '../lib/api'
 
 interface BusLocation {
   id: string
@@ -69,12 +70,61 @@ export default function RealTimeTracking() {
   const [busLocations, setBusLocations] = useState<BusLocation[]>(mockBusLocations)
   const [selectedBus, setSelectedBus] = useState<string>('')
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [alerts, setAlerts] = useState<TripAlert[]>([])
+  const [loadingAlerts, setLoadingAlerts] = useState(false)
+  const [errorAlerts, setErrorAlerts] = useState<string | null>(null)
 
+  const fetchAlerts = useCallback(async () => {
+    setLoadingAlerts(true)
+    setErrorAlerts(null)
+    try {
+      const data = await getTripAlerts()
+      setAlerts(data)
+    } catch (e: any) {
+      setErrorAlerts(e.message || 'Không tải được cảnh báo')
+    } finally {
+      setLoadingAlerts(false)
+    }
+  }, [])
 
+  useEffect(() => {
+    fetchAlerts()
+  }, [fetchAlerts])
+
+  useEffect(() => {
+    if (!autoRefresh) return
+    const id = setInterval(() => {
+      fetchAlerts()
+    }, 30000) // 30s
+    return () => clearInterval(id)
+  }, [autoRefresh, fetchAlerts])
 
   const handleRefresh = () => {
-    // Simulate data refresh
-    console.log('Refreshing bus locations...')
+    fetchAlerts()
+  }
+
+  const formatTime = (iso: string) => {
+    try {
+      const d = new Date(iso)
+      return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return iso
+    }
+  }
+
+  const badgeColor = (type: TripAlert['type']) => {
+    switch (type) {
+      case 'delay':
+        return 'bg-yellow-500'
+      case 'pickup_complete':
+        return 'bg-blue-500'
+      case 'dropoff_complete':
+        return 'bg-indigo-500'
+      case 'trip_complete':
+        return 'bg-green-500'
+      default:
+        return 'bg-gray-400'
+    }
   }
 
   return (
@@ -102,13 +152,11 @@ export default function RealTimeTracking() {
             onClick={handleRefresh}
             className="btn-secondary flex items-center space-x-2"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={"w-4 h-4 " + (loadingAlerts ? 'animate-spin' : '')} />
             <span>Làm mới</span>
           </button>
         </div>
       </div>
-
-
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Map View */}
@@ -128,7 +176,7 @@ export default function RealTimeTracking() {
               ))}
             </select>
           </div>
-          
+
           {/* Google Maps with Route */}
           <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
             {selectedBus ? (
@@ -160,27 +208,23 @@ export default function RealTimeTracking() {
         {/* Recent Alerts */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Cảnh báo gần đây</h3>
+          {errorAlerts && <div className="text-sm text-red-600 mb-3">{errorAlerts}</div>}
+          {loadingAlerts && alerts.length === 0 && (
+            <div className="text-sm text-gray-500">Đang tải cảnh báo...</div>
+          )}
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {[
-              { time: '10:35', type: 'warning', message: 'Xe 29C-11111 chậm 15 phút so với lịch trình' },
-              { time: '10:20', type: 'info', message: 'Xe 29A-12345 đã đón xong học sinh tại Điểm dừng A' },
-              { time: '10:15', type: 'success', message: 'Xe 29D-22222 đã hoàn thành chuyến đi sáng' },
-              { time: '10:10', type: 'warning', message: 'Tài xế Trần Thị B báo cáo tắc đường tại Đường DEF' },
-              { time: '10:05', type: 'info', message: 'Xe 29A-12345 bắt đầu chuyến đi sáng' },
-              { time: '09:58', type: 'warning', message: 'Xe 29B-67890 báo cáo sự cố nhỏ tại Điểm dừng E' },
-              { time: '09:45', type: 'success', message: 'Tất cả xe đã sẵn sàng cho ca sáng' }
-            ].map((alert, index) => (
+            {alerts.map((alert, index) => (
               <div key={index} className="flex items-start space-x-3 p-3 rounded-lg bg-gray-50">
-                <div className={`w-2 h-2 rounded-full mt-2 ${
-                  alert.type === 'warning' ? 'bg-yellow-500' :
-                  alert.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
-                }`} />
+                <div className={`w-2 h-2 rounded-full mt-2 ${badgeColor(alert.type)}`} />
                 <div className="flex-1">
                   <p className="text-sm text-gray-900">{alert.message}</p>
-                  <p className="text-xs text-gray-500 mt-1">{alert.time}</p>
+                  <p className="text-xs text-gray-500 mt-1">{formatTime(alert.time)}</p>
                 </div>
               </div>
             ))}
+            {!loadingAlerts && alerts.length === 0 && !errorAlerts && (
+              <div className="text-sm text-gray-500">Chưa có cảnh báo nào.</div>
+            )}
           </div>
         </div>
       </div>

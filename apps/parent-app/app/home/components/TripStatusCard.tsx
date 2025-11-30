@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/Card.tsx"
 import { Badge } from "../../../components/ui/Badge.tsx"
 import { Button } from "../../../components/ui/Button.tsx"
-import {Bus, MapPin, User, Navigation, Clock, Calendar, Star} from "lucide-react"
+import { Bus, MapPin, User, Navigation, Clock, Calendar, Star } from "lucide-react"
 import { Link } from "react-router-dom"
-import {useState} from "react";
-import {format} from "date-fns";
+import { useState } from "react";
+import { format } from "date-fns";
 
 type TripStatus = "Scheduled" | "In_progress" | "Completed" | "Cancelled"
 type TripType = "Pickup" | "Dropoff"

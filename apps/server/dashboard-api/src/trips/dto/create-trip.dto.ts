@@ -18,6 +18,10 @@ export class CreateTripDto {
     @IsEnum(TripType) type: TripType
 
     @IsOptional()
+    @IsDateString()
+    plannedStartTime?: string
+
+    @IsOptional()
     @IsArray()
     @IsUUID('4', { each: true })
     studentIds?: string[]
