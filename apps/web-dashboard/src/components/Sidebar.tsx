@@ -8,6 +8,7 @@ import {
   MapPin,
   Calendar,
   MessageCircle,
+  AlertTriangle,
   LogOut
 } from 'lucide-react'
 import { logout } from '../lib/auth'
@@ -48,6 +49,11 @@ const menuItems = [
     path: '/schedules',
     icon: Calendar,
     label: 'Quản lý Lịch trình'
+  },
+  {
+    path: '/alerts',
+    icon: AlertTriangle,
+    label: 'Sự cố'
   },
   {
     path: '/messages',
