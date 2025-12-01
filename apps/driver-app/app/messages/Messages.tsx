@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Ta
 // --- LẤY API URL TỪ .ENV ---
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
 
+
 // 1. Định nghĩa từ điển ngôn ngữ
 const TRANSLATIONS = {
   vi: {
@@ -116,6 +117,7 @@ interface ChatContact {
   id: string
   fullName: string
   role: "manager" | "parent"
+  conversationId?: string;
 }
 
 interface ConversationState extends ChatContact {
@@ -289,10 +291,11 @@ export default function MessagesPage() {
     if (!socket || !messageInput.trim() || !selectedContactId) {
       return
     }
-
+  const currentConversation = conversations.find(c => c.id === selectedContactId);
     socket.emit("sendMessage", {
       recipientId: selectedContactId,
       content: messageInput,
+      conversationId: currentConversation?.conversationId
     })
 
     setMessageInput("")
@@ -300,9 +303,11 @@ export default function MessagesPage() {
 
   const handleQuickReply = (reply: string) => {
     if (!socket || !selectedContactId) return
+    const currentConversation = conversations.find(c => c.id === selectedContactId);
     socket.emit("sendMessage", {
       recipientId: selectedContactId,
       content: reply,
+      conversationId: currentConversation?.conversationId
     })
   }
 

@@ -19,7 +19,8 @@ import { AuthService } from '../auth/auth.service';
 @WebSocketGateway({
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'], // TODO: Đổi lại địa chỉ ReactJS (FE) sau
+    methods: ['GET', 'POST'],
+    credentials: true, // TODO: Đổi lại địa chỉ ReactJS (FE) sau
   },
   namespace: 'chat', // Chỉ xử lý kết nối đến /chat
 })
@@ -133,13 +134,18 @@ async handleConnection(client: Socket) {
   /**
    * Lắng nghe sự kiện 'sendMessage' (Phần này không đổi)
    */
+/**
+   * Lắng nghe sự kiện 'sendMessage'
+   * (ĐÃ CẬP NHẬT: Nhận thêm conversationId từ Client)
+   */
   @SubscribeMessage('sendMessage')
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { recipientId: string; content: string },
+    // 1. Cập nhật kiểu dữ liệu payload để nhận conversationId
+    @MessageBody() payload: { recipientId: string; content: string; conversationId?: string },
   ) {
-    // 1. Lấy senderId (người gửi) từ map (đã xác thực lúc kết nối)
-    let senderId: string | undefined = undefined; // Sửa lỗi 2
+    // 2. Lấy senderId (người gửi) từ map (đã xác thực lúc kết nối)
+    let senderId: string | undefined = undefined;
     for (const [userId, socketId] of this.connectedUsers.entries()) {
       if (socketId === client.id) {
         senderId = userId;
@@ -151,32 +157,36 @@ async handleConnection(client: Socket) {
       return client.emit('error', 'Lỗi: Không thể xác định người gửi.');
     }
 
-    const { recipientId, content } = payload;
-    this.logger.log(`[${senderId}] -> [${recipientId}]: ${content}`);
+    // 3. Destructure lấy conversationId
+    const { recipientId, content, conversationId } = payload;
+    
+    this.logger.log(`[${senderId}] -> [${recipientId}] (Convo: ${conversationId}): ${content}`);
 
     try {
-      // 2. Tạo DTO và lưu tin nhắn vào DB
+      // 4. Tạo DTO và truyền conversationId vào Service
       const messageDto: CreateMessageDto = {
         senderId,
         recipientId,
         content,
+        conversationId, // <--- QUAN TRỌNG: Truyền cái này xuống Service
       };
+      
       const savedMessage = await this.chatService.createMessage(messageDto);
 
-      // 3. Tìm socket của người nhận (nếu họ online)
+      // 5. Tìm socket của người nhận (nếu họ online)
       const recipientSocketId = this.connectedUsers.get(recipientId);
 
       if (recipientSocketId) {
-        // 4. Nếu online, gửi tin nhắn real-time cho họ
+        // Nếu online, gửi tin nhắn real-time cho họ
         this.server
           .to(recipientSocketId)
           .emit('newMessage', savedMessage);
       } else {
-        // 5. Nếu offline, (Bước sau: bắn Push Notification - FCM)
+        // Nếu offline (sau này làm Push Notification ở đây)
         this.logger.warn(`User ${recipientId} đang offline.`);
       }
 
-      // 6. Gửi lại tin nhắn cho chính người gửi (để xác nhận đã gửi OK)
+      // 6. Gửi lại tin nhắn cho chính người gửi (để xác nhận đã gửi OK và cập nhật UI)
       client.emit('messageSent', savedMessage);
     } catch (error) {
       this.logger.error(`Lỗi khi gửi tin nhắn: ${error.message}`);
