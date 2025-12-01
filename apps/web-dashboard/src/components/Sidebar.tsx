@@ -1,11 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Bus, 
-  Users, 
-  GraduationCap, 
-  Route, 
-  MapPin, 
+import {
+  LayoutDashboard,
+  Bus,
+  Users,
+  GraduationCap,
+  Route,
+  MapPin,
   Calendar,
   MessageCircle,
   LogOut
@@ -75,7 +75,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-      
+
       <nav className="mt-6">
         {menuItems.map((item) => {
           const Icon = item.icon
@@ -94,7 +94,7 @@ export default function Sidebar() {
           )
         })}
       </nav>
-      
+
       <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
         <button onClick={handleLogout} className="sidebar-item w-full text-red-600 hover:bg-red-50 hover:text-red-700">
           <LogOut className="w-5 h-5 mr-3" />

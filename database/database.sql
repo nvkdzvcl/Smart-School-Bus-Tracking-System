@@ -78,6 +78,52 @@ CREATE TYPE student_status AS ENUM (
   'inactive'
 );
 
+-- Chuẩn hóa trạng thái người dùng thành ENUM thay vì VARCHAR
+DO $$
+BEGIN
+  -- Đảm bảo enum tồn tại và có đầy đủ các giá trị
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_status') THEN
+    CREATE TYPE user_status AS ENUM ('active', 'inactive', 'locked');
+  ELSE
+    -- Nếu enum đã tồn tại nhưng chưa có 'locked' thì thêm vào
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_enum e
+      JOIN pg_type t ON t.oid = e.enumtypid
+      WHERE t.typname = 'user_status' AND e.enumlabel = 'locked'
+    ) THEN
+      ALTER TYPE user_status ADD VALUE 'locked';
+    END IF;
+  END IF;
+
+  -- Nếu cột status đang là varchar thì chuyển sang enum (bao gồm cả 'locked')
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'Users' AND column_name = 'status' AND data_type = 'character varying'
+  ) THEN
+    ALTER TABLE "Users"
+      ALTER COLUMN "status" TYPE user_status USING (
+        CASE LOWER("status")
+          WHEN 'inactive' THEN 'inactive'::user_status
+          WHEN 'locked'   THEN 'locked'::user_status
+          ELSE 'active'   ::user_status
+        END
+      );
+  END IF;
+END $$;
+
+-- Enum cho loại cảnh báo chuyến đi phù hợp với FE
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'trip_alert_type') THEN
+    CREATE TYPE trip_alert_type AS ENUM (
+      'delay',
+      'pickup_complete',
+      'dropoff_complete',
+      'trip_complete'
+    );
+  END IF;
+END $$;
+
 -- --- HÀM TỰ ĐỘNG CẬP NHẬT `updated_at` ---
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
@@ -99,6 +145,9 @@ CREATE TABLE "Users" (
   "role" user_role NOT NULL,
   "fcm_token" VARCHAR(255),
   "license_number" VARCHAR(255), -- số bằng lái (nullable)
+  "license_class" VARCHAR(50), -- hạng bằng lái (ví dụ: B1, B2, C)
+  "license_expiry" DATE,        -- ngày hết hạn bằng lái
+  "status" user_status DEFAULT 'active', -- trạng thái người dùng (driver)
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
@@ -115,11 +164,14 @@ CREATE TABLE "Stops" (
 );
 
 -- Buses
+-- Buses
 CREATE TABLE "Buses" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "license_plate" VARCHAR(50) UNIQUE NOT NULL,
   "capacity" INT NOT NULL,
   "status" bus_status NOT NULL DEFAULT 'active',
+  "gps_device_id" VARCHAR(255), 
+  "insurance_expiry" DATE,      
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
@@ -128,8 +180,8 @@ CREATE TABLE "Buses" (
 CREATE TABLE "Routes" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name" VARCHAR(255) UNIQUE NOT NULL,
-  "description" VARCHAR(255), -- mô tả tuyến (nullable)
-  "status" VARCHAR(20) DEFAULT 'active', -- active/inactive
+  "description" VARCHAR(255), -- NEW: mô tả tuyến đường
+  "status" VARCHAR(20) DEFAULT 'active',
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
@@ -162,7 +214,7 @@ CREATE TABLE IF NOT EXISTS "Students" (
   FOREIGN KEY ("route_id") REFERENCES "Routes"("id") ON DELETE SET NULL
 );
 
--- Trips: THÊM "session"
+-- Trips: THÊM "session" + "scheduled_start_time"
 CREATE TABLE "Trips" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "route_id" UUID,
@@ -174,6 +226,7 @@ CREATE TABLE "Trips" (
   "status" trip_status NOT NULL DEFAULT 'scheduled',
   "actual_start_time" TIMESTAMPTZ,
   "actual_end_time" TIMESTAMPTZ,
+  "scheduled_start_time" TIMESTAMPTZ, -- << ADDED for planned start
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW(),
   FOREIGN KEY ("route_id") REFERENCES "Routes"("id") ON DELETE SET NULL,
@@ -193,6 +246,17 @@ CREATE TABLE "Trip_Students" (
   FOREIGN KEY ("trip_id") REFERENCES "Trips"("id") ON DELETE CASCADE,
   FOREIGN KEY ("student_id") REFERENCES "Students"("id") ON DELETE CASCADE
 );
+
+-- Bảng lưu cảnh báo theo chuyến
+CREATE TABLE IF NOT EXISTS "Trip_Alerts" (
+  "id" BIGSERIAL PRIMARY KEY,
+  "trip_id" UUID REFERENCES "Trips"("id") ON DELETE CASCADE,
+  "type" trip_alert_type NOT NULL,
+  "message" TEXT NOT NULL,
+  "created_at" TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS trip_alerts_trip_idx ON "Trip_Alerts" ("trip_id", "created_at" DESC);
 
 -- Bus_Locations
 CREATE TABLE "Bus_Locations" (
@@ -267,8 +331,6 @@ CREATE TABLE "Reports" (
   FOREIGN KEY ("student_id") REFERENCES "Students"("id") ON DELETE SET NULL
 );
 
-
-
 -- --- TRIGGERS ---
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Users"    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
 CREATE TRIGGER set_timestamp BEFORE UPDATE ON "Stops"    FOR EACH ROW EXECUTE FUNCTION trigger_set_timestamp();
@@ -295,6 +357,13 @@ CREATE UNIQUE INDEX "uq_idx_participants" ON "Conversations" (
   GREATEST("participant_1_id", "participant_2_id")
 );
 CREATE INDEX IF NOT EXISTS routes_status_idx ON "Routes"("status");
+
+-- Nếu DB hiện tại đã tồn tại bảng Routes, thêm ALTER để cập nhật khi chạy thủ công
+ALTER TABLE "Routes" ADD COLUMN IF NOT EXISTS "description" VARCHAR(255);
+
+-- Thêm cột hạng bằng lái và ngày hết hạn cho bảng Users nếu chạy thủ công
+ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "license_class" VARCHAR(50);
+ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "license_expiry" DATE;
 
 -- ========== PHẦN 2: DỮ LIỆU MẪU (CÓ SÁNG/CHIỀU) ==========
 
@@ -351,9 +420,10 @@ BEGIN
   VALUES ('Chợ Bến Thành', 'Quận 1, TPHCM', 10.77250, 106.69800)
   RETURNING id INTO v_stop_2_id;
 
-  RAISE NOTICE '--- Seeding Bus ---';
-  INSERT INTO "Buses"(license_plate, capacity, status)
-  VALUES ('51A-12345', 30, 'active')
+ RAISE NOTICE '--- Seeding Bus ---';
+  -- Cập nhật thêm GPS và Hạn bảo hiểm (1 năm sau kể từ hôm nay)
+  INSERT INTO "Buses"(license_plate, capacity, status, gps_device_id, insurance_expiry)
+  VALUES ('51A-12345', 30, 'active', 'GPS-001-A', (CURRENT_DATE + interval '1 year'))
   RETURNING id INTO v_bus_1_id;
 
   -- Route
@@ -377,8 +447,8 @@ BEGIN
 
   RAISE NOTICE '--- Seeding Trips ---';
   -- Gán các chuyến cho Tài xế 1
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'))
+  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '12 hours 47 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
 
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 35 minutes');
@@ -392,8 +462,8 @@ BEGIN
   -- INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '12 hours 35 minutes');
 
   -- Chiều (Trả 3 bé)
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'))
+  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '20 hours 21 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
 
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 35 minutes');
@@ -406,8 +476,8 @@ BEGIN
   -- ====================================================
 
   -- Sáng (Đón An & Bình) -> Đã xong
-  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'))
+  INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
 
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', CURRENT_DATE + interval '6 hours 35 minutes');
@@ -593,6 +663,46 @@ IF v_trip_dropoff_afternoon IS NOT NULL THEN
 
 END $$;
 
+-- Seed cảnh báo mẫu cho các chuyến đã có để phục vụ frontend /trips/alerts
+DO $$
+DECLARE
+  v_trip_today_pickup UUID;
+  v_trip_today_dropoff UUID;
+BEGIN
+  SELECT id INTO v_trip_today_pickup FROM "Trips"
+    WHERE trip_date = CURRENT_DATE AND session = 'morning' AND type = 'pickup'
+    ORDER BY created_at DESC LIMIT 1;
+  SELECT id INTO v_trip_today_dropoff FROM "Trips"
+    WHERE trip_date = CURRENT_DATE AND session = 'afternoon' AND type = 'dropoff'
+    ORDER BY created_at DESC LIMIT 1;
+
+  IF v_trip_today_pickup IS NOT NULL THEN
+    INSERT INTO "Trip_Alerts"(trip_id, type, message, created_at)
+    VALUES
+      (v_trip_today_pickup, 'delay', 'Chuyến đón sáng chậm 10 phút tại điểm dừng đầu tiên', NOW() - interval '45 minutes')
+    ON CONFLICT DO NOTHING;
+    INSERT INTO "Trip_Alerts"(trip_id, type, message, created_at)
+    VALUES
+      (v_trip_today_pickup, 'pickup_complete', 'Hoàn tất đón học sinh trên tuyến sáng', NOW() - interval '10 minutes')
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  IF v_trip_today_dropoff IS NOT NULL THEN
+    INSERT INTO "Trip_Alerts"(trip_id, type, message, created_at)
+    VALUES
+      (v_trip_today_dropoff, 'delay', 'Kẹt xe nhẹ trên tuyến chiều, dự kiến trễ 15 phút', NOW() - interval '20 minutes')
+    ON CONFLICT DO NOTHING;
+    INSERT INTO "Trip_Alerts"(trip_id, type, message, created_at)
+    VALUES
+      (v_trip_today_dropoff, 'dropoff_complete', 'Đã trả học sinh xong trên tuyến chiều', NOW())
+    ON CONFLICT DO NOTHING;
+    INSERT INTO "Trip_Alerts"(trip_id, type, message, created_at)
+    VALUES
+      (v_trip_today_dropoff, 'trip_complete', 'Chuyến chiều hoàn tất. Tài xế báo cáo xong nhiệm vụ.', NOW())
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
+
 -- ========== PHẦN 5: SEED THÊM DỮ LIỆU MẪU (MỞ RỘNG) ==========
 DO $$
 DECLARE
@@ -659,9 +769,13 @@ BEGIN
 
   -- ===== BUSES =====
   SELECT id INTO v_bus_1 FROM "Buses" WHERE license_plate='51A-12345' LIMIT 1;
+  
   IF NOT EXISTS (SELECT 1 FROM "Buses" WHERE license_plate='51B-22222') THEN
-    INSERT INTO "Buses"(license_plate, capacity, status) VALUES ('51B-22222', 28, 'active');
+    -- Thêm xe thứ 2 với GPS và hạn bảo hiểm
+    INSERT INTO "Buses"(license_plate, capacity, status, gps_device_id, insurance_expiry) 
+    VALUES ('51B-22222', 28, 'active', 'GPS-002-B', (CURRENT_DATE + interval '6 months'));
   END IF;
+  
   SELECT id INTO v_bus_2 FROM "Buses" WHERE license_plate='51B-22222' LIMIT 1;
 
   -- ===== ROUTES =====

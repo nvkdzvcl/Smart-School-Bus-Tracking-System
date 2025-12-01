@@ -37,4 +37,8 @@ export class UpdateTripDto {
     @IsOptional()
     @IsEnum(TripType)
     type?: TripType
+
+    @IsOptional()
+    @IsDateString()
+    plannedStartTime?: string
 }

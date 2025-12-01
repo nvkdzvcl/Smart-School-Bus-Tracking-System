@@ -11,7 +11,7 @@ export class RoutesService {
     @InjectRepository(Route) private routeRepo: Repository<Route>,
     @InjectRepository(RouteStop) private rsRepo: Repository<RouteStop>,
     @InjectRepository(Stop) private stopRepo: Repository<Stop>,
-  ) {}
+  ) { }
 
   findAll() {
     return this.routeRepo.find({ relations: ['stops', 'stops.stop'] })
@@ -23,22 +23,25 @@ export class RoutesService {
     return route[0]
   }
 
-  async create(data: { name: string; stopIds?: string[] }) {
+  async create(data: { name: string; description?: string; status?: string; stopIds?: string[] }) {
     if (!data.name) throw new BadRequestException('Route name required')
-    const route = await this.routeRepo.save(this.routeRepo.create({ name: data.name }))
+    const route = this.routeRepo.create({ name: data.name, description: data.description, status: (data.status || 'active') })
+    const saved = await this.routeRepo.save(route)
     if (data.stopIds?.length) {
       let order = 1
       for (const sid of data.stopIds) {
-        await this.rsRepo.save({ routeId: route.id, stopId: sid, stopOrder: order++ })
+        await this.rsRepo.save({ routeId: saved.id, stopId: sid, stopOrder: order++ })
       }
     }
-    return this.findOne(route.id)
+    return this.findOne(saved.id)
   }
 
-  async update(id: string, data: { name?: string; stopIds?: string[] }) {
+  async update(id: string, data: { name?: string; description?: string; status?: string; stopIds?: string[] }) {
     const route = await this.routeRepo.findOne({ where: { id } })
     if (!route) throw new NotFoundException('Route not found')
-    if (data.name) route.name = data.name
+    if (data.name !== undefined) route.name = data.name!
+    if (data.description !== undefined) route.description = data.description!
+    if (data.status !== undefined) route.status = data.status!
     await this.routeRepo.save(route)
     if (data.stopIds) {
       await this.rsRepo.delete({ routeId: id })

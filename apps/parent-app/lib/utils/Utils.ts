@@ -64,7 +64,7 @@ export function cn(...inputs: ClassValue[]) {
  * ------------------------*/
 
 /** No operation function (placeholder callbacks) */
-export const noop = () => {}
+export const noop = () => { }
 
 /** Narrowing helper: filters out null/undefined */
 export function isDefined<T>(x: T | null | undefined): x is T {
@@ -101,4 +101,15 @@ export function range(start: number, end: number) {
 /** Exhaustiveness check for switch/case on union types */
 export function assertNever(x: never): never {
   throw new Error(`Unexpected object: ${x as unknown as string}`)
+}
+
+/** Format trip status */
+export function formatTripStatus(status: string): string {
+  switch (status) {
+    case 'scheduled': return 'Scheduled'
+    case 'in_progress': return 'In Progress'
+    case 'completed': return 'Completed'
+    case 'cancelled': return 'Cancelled'
+    default: return status
+  }
 }

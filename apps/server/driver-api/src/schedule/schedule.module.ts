@@ -35,4 +35,4 @@ import { AuthModule } from '../auth/auth.module';
   controllers: [ScheduleController],
   providers: [ScheduleService],
 })
-export class ScheduleModule {}
+export class ScheduleModule { }

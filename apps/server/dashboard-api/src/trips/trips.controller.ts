@@ -12,9 +12,27 @@ import { UpdateAttendanceDto } from './dto/update-attendance.dto'
 export class TripsController {
     constructor(private readonly service: TripsService) { }
 
-    // Public read endpoints
-    @Get() findAll() { return this.service.findAll() }
-    @Get(':id') findOne(@Param('id') id: string) { return this.service.findOne(id) }
+    // Public read endpoints (place static paths before dynamic :id)
+    @Get('alerts')
+    recentAlerts() { return this.service.recentAlerts() }
+
+    @Get()
+    findAll() {
+        try {
+            return this.service.findAll()
+        } catch (e: any) {
+            throw new HttpException(e.message || 'Failed to load trips', HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @Get(':id')
+    findOne(@Param('id') id: string) {
+        try {
+            return this.service.findOne(id)
+        } catch (e: any) {
+            throw new HttpException(e.message || 'Failed to load trip', HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
 
     // Protected write endpoints - manager only
     @UseGuards(JwtAuthGuard, RolesGuard)

@@ -21,12 +21,34 @@ export class User extends TimestampedEntity {
   @Exclude()
   passwordHash: string
 
-  @Column({ type: 'enum', enum: [UserRole.MANAGER, UserRole.DRIVER, UserRole.PARENT], enumName: 'user_role', name: 'role' })
+  @Column({
+    type: 'enum',
+    enum: [UserRole.MANAGER, UserRole.DRIVER, UserRole.PARENT],
+    enumName: 'user_role',
+    name: 'role'
+  })
   role: UserRole
 
+  // --- CẬP NHẬT THÔNG TIN BẰNG LÁI ---
   @Column({ name: 'license_number', nullable: true })
-  licenseNumber?: string // chỉ áp dụng cho tài xế (driver), phụ huynh & quản lý để null
+  licenseNumber?: string
+
+  @Column({ name: 'license_class', nullable: true, length: 50 })
+  licenseClass?: string
+
+  @Column({ name: 'license_expiry', type: 'date', nullable: true })
+  licenseExpiry?: Date
+  // ------------------------------------
 
   @Column({ name: 'fcm_token', nullable: true })
   fcmToken: string
+
+  // Cập nhật trạng thái theo yêu cầu: Active (Đang làm việc), Inactive (Nghỉ phép), Locked (Khóa)
+  @Column({
+    type: 'enum',
+    enumName: 'user_status',
+    enum: ['active', 'inactive', 'locked'],
+    default: 'active'
+  })
+  status: 'active' | 'inactive' | 'locked'
 }

@@ -205,6 +205,7 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
   // 3. Sync language (Mới)
   useEffect(() => {
     localStorage.setItem("language", language)
+    window.dispatchEvent(new Event("language-change"))
   }, [language])
 
   const handleLogout = () => {
@@ -336,9 +337,13 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-4 space-y-4">
-        {/* Profile */}
-        <Card className="border-border/50 rounded-lg">
+<main className="max-w-lg mx-auto px-4 py-4 space-y-4">
+        
+        {/* 1. Profile (Xuất hiện đầu tiên - 0ms) */}
+        <Card 
+          style={{ animationDelay: "0ms", animationFillMode: "both" }}
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-border/50 rounded-lg"
+        >
           <CardHeader>
             <CardTitle className="text-base text-foreground">{t.profile}</CardTitle>
           </CardHeader>
@@ -372,8 +377,11 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
           </CardContent>
         </Card>
 
-        {/* Notifications */}
-        <Card className="border-border/50 rounded-lg">
+        {/* 2. Notifications (Xuất hiện sau 75ms) */}
+        <Card 
+          style={{ animationDelay: "75ms", animationFillMode: "both" }}
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-border/50 rounded-lg"
+        >
           <CardHeader>
             <CardTitle className="text-base text-foreground">{t.notifications}</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -403,8 +411,11 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
           </CardContent>
         </Card>
 
-        {/* Appearance */}
-        <Card className="border-border/50 rounded-lg">
+        {/* 3. Appearance (Xuất hiện sau 150ms) */}
+        <Card 
+          style={{ animationDelay: "150ms", animationFillMode: "both" }}
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-border/50 rounded-lg"
+        >
           <CardHeader>
             <CardTitle className="text-base text-foreground">{t.appearance}</CardTitle>
             <CardDescription className="text-muted-foreground">
@@ -420,7 +431,7 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
               <Switch checked={darkMode} onCheckedChange={setDarkMode} />
             </div>
 
-            {/* 🔥🔥🔥 NÚT CHUYỂN NGÔN NGỮ MỚI THÊM 🔥🔥🔥 */}
+            {/* NÚT CHUYỂN NGÔN NGỮ */}
             <div className="flex items-center justify-between pt-2 border-t border-border/40">
               <div className="space-y-0.5">
                 <Label className="text-foreground">{t.language}</Label>
@@ -436,12 +447,14 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
                  />
               </div>
             </div>
-
           </CardContent>
         </Card>
 
-        {/* Support */}
-        <Card className="border-border/50 rounded-lg">
+        {/* 4. Support (Xuất hiện sau 225ms) */}
+        <Card 
+          style={{ animationDelay: "225ms", animationFillMode: "both" }}
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-border/50 rounded-lg"
+        >
           <CardHeader>
             <CardTitle className="text-base text-foreground">{t.support}</CardTitle>
           </CardHeader>
@@ -492,12 +505,14 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
           </CardContent>
         </Card>
 
-        {/* About */}
-        <Card className="border-border/50 rounded-lg">
+        {/* 5. About (Xuất hiện sau 300ms) */}
+        <Card 
+          style={{ animationDelay: "300ms", animationFillMode: "both" }}
+          className="animate-in fade-in slide-in-from-bottom-4 duration-500 border-border/50 rounded-lg"
+        >
           <div className="p-3">
             <CardContent
-              className="py-1 text-center
-                        flex flex-col items-center justify-center gap-0.5"
+              className="py-1 text-center flex flex-col items-center justify-center gap-0.5"
             >
               <p className="font-bold">Driver App v1.0.0</p>
               <p className="font-medium text-sm">
@@ -507,23 +522,26 @@ const t = TRANSLATIONS[language as keyof typeof TRANSLATIONS]
           </div>
         </Card>
 
-        {/* Logout */}
-        <Button
-          onClick={handleLogout}
-          variant="outline"
-          className="w-full border-destructive text-destructive hover:bg-destructive/10 bg-transparent rounded-lg"
-        >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          {t.logout}
-        </Button>
+        {/* 6. Logout (Xuất hiện sau 375ms) */}
+        <div style={{ animationDelay: "375ms", animationFillMode: "both" }} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="w-full border-destructive text-destructive hover:bg-destructive/10 bg-transparent rounded-lg"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {t.logout}
+          </Button>
+        </div>
       </main>
 
       {/* Popup edit profile */}
       {isEditing && (
         <div className="fixed inset-0 z-50 flex justify-center bg-black/30 items-end sm:items-center">
-          <div className="w-full max-w-lg bg-card rounded-t-2xl sm:rounded-2xl border border-border/60 shadow-lg">
+<div className="w-full max-w-lg bg-card rounded-t-2xl sm:rounded-2xl border border-border/60 shadow-lg animate-in slide-in-from-top-10 fade-in duration-500">
+            
             <div className="px-4 pt-4 pb-2 flex items-center justify-between">
               <h2 className="text-base font-semibold text-foreground">{t.editTitle}</h2>
               <Button
