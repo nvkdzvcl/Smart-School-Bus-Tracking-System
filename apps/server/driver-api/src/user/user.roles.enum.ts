@@ -5,3 +5,9 @@ export enum UserRole {
   DRIVER = 'driver',
   PARENT = 'parent',
 }
+
+export enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  LOCKED = 'locked',
+}
