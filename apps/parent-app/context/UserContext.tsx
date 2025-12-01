@@ -17,7 +17,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const fetchUser = async () => {
       try {
         const result = await getUserById(
-          "c6e5d576-e7cd-40d3-8ac8-abb5551ef7d5"
+          "2e2d9669-e45d-4b19-bf4f-e3ddb1ccc764"
         );
         setUser(result.data);
       } catch (err) {
