@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import {
-  Plus, Edit, Trash2, Search, User, ChevronLeft, ChevronRight,
+  Plus, Edit, Trash2, Search, User, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
   Users, UserCheck, UserX, AlertCircle
 } from 'lucide-react'
 
@@ -499,9 +499,11 @@ export default function StudentManagement() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm">
           <div className="text-gray-600">Hiển thị <b>{paginated.length}</b> / <b>{filteredStudents.length}</b> học sinh</div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setPage(1)} disabled={page <= 1} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm" title="Trang đầu"><ChevronsLeft className="h-4 w-4" /></button>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"><ChevronLeft className="h-4 w-4" /> Trước</button>
-            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <span className="text-gray-700 mx-2">Trang <b>{page}</b> / <b>{maxPage}</b></span>
             <button onClick={() => setPage(p => Math.min(maxPage, p + 1))} disabled={page >= maxPage} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50">Sau <ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => setPage(maxPage)} disabled={page >= maxPage} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm" title="Trang cuối"><ChevronsRight className="h-4 w-4" /></button>
           </div>
         </div>
       </div>

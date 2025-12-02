@@ -29,6 +29,9 @@ export default function Login() {
       localStorage.setItem('token', data.access_token)
       // Also store under the standardized key used by other apps
       localStorage.setItem('auth_token', data.access_token)
+      if (data.user) {
+        localStorage.setItem('user_info', JSON.stringify(data.user))
+      }
       navigate('/')
     } catch (e: any) {
       setError(e.message || 'Đăng nhập thất bại')

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search, Clock, User, Bus,
-  ChevronLeft, ChevronRight // Thêm icon điều hướng
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react'
 import { getTrips, getDrivers, getAllBuses, getRoutes, createTrip, updateTrip, deleteTrip, Trip } from '../lib/api'
 
@@ -22,16 +22,16 @@ export default function ScheduleManagement() {
   const [drivers, setDrivers] = useState<{ id: string; name: string }[]>([])
   const [buses, setBuses] = useState<{ id: string; licensePlate: string }[]>([])
   const [routes, setRoutes] = useState<{ id: string; name: string }[]>([])
-  
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   // UI Filters State
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  
+
   // Pagination State
   const [page, setPage] = useState(1)
   const pageSize = 6 // Hiển thị 6 card mỗi trang
@@ -102,7 +102,7 @@ export default function ScheduleManagement() {
 
   // --- LOGIC PHÂN TRANG ---
   const maxPage = Math.max(1, Math.ceil(filteredSchedules.length / pageSize))
-  
+
   const paginatedSchedules = useMemo(() => {
     const start = (page - 1) * pageSize
     return filteredSchedules.slice(start, start + pageSize)
@@ -162,7 +162,7 @@ export default function ScheduleManagement() {
       await deleteTrip(schedule.id)
       // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
       if (paginatedSchedules.length === 1 && page > 1) {
-          setPage(p => p - 1)
+        setPage(p => p - 1)
       }
       await loadData()
     } catch (e: any) {
@@ -183,12 +183,12 @@ export default function ScheduleManagement() {
   const [autoRefresh] = useState(true)
   const POLL_INTERVAL_MS = 8000
 
-const loadData = async (isBackground = false) => {
+  const loadData = async (isBackground = false) => {
     // --- SỬA Ở ĐÂY: Chỉ hiện loading nếu KHÔNG phải chạy ngầm ---
     if (!isBackground) {
       setLoading(true)
     }
-    
+
     setError(null)
     try {
       const [tripList, driverList, busList, routeList] = await Promise.all([
@@ -233,13 +233,13 @@ const loadData = async (isBackground = false) => {
       setRoutes(routeList.map(r => ({ id: String(r.id), name: r.name })))
     } catch (e: any) {
       setError(e?.message || 'Không thể tải dữ liệu')
-    } finally { 
+    } finally {
       // Luôn đảm bảo tắt loading khi xong việc
-      setLoading(false) 
+      setLoading(false)
     }
   }
 
-useEffect(() => {
+  useEffect(() => {
     let mounted = true
     loadData(false) // Lần đầu: false để hiện loading
 
@@ -321,7 +321,7 @@ useEffect(() => {
       {/* Schedule Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {loading && <div className="col-span-full text-center text-sm text-gray-500">Đang tải dữ liệu...</div>}
-        
+
         {/* Render từ Paginated Schedules */}
         {!loading && paginatedSchedules.map((schedule) => (
           <div key={schedule.id} className="card">
@@ -393,19 +393,35 @@ useEffect(() => {
           <div className="text-gray-600">Hiển thị <b>{paginatedSchedules.length}</b> / <b>{filteredSchedules.length}</b> lịch trình</div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setPage(1)}
+              disabled={page <= 1}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+              title="Trang đầu"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
             >
               <ChevronLeft className="h-4 w-4" /> Trước
             </button>
-            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <span className="text-gray-700 mx-2">Trang <b>{page}</b> / <b>{maxPage}</b></span>
             <button
               onClick={() => setPage(p => Math.min(maxPage, p + 1))}
               disabled={page >= maxPage}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
             >
               Sau <ChevronRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPage(maxPage)}
+              disabled={page >= maxPage}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+              title="Trang cuối"
+            >
+              <ChevronsRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -700,7 +716,7 @@ useEffect(() => {
           </div>
         </div>
       )}
-      
+
       {error && <div className="text-sm text-red-600">{error}</div>}
     </div>
   )

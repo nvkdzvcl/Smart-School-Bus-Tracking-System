@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search, Phone, Mail,
   Users, UserCheck, AlertTriangle, CreditCard, // Đã xóa UserX (icon nghỉ phép)
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react'
 
 import {
@@ -21,7 +21,7 @@ const DRIVER_STATUSES = {
 
 export default function DriverManagement() {
   const [drivers, setDrivers] = useState<Driver[]>([])
-  
+
   // UI State
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1)
@@ -43,7 +43,7 @@ export default function DriverManagement() {
   const [addEmail, setAddEmail] = useState('')
   const [addLicenseNumber, setAddLicenseNumber] = useState('')
   const [addLicenseClass, setAddLicenseClass] = useState('')
-  const [addLicenseExpiry, setAddLicenseExpiry] = useState('') 
+  const [addLicenseExpiry, setAddLicenseExpiry] = useState('')
   const [addPassword, setAddPassword] = useState('')
   const [addStatus, setAddStatus] = useState<'active' | 'locked'>('active') // Xóa inactive
 
@@ -53,7 +53,7 @@ export default function DriverManagement() {
   const [editEmail, setEditEmail] = useState('')
   const [editLicenseNumber, setEditLicenseNumber] = useState('')
   const [editLicenseClass, setEditLicenseClass] = useState('')
-  const [editLicenseExpiry, setEditLicenseExpiry] = useState('') 
+  const [editLicenseExpiry, setEditLicenseExpiry] = useState('')
   const [editPassword, setEditPassword] = useState('')
   const [editStatus, setEditStatus] = useState<'active' | 'locked'>('active') // Xóa inactive
 
@@ -89,7 +89,7 @@ export default function DriverManagement() {
     try {
       const date = new Date(dateString)
       if (isNaN(date.getTime())) return '-'
-      return new Intl.DateTimeFormat('vi-VN').format(date) 
+      return new Intl.DateTimeFormat('vi-VN').format(date)
     } catch { return '-' }
   }
 
@@ -125,7 +125,7 @@ export default function DriverManagement() {
 
   // --- LOGIC PHÂN TRANG ---
   const maxPage = Math.max(1, Math.ceil(filteredDrivers.length / pageSize))
-  
+
   const paginatedDrivers = useMemo(() => {
     const start = (page - 1) * pageSize
     return filteredDrivers.slice(start, start + pageSize)
@@ -187,12 +187,12 @@ export default function DriverManagement() {
     } finally { setActionLoading(false) }
   }
 
-const handleEditSubmit = async (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingDriver || !editingDriver.id) return
     setActionLoading(true)
-    
-    console.log("Đang gửi cập nhật với status:", editStatus); 
+
+    console.log("Đang gửi cập nhật với status:", editStatus);
 
     try {
       // --- SỬA Ở ĐÂY: Đổi kiểu thành 'any' để TypeScript không bắt lỗi thiếu status ---
@@ -216,8 +216,8 @@ const handleEditSubmit = async (e: React.FormEvent) => {
       setEditingDriver(null)
     } catch (e: any) {
       alert(e.message || 'Cập nhật tài xế thất bại')
-    } finally { 
-      setActionLoading(false) 
+    } finally {
+      setActionLoading(false)
     }
   }
 
@@ -279,12 +279,12 @@ const handleEditSubmit = async (e: React.FormEvent) => {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input 
-                type="text" 
-                placeholder="Tìm tên, SĐT, bằng lái..." 
-                value={searchTerm} 
-                onChange={e => { setSearchTerm(e.target.value); resetPage() }} 
-                className="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white" 
+              <input
+                type="text"
+                placeholder="Tìm tên, SĐT, bằng lái..."
+                value={searchTerm}
+                onChange={e => { setSearchTerm(e.target.value); resetPage() }}
+                className="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
               />
             </div>
             <button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm">
@@ -366,21 +366,11 @@ const handleEditSubmit = async (e: React.FormEvent) => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm bg-gray-50/50">
           <div className="text-gray-600">Hiển thị <b>{paginatedDrivers.length}</b> / <b>{filteredDrivers.length}</b> tài xế</div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
-            >
-              <ChevronLeft className="h-4 w-4" /> Trước
-            </button>
-            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
-            <button
-              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
-              disabled={page >= maxPage}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
-            >
-              Sau <ChevronRight className="h-4 w-4" />
-            </button>
+            <button onClick={() => setPage(1)} disabled={page <= 1} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm" title="Trang đầu"><ChevronsLeft className="h-4 w-4" /></button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"><ChevronLeft className="h-4 w-4" /> Trước</button>
+            <span className="text-gray-700 mx-2">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <button onClick={() => setPage(p => Math.min(maxPage, p + 1))} disabled={page >= maxPage} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50">Sau <ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => setPage(maxPage)} disabled={page >= maxPage} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm" title="Trang cuối"><ChevronsRight className="h-4 w-4" /></button>
           </div>
         </div>
 

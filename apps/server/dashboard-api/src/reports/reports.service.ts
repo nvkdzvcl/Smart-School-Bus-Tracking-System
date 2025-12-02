@@ -5,7 +5,7 @@ import { Report } from './report.entity'
 import { User } from '../user/user.entity'
 import { Trip } from '../trips/trip.entity'
 import { Student } from '../students/student.entity'
-import { ReportType, ReportStatus } from '../common/enums'
+import { ReportType, ReportStatus, IncidentPriority } from '../common/enums'
 
 @Injectable()
 export class ReportsService {
@@ -24,8 +24,16 @@ export class ReportsService {
         return r
     }
 
-    async create(data: { senderId?: string; tripId?: string; studentId?: string; title: string; content: string; type: ReportType; imageUrl?: string }) {
-        const entity = this.reportRepo.create({ title: data.title, content: data.content, type: data.type, imageUrl: data.imageUrl })
+    async create(data: { senderId?: string; tripId?: string; studentId?: string; title: string; content: string; type: ReportType; imageUrl?: string; priority?: IncidentPriority; resolutionNote?: string }) {
+        const entity = this.reportRepo.create({
+            title: data.title,
+            content: data.content,
+            type: data.type,
+            imageUrl: data.imageUrl,
+            priority: data.priority ?? IncidentPriority.MEDIUM,
+            resolutionNote: data.resolutionNote,
+            status: ReportStatus.PENDING,
+        })
         if (data.senderId) {
             const sender = await this.userRepo.findOne({ where: { id: data.senderId } })
             if (!sender) throw new NotFoundException('Sender not found')
@@ -45,11 +53,13 @@ export class ReportsService {
         return this.findOne(saved.id)
     }
 
-    async update(id: string, data: { title?: string; content?: string; status?: ReportStatus }) {
+    async update(id: string, data: { title?: string; content?: string; status?: ReportStatus; priority?: IncidentPriority; resolutionNote?: string }) {
         const r = await this.findOne(id)
         if (data.title !== undefined) r.title = data.title
         if (data.content !== undefined) r.content = data.content
         if (data.status !== undefined) r.status = data.status
+        if (data.priority !== undefined) r.priority = data.priority
+        if (data.resolutionNote !== undefined) r.resolutionNote = data.resolutionNote
         await this.reportRepo.save(r)
         return this.findOne(id)
     }
