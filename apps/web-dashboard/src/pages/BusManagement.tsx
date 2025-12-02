@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search,
   Bus as BusIcon, CheckCircle, Wrench, WifiOff, MoreVertical,
-  MapPin, ShieldCheck, ChevronLeft, ChevronRight // Thêm icon điều hướng
+  MapPin, ShieldCheck, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react'
 import { getAllBuses, createBus, updateBus, deleteBus, Bus } from '../lib/api'
 
@@ -30,7 +30,7 @@ const BUS_STATUSES = {
 
 export default function BusManagement() {
   const [buses, setBuses] = useState<BusWithDetails[]>([])
-  
+
   // UI State
   const [searchTerm, setSearchTerm] = useState('')
   const [page, setPage] = useState(1) // State trang hiện tại
@@ -93,7 +93,7 @@ export default function BusManagement() {
 
   // --- LOGIC PHÂN TRANG (PAGINATION) ---
   const maxPage = Math.max(1, Math.ceil(filteredBuses.length / pageSize))
-  
+
   const paginatedBuses = useMemo(() => {
     const start = (page - 1) * pageSize
     return filteredBuses.slice(start, start + pageSize)
@@ -180,7 +180,7 @@ export default function BusManagement() {
       setBuses(prev => prev.filter(b => b.id !== bus.id))
       // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
       if (paginatedBuses.length === 1 && page > 1) {
-          setPage(p => p - 1)
+        setPage(p => p - 1)
       }
     } catch (e: any) {
       alert(e.message || 'Xóa xe buýt thất bại')
@@ -366,21 +366,11 @@ export default function BusManagement() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm">
           <div className="text-gray-600">Hiển thị <b>{paginatedBuses.length}</b> / <b>{filteredBuses.length}</b> xe</div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"
-            >
-              <ChevronLeft className="h-4 w-4" /> Trước
-            </button>
-            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
-            <button
-              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
-              disabled={page >= maxPage}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"
-            >
-              Sau <ChevronRight className="h-4 w-4" />
-            </button>
+            <button onClick={() => setPage(1)} disabled={page <= 1} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm" title="Trang đầu"><ChevronsLeft className="h-4 w-4" /></button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"><ChevronLeft className="h-4 w-4" /> Trước</button>
+            <span className="text-gray-700 mx-2">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <button onClick={() => setPage(p => Math.min(maxPage, p + 1))} disabled={page >= maxPage} className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50">Sau <ChevronRight className="h-4 w-4" /></button>
+            <button onClick={() => setPage(maxPage)} disabled={page >= maxPage} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm" title="Trang cuối"><ChevronsRight className="h-4 w-4" /></button>
           </div>
         </div>
 
