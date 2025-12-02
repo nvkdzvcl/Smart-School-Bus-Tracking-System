@@ -25,6 +25,7 @@ export default function EditParentModal({
     setLoading(true);
     try {
       const res = await updateParentInfo(parent.id, { fullName, phone, email });
+      console.log("res: ",  { fullName, phone, email }, parent.id)
       onUpdated?.(res.data);
       onClose();
     } catch (err) {

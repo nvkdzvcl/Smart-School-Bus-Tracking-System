@@ -233,10 +233,6 @@ CREATE TABLE "Route_Stops" (
   FOREIGN KEY ("stop_id") REFERENCES "Stops"("id") ON DELETE CASCADE
 );
 
-
-
-
-
 -- Students
 CREATE TABLE IF NOT EXISTS "Students" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),

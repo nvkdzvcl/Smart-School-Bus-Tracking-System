@@ -60,15 +60,15 @@ export class UsersService {
    * Dùng bởi endpoint: GET /users/students/:studentId/current-trip
    */
   async getCurrentTripForStudent(studentId: string) {
-    // 0. (optional) kiểm tra student có tồn tại không
+    // 0. Kiểm tra student (Giữ nguyên)
     const student = await this.studentRepo.findOne({
       where: { id: studentId },
     });
     if (!student) {
-      return null; // hoặc throw NotFoundException
+      return null;
     }
 
-    // 1. Lấy tất cả TripStudent của học sinh này
+    // 1. Lấy TripStudent (Giữ nguyên)
     const tripStudents = await this.tripStudentRepo.find({
       where: { studentId: studentId },
     });
@@ -77,21 +77,21 @@ export class UsersService {
       return null;
     }
 
-
     const tripIds = tripStudents.map((ts) => ts.tripId);
 
-    // 2. Tạo ngày hôm nay (Date) – đúng kiểu với tripDate: Date
+    // 2. Tạo ngày hôm nay (Giữ nguyên)
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 3. Lấy các trip hôm nay, status scheduled/in_progress
+    // 3. Query Trips (SỬA Ở ĐÂY)
     const trips = await this.tripRepo.find({
       where: {
         id: In(tripIds),
         tripDate: today,
         status: In([TripStatus.SCHEDULED, TripStatus.IN_PROGRESS]),
       },
-      relations: ['route'],
+      // === THÊM 'driver' VÀ 'bus' VÀO RELATIONS ===
+      relations: ['route', 'driver', 'bus'],
       order: {
         createdAt: 'DESC',
       },
@@ -101,7 +101,7 @@ export class UsersService {
       return null;
     }
 
-    // 4. Ưu tiên trip đang chạy trước, rồi đến scheduled
+    // 4. Ưu tiên trip (Giữ nguyên)
     const activeTrip =
       trips.find((t) => t.status === TripStatus.IN_PROGRESS) ??
       trips.find((t) => t.status === TripStatus.SCHEDULED);
@@ -110,7 +110,7 @@ export class UsersService {
       return null;
     }
 
-    // 5. Chuẩn hóa data trả về cho FE
+    // 5. Chuẩn hóa data (SỬA Ở ĐÂY)
     return {
       id: activeTrip.id,
       route_id: activeTrip.routeId,
@@ -120,6 +120,26 @@ export class UsersService {
       session: activeTrip.session,
       type: activeTrip.type,
       status: activeTrip.status,
+      // Thời gian dự kiến (nếu có)
+      actualStartTime: activeTrip.actualStartTime,
+
+      // === TRẢ VỀ THÔNG TIN TÀI XẾ VÀ XE ===
+      // Frontend sẽ truy cập qua: trip.driver.fullName, trip.driver.phone
+      driver: activeTrip.driver
+        ? {
+            id: activeTrip.driver.id,
+            fullName: activeTrip.driver.fullName,
+            phone: activeTrip.driver.phone,
+          }
+        : null,
+
+      // Frontend sẽ truy cập qua: trip.bus.licensePlate
+      bus: activeTrip.bus
+        ? {
+            id: activeTrip.bus.id,
+            licensePlate: activeTrip.bus.licensePlate,
+          }
+        : null,
     };
   }
 }
