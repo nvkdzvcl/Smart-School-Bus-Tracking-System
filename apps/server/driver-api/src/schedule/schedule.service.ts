@@ -522,6 +522,7 @@ export class ScheduleService {
   }
 
   // ========== API 8: Lấy danh sách học sinh tuần (Giữ nguyên logic đã sửa trước đó) ==========
+// ========== API 8: Lấy danh sách học sinh tuần (ĐÃ FIX LỖI ĐỊA CHỈ) ==========
   async getWeeklyStudents(
     driverId: string,
     startDate: string,
@@ -560,14 +561,20 @@ export class ScheduleService {
       const studentsList =
         (trip.tripStudents as unknown as TripStudent[]) || [];
 
-      const formattedStudents = studentsList.map((ts) => {
+const formattedStudents = studentsList.map((ts) => {
         const isPickup = trip.type === TripType.PICKUP;
+        
+        // 1. Xác định Stop dựa trên chiều đi
+        const targetStop = isPickup ? ts.student.pickupStop : ts.student.dropoffStop;
+        
+        // 2. Lấy địa chỉ từ Stop (Bỏ qua student.address vì không có trong DB)
+        // Ưu tiên lấy trường 'address' của Stop, nếu null thì lấy 'name'
+        const finalAddress = targetStop?.address || targetStop?.name || 'Chưa cập nhật địa chỉ';
+
         return {
           id: ts.student.id,
           fullName: ts.student.fullName,
-          address: isPickup
-            ? ts.student.pickupStop?.name
-            : ts.student.dropoffStop?.name,
+          address: finalAddress, // Kết quả: Sẽ hiển thị địa chỉ của trạm dừng
           status: ts.status,
           attendedAt: ts.attendedAt,
         };

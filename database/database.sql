@@ -365,7 +365,8 @@ ALTER TABLE "Routes" ADD COLUMN IF NOT EXISTS "description" VARCHAR(255);
 ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "license_class" VARCHAR(50);
 ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "license_expiry" DATE;
 
--- ========== PHẦN 2: DỮ LIỆU MẪU (CÓ SÁNG/CHIỀU) ==========
+
+-- ========== PHẦN 2: DỮ LIỆU MẪU (CÓ SÁNG/CHIỀU + 7 NGÀY) ==========
 
 DO $$
 DECLARE
@@ -380,13 +381,45 @@ DECLARE
   v_stop_2_id UUID;
   v_bus_1_id UUID;
   v_route_1_id UUID;
+  v_route_minus3_id UUID;
+  v_route_minus2_id UUID;
+  v_route_minus1_id UUID;
+  v_route_today_id UUID;
+  v_route_plus1_id UUID;
+  v_route_plus2_id UUID;
+  v_route_plus3_id UUID;
+  v_route_plus4_id UUID;
+  v_route_plus5_id UUID;
+  v_route_plus6_id UUID;
+  v_route_plus7_id UUID;
+  v_stop_minus3_pickup_id UUID;
+  v_stop_minus3_dropoff_id UUID;
+  v_stop_minus2_pickup_id UUID;
+  v_stop_minus2_dropoff_id UUID;
+  v_stop_minus1_pickup_id UUID;
+  v_stop_minus1_dropoff_id UUID;
+  v_stop_plus1_pickup_id UUID;
+  v_stop_plus1_dropoff_id UUID;
+  v_stop_plus2_pickup_id UUID;
+  v_stop_plus2_dropoff_id UUID;
+  v_stop_plus3_pickup_id UUID;
+  v_stop_plus3_dropoff_id UUID;
+  v_stop_plus4_pickup_id UUID;
+  v_stop_plus4_dropoff_id UUID;
+  v_stop_plus5_pickup_id UUID;
+  v_stop_plus5_dropoff_id UUID;
+  v_stop_plus6_pickup_id UUID;
+  v_stop_plus6_dropoff_id UUID;
+  v_stop_plus7_pickup_id UUID;
+  v_stop_plus7_dropoff_id UUID;
+  v_current_route_id UUID;
 
   -- Students
   v_student_1_id UUID; -- Nguyễn Văn An
   v_student_2_id UUID; -- Trần Thị Bình
   v_student_3_id UUID; -- Phạm Gia Huy
 
-  -- Trips
+  -- Trips Variables
   v_trip_pickup_morning   UUID;
   v_trip_pickup_afternoon UUID;
   v_trip_dropoff_afternoon UUID;
@@ -396,15 +429,22 @@ DECLARE
   v_convo_2_id UUID; -- Parent <-> Manager (Nhà trường)
   v_convo_3_id UUID; -- Parent <-> Driver 2
 
+  -- BIẾN MỚI DÙNG CHO VÒNG LẶP TẠO 7 NGÀY
+  v_loop_i INT;
+  v_gen_date DATE;
+  v_gen_trip_id UUID;
+  v_gen_status trip_status;
+  v_gen_student_status attendance_status;
+
 BEGIN
   RAISE NOTICE '--- Seeding Users (with all chat participants) ---';
-  -- Users (Sửa tên và thêm user cho đủ 3 hội thoại)
+  -- Users
   INSERT INTO "Users"(full_name, phone, email, password_hash, role)
   VALUES
     ('Trần Văn B (Tài xế)', '0912345678', 'driver01@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'driver'),
     ('Phụ huynh 01', '0922222222', 'parent01@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent'),
     ('Nhà trường (Văn phòng)', '0933333333', 'manager01@ssb.com','$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'manager'),
-    ('Lê Thị C (Tài xế)', '0944444444', 'driver02@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'driver'); -- Thêm tài xế 2
+    ('Lê Thị C (Tài xế)', '0944444444', 'driver02@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'driver');
 
   -- Lấy ID
   SELECT id INTO v_driver_1_id FROM "Users" WHERE phone='0912345678';
@@ -420,8 +460,7 @@ BEGIN
   VALUES ('Chợ Bến Thành', 'Quận 1, TPHCM', 10.77250, 106.69800)
   RETURNING id INTO v_stop_2_id;
 
- RAISE NOTICE '--- Seeding Bus ---';
-  -- Cập nhật thêm GPS và Hạn bảo hiểm (1 năm sau kể từ hôm nay)
+  RAISE NOTICE '--- Seeding Bus ---';
   INSERT INTO "Buses"(license_plate, capacity, status, gps_device_id, insurance_expiry)
   VALUES ('51A-12345', 30, 'active', 'GPS-001-A', (CURRENT_DATE + interval '1 year'))
   RETURNING id INTO v_bus_1_id;
@@ -433,6 +472,138 @@ BEGIN
   VALUES (v_route_1_id, v_stop_1_id, 1);
   INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
   VALUES (v_route_1_id, v_stop_2_id, 2);
+    v_route_today_id := v_route_1_id;
+
+    -- Các tuyến bổ sung cho từng ngày khác nhau của tài xế 0912345678
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Chợ An Đông', 'Phường 9, Quận 5, TPHCM', 10.75560, 106.66840)
+    RETURNING id INTO v_stop_minus3_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Chợ An Đông', 'Phường 9, Quận 5, TPHCM', 10.75560, 106.66840)
+    RETURNING id INTO v_stop_minus3_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến G - Chợ An Đông', 'Lộ trình phục vụ khu Chợ An Đông (Quận 5) cho ngày -3', 'active')
+    RETURNING id INTO v_route_minus3_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_minus3_id, v_stop_minus3_pickup_id, 1),
+      (v_route_minus3_id, v_stop_minus3_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Công viên Văn Lang', 'Phường 9, Quận 5, TPHCM', 10.75430, 106.66650)
+    RETURNING id INTO v_stop_minus2_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Công viên Văn Lang', 'Phường 9, Quận 5, TPHCM', 10.75430, 106.66650)
+    RETURNING id INTO v_stop_minus2_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến H - Văn Lang', 'Lộ trình phục vụ Công viên Văn Lang (Quận 5) cho ngày -2', 'active')
+    RETURNING id INTO v_route_minus2_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_minus2_id, v_stop_minus2_pickup_id, 1),
+      (v_route_minus2_id, v_stop_minus2_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Bệnh viện Chợ Rẫy', 'Phường 12, Quận 5, TPHCM', 10.75850, 106.66300)
+    RETURNING id INTO v_stop_minus1_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Bệnh viện Chợ Rẫy', 'Phường 12, Quận 5, TPHCM', 10.75850, 106.66300)
+    RETURNING id INTO v_stop_minus1_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến C - Chợ Rẫy', 'Lộ trình quanh Bệnh viện Chợ Rẫy (Quận 5) cho ngày -1', 'active')
+    RETURNING id INTO v_route_minus1_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_minus1_id, v_stop_minus1_pickup_id, 1),
+      (v_route_minus1_id, v_stop_minus1_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Trung tâm Văn hóa Quận 5', 'Phường 4, Quận 5, TPHCM', 10.75720, 106.66690)
+    RETURNING id INTO v_stop_plus1_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Trung tâm Văn hóa Quận 5', 'Phường 4, Quận 5, TPHCM', 10.75720, 106.66690)
+    RETURNING id INTO v_stop_plus1_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến D - Văn hóa Q5', 'Lộ trình phục vụ Trung tâm Văn hóa Quận 5 cho ngày +1', 'active')
+    RETURNING id INTO v_route_plus1_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus1_id, v_stop_plus1_pickup_id, 1),
+      (v_route_plus1_id, v_stop_plus1_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Nhà Thiếu nhi Quận 5', 'Phường 5, Quận 5, TPHCM', 10.75580, 106.66970)
+    RETURNING id INTO v_stop_plus2_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Nhà Thiếu nhi Quận 5', 'Phường 5, Quận 5, TPHCM', 10.75580, 106.66970)
+    RETURNING id INTO v_stop_plus2_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến E - Nhà thiếu nhi Q5', 'Lộ trình phục vụ Nhà Thiếu nhi Quận 5 cho ngày +2', 'active')
+    RETURNING id INTO v_route_plus2_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus2_id, v_stop_plus2_pickup_id, 1),
+      (v_route_plus2_id, v_stop_plus2_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Chùa Bà Thiên Hậu', 'Phường 11, Quận 5, TPHCM', 10.75210, 106.66450)
+    RETURNING id INTO v_stop_plus3_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Chùa Bà Thiên Hậu', 'Phường 11, Quận 5, TPHCM', 10.75210, 106.66450)
+    RETURNING id INTO v_stop_plus3_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến F - Chùa Thiên Hậu', 'Lộ trình quanh Chùa Bà Thiên Hậu (Quận 5) cho ngày +3', 'active')
+    RETURNING id INTO v_route_plus3_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus3_id, v_stop_plus3_pickup_id, 1),
+      (v_route_plus3_id, v_stop_plus3_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Chung cư Ngô Gia Tự', 'Phường 2, Quận 5, TPHCM', 10.75530, 106.65590)
+    RETURNING id INTO v_stop_plus4_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Chung cư Ngô Gia Tự', 'Phường 2, Quận 5, TPHCM', 10.75530, 106.65590)
+    RETURNING id INTO v_stop_plus4_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến I - Ngô Gia Tự', 'Lộ trình khu Ngô Gia Tự (Quận 5) cho ngày +4', 'active')
+    RETURNING id INTO v_route_plus4_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus4_id, v_stop_plus4_pickup_id, 1),
+      (v_route_plus4_id, v_stop_plus4_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Bến xe Chợ Lớn', 'Phường 11, Quận 5, TPHCM', 10.74900, 106.66050)
+    RETURNING id INTO v_stop_plus5_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Bến xe Chợ Lớn', 'Phường 11, Quận 5, TPHCM', 10.74900, 106.66050)
+    RETURNING id INTO v_stop_plus5_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến J - Chợ Lớn', 'Lộ trình khu Bến xe Chợ Lớn (Quận 5) cho ngày +5', 'active')
+    RETURNING id INTO v_route_plus5_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus5_id, v_stop_plus5_pickup_id, 1),
+      (v_route_plus5_id, v_stop_plus5_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Nhà thi đấu Lãnh Binh Thăng', 'Phường 12, Quận 5, TPHCM', 10.75810, 106.67080)
+    RETURNING id INTO v_stop_plus6_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Nhà thi đấu Lãnh Binh Thăng', 'Phường 12, Quận 5, TPHCM', 10.75810, 106.67080)
+    RETURNING id INTO v_stop_plus6_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến K - Lãnh Binh Thăng', 'Lộ trình quanh Nhà thi đấu Lãnh Binh Thăng (Quận 5) cho ngày +6', 'active')
+    RETURNING id INTO v_route_plus6_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus6_id, v_stop_plus6_pickup_id, 1),
+      (v_route_plus6_id, v_stop_plus6_dropoff_id, 2);
+
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Trung tâm Y tế Quận 5', 'Phường 12, Quận 5, TPHCM', 10.75180, 106.66980)
+    RETURNING id INTO v_stop_plus7_pickup_id;
+    INSERT INTO "Stops"(name, address, latitude, longitude)
+    VALUES ('Trung tâm Y tế Quận 5', 'Phường 12, Quận 5, TPHCM', 10.75180, 106.66980)
+    RETURNING id INTO v_stop_plus7_dropoff_id;
+    INSERT INTO "Routes"(name, description, status)
+    VALUES ('Tuyến L - Trung tâm Y tế Q5', 'Lộ trình phục vụ Trung tâm Y tế Quận 5 cho ngày +7', 'active')
+    RETURNING id INTO v_route_plus7_id;
+    INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
+    VALUES (v_route_plus7_id, v_stop_plus7_pickup_id, 1),
+      (v_route_plus7_id, v_stop_plus7_dropoff_id, 2);
 
   RAISE NOTICE '--- Seeding Students ---';
   INSERT INTO "Students"(full_name, parent_id, pickup_stop_id, dropoff_stop_id)
@@ -445,76 +616,117 @@ BEGIN
   VALUES ('Phạm Gia Huy', v_parent_id, v_stop_1_id, v_stop_2_id)
   RETURNING id INTO v_student_3_id;
 
-  RAISE NOTICE '--- Seeding Trips ---';
-  -- Gán các chuyến cho Tài xế 1
+  RAISE NOTICE '--- Seeding Trips (Manual: Yesterday, Today, Tomorrow) ---';
+  
+  -- 1. HÔM QUA (YESTERDAY) - Đã xong
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '12 hours 47 minutes'))
+  VALUES (v_route_minus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '12 hours 47 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 35 minutes');
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 40 minutes');
+  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 45 minutes');
 
-  -- Chiều (Đón Huy)
-  -- INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  -- VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '12 hours 30 minutes'))
-  -- RETURNING id INTO v_trip_pickup_afternoon;
-
-  -- INSERT INTO "Trip_Students" VALUES (v_trip_pickup_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '12 hours 35 minutes');
-
-  -- Chiều (Trả 3 bé)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '20 hours 21 minutes'))
+  VALUES (v_route_minus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '20 hours 21 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
-
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 35 minutes');
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 40 minutes');
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 45 minutes');
 
-
-  -- ====================================================
   -- 2. HÔM NAY (TODAY) - Sáng xong, Chiều chưa
-  -- ====================================================
-
-  -- Sáng (Đón An & Bình) -> Đã xong
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
+  VALUES (v_route_today_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', CURRENT_DATE + interval '6 hours 35 minutes');
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', CURRENT_DATE + interval '6 hours 40 minutes');
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'attended', CURRENT_DATE + interval '6 hours 45 minutes');
 
-
-  -- Chiều (Trả 3 bé) -> Sắp chạy (Scheduled)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'afternoon', 'dropoff', 'scheduled', (CURRENT_DATE + interval '16 hours 30 minutes'))
+  VALUES (v_route_today_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'afternoon', 'dropoff', 'scheduled', (CURRENT_DATE + interval '16 hours 30 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
-
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'pending', NULL);
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'pending', NULL);
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'pending', NULL);
 
-
-  -- ====================================================
   -- 3. NGÀY MAI (TOMORROW) - Tất cả SẮP CHẠY
-  -- ====================================================
-
-  -- Sáng (Đón An & Bình)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'morning', 'pickup', 'scheduled', ((CURRENT_DATE + 1) + interval '6 hours 30 minutes'))
+  VALUES (v_route_plus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'morning', 'pickup', 'scheduled', ((CURRENT_DATE + 1) + interval '6 hours 30 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'pending', NULL);
   INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'pending', NULL);
+  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'pending', NULL);
 
-  -- Chiều (Trả 3 bé)
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
-  VALUES (v_route_1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'afternoon', 'dropoff', 'scheduled', ((CURRENT_DATE + 1) + interval '16 hours 30 minutes'))
+  VALUES (v_route_plus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'afternoon', 'dropoff', 'scheduled', ((CURRENT_DATE + 1) + interval '16 hours 30 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
-
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'pending', NULL);
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'pending', NULL);
   INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'pending', NULL);
+
+  -- =========================================================================
+  -- TỰ ĐỘNG GEN THÊM CHO CÁC NGÀY TRONG TUẦN (Từ T+2 đến T+7)
+  -- =========================================================================
+  RAISE NOTICE '--- Auto Seeding Remaining Days of Week ---';
+  
+  FOR v_loop_i IN 2..7 LOOP
+
+    v_gen_date := CURRENT_DATE + v_loop_i;
+
+    -- XÁC ĐỊNH TRẠNG THÁI
+    IF v_loop_i < 0 THEN
+       v_gen_status := 'completed';
+       v_gen_student_status := 'attended';
+    ELSE
+       v_gen_status := 'scheduled';
+       v_gen_student_status := 'pending';
+    END IF;
+
+    v_current_route_id := CASE v_loop_i
+      WHEN -3 THEN v_route_minus3_id
+      WHEN -2 THEN v_route_minus2_id
+      WHEN -1 THEN v_route_minus1_id
+      WHEN 0  THEN v_route_today_id
+      WHEN 1  THEN v_route_plus1_id
+      WHEN 2  THEN v_route_plus2_id
+      WHEN 3  THEN v_route_plus3_id
+      WHEN 4  THEN v_route_plus4_id
+      WHEN 5  THEN v_route_plus5_id
+      WHEN 6  THEN v_route_plus6_id
+      WHEN 7  THEN v_route_plus7_id
+      ELSE v_route_today_id
+    END;
+
+    -- 1. SÁNG (Pickup)
+    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+    VALUES (
+      v_current_route_id, v_bus_1_id, v_driver_1_id, 
+      v_gen_date, 'morning', 'pickup', v_gen_status,
+      CASE WHEN v_gen_status = 'completed' THEN (v_gen_date + interval '6 hours 30 minutes') ELSE NULL END,
+      CASE WHEN v_gen_status = 'completed' THEN (v_gen_date + interval '7 hours 15 minutes') ELSE NULL END
+    )
+    RETURNING id INTO v_gen_trip_id;
+
+    -- Add học sinh
+    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_1_id, v_gen_student_status);
+    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_2_id, v_gen_student_status);
+    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_3_id, v_gen_student_status);
+
+    -- 2. CHIỀU (Dropoff)
+    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
+    VALUES (
+      v_current_route_id, v_bus_1_id, v_driver_1_id, 
+      v_gen_date, 'afternoon', 'dropoff', v_gen_status,
+      CASE WHEN v_gen_status = 'completed' THEN (v_gen_date + interval '16 hours 30 minutes') ELSE NULL END,
+      CASE WHEN v_gen_status = 'completed' THEN (v_gen_date + interval '17 hours 30 minutes') ELSE NULL END
+    )
+    RETURNING id INTO v_gen_trip_id;
+
+    -- Add học sinh
+    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_1_id, v_gen_student_status);
+    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_2_id, v_gen_student_status);
+    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_3_id, v_gen_student_status);
+
+  END LOOP;
 
 
   RAISE NOTICE '--- Seeding Notifications (Parent) ---';
@@ -523,19 +735,13 @@ BEGIN
     (v_parent_id, 'Lịch đưa đón sáng', 'Hôm nay có chuyến đón sáng cho Nguyễn Văn An & Trần Thị Bình.', 'arrival'),
     (v_parent_id, 'Lịch đưa đón chiều', 'Hôm nay có chuyến đón chiều & trả chiều cho Phạm Gia Huy; trả chiều gồm cả An & Bình.', 'arrival');
 
-  -- === PHẦN THÊM MỚI ĐỂ TEST CHAT ===
   RAISE NOTICE '--- Seeding Conversations & Messages (MOCK DATA) ---';
 
--- === PHẦN THÊM MỚI ĐỂ TEST CHAT ===
-  RAISE NOTICE '--- Seeding Conversations & Messages (MOCK DATA) ---';
-
-  -- 1. Hội thoại 1: Parent 1 <-> Driver 1 (Trần Văn B)
-  -- (Sửa last_message_at để khớp với tin nhắn cuối cùng)
+  -- 1. Hội thoại 1: Parent 1 <-> Driver 1
   INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
-  VALUES (v_parent_id, v_driver_1_id, (NOW() - interval '1 hour 30 minutes')) -- 10:30 AM (Giả lập)
+  VALUES (v_parent_id, v_driver_1_id, (NOW() - interval '1 hour 30 minutes'))
   RETURNING id INTO v_convo_1_id;
 
-  -- (Sửa lại: Thêm 6 tin nhắn mẫu từ ChatBox)
   INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at)
   VALUES 
     (v_convo_1_id, v_driver_1_id, v_parent_id, 'Chào anh, tôi đang trên đường đến đón bé Anh.', (NOW() - interval '1 hour 36 minutes')),
@@ -545,28 +751,26 @@ BEGIN
     (v_convo_1_id, v_driver_1_id, v_parent_id, 'Tôi đến cổng rồi ạ.', (NOW() - interval '1 hour 31 minutes')),
     (v_convo_1_id, v_parent_id, v_driver_1_id, 'Tôi cho bé ra ngay.', (NOW() - interval '1 hour 30 minutes'));
 
-  -- (Sửa lại: Cập nhật last_message_preview cho đúng tin nhắn cuối cùng)
   UPDATE "Conversations"
   SET last_message_preview = 'Bạn: Tôi cho bé ra ngay.'
   WHERE id = v_convo_1_id;
   
-  -- 2. Hội thoại 2: Parent 1 <-> Nhà trường (Manager 1)
-  -- (Tin nhắn này chưa được đọc: is_read = false)
+  -- 2. Hội thoại 2: Parent 1 <-> Nhà trường
   INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
-  VALUES (v_parent_id, v_manager_id, (NOW() - interval '2 hours 45 minutes')) -- 9:15 AM
+  VALUES (v_parent_id, v_manager_id, (NOW() - interval '2 hours 45 minutes'))
   RETURNING id INTO v_convo_2_id;
 
   INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at, is_read)
   VALUES 
-    (v_convo_2_id, v_parent_id, v_manager_id, 'Vâng, tôi đã nhận được thông báo.', (NOW() - interval '2 hours 45 minutes'), false); -- CHƯA ĐỌC
+    (v_convo_2_id, v_parent_id, v_manager_id, 'Vâng, tôi đã nhận được thông báo.', (NOW() - interval '2 hours 45 minutes'), false);
 
   UPDATE "Conversations"
   SET last_message_preview = 'Bạn: Vâng, tôi đã nhận được thông báo.'
   WHERE id = v_convo_2_id;
 
-  -- 3. Hội thoại 3: Parent 1 <-> Driver 2 (Lê Thị C)
+  -- 3. Hội thoại 3: Parent 1 <-> Driver 2
   INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
-  VALUES (v_parent_id, v_driver_2_id, (NOW() - interval '1 day')) -- Hôm qua
+  VALUES (v_parent_id, v_driver_2_id, (NOW() - interval '1 day'))
   RETURNING id INTO v_convo_3_id;
 
   INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at)
