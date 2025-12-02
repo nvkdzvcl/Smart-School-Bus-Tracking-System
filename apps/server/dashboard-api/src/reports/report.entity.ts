@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 't
 import { User } from '../user/user.entity'
 import { Trip } from '../trips/trip.entity'
 import { Student } from '../students/student.entity'
-import { ReportType, ReportStatus } from '../common/enums'
+import { ReportType, ReportStatus, IncidentPriority } from '../common/enums'
 import { TimestampedEntity } from '../common/base.entity'
 
 @Entity('Reports')
@@ -21,16 +21,35 @@ export class Report extends TimestampedEntity {
   @Column({ nullable: false }) title: string
   @Column({ type: 'text', nullable: false }) content: string
 
-  @Column({ type: 'enum', enum: [
-    ReportType.STUDENT_ABSENT,
-    ReportType.INCIDENT_TRAFFIC,
-    ReportType.INCIDENT_VEHICLE,
-    ReportType.INCIDENT_ACCIDENT,
-    ReportType.COMPLAINT,
-    ReportType.OTHER
-  ], enumName: 'report_type', name: 'type' }) type: ReportType
+  @Column({
+    type: 'enum', enum: [
+      ReportType.STUDENT_ABSENT,
+      ReportType.INCIDENT_TRAFFIC,
+      ReportType.INCIDENT_VEHICLE,
+      ReportType.INCIDENT_ACCIDENT,
+      ReportType.COMPLAINT,
+      ReportType.OTHER
+    ], enumName: 'report_type', name: 'type'
+  }) type: ReportType
 
-  @Column({ type: 'enum', enum: [ReportStatus.PENDING, ReportStatus.RESOLVED], enumName: 'report_status', name: 'status', default: ReportStatus.PENDING }) status: ReportStatus
+  @Column({
+    type: 'enum', enum: [
+      ReportStatus.PENDING,
+      ReportStatus.IN_PROGRESS,
+      ReportStatus.RESOLVED,
+      ReportStatus.REJECTED
+    ], enumName: 'report_status', name: 'status', default: ReportStatus.PENDING
+  }) status: ReportStatus
 
   @Column({ name: 'image_url', nullable: true }) imageUrl?: string
+
+  @Column({
+    type: 'enum', enum: [
+      IncidentPriority.LOW,
+      IncidentPriority.MEDIUM,
+      IncidentPriority.HIGH
+    ], enumName: 'incident_priority', name: 'priority', default: IncidentPriority.MEDIUM
+  }) priority: IncidentPriority
+
+  @Column({ name: 'resolution_note', type: 'text', nullable: true }) resolutionNote?: string
 }

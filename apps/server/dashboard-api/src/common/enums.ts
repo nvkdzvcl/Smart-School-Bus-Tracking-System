@@ -51,5 +51,13 @@ export enum ReportType {
 
 export enum ReportStatus {
     PENDING = 'pending',
+    IN_PROGRESS = 'in_progress',
     RESOLVED = 'resolved',
+    REJECTED = 'rejected',
+}
+
+export enum IncidentPriority {
+    LOW = 'low',
+    MEDIUM = 'medium',
+    HIGH = 'high',
 }

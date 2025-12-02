@@ -31,7 +31,7 @@ export interface Driver {
     licenseClass?: string
     licenseExpiry?: string // ISO date string
     // --- THÊM DÒNG NÀY ---
-    status?: 'active' | 'inactive' | 'locked' 
+    status?: 'active' | 'inactive' | 'locked'
     // ---------------------
     createdAt?: string
     updatedAt?: string
@@ -70,6 +70,27 @@ export interface TripAlert {
     type: 'delay' | 'pickup_complete' | 'dropoff_complete' | 'trip_complete';
     message: string;
     licensePlate?: string;
+}
+
+// Driver report (incident) entity for dashboard
+export interface Report {
+    id: string;
+    title: string;
+    content: string;
+    type: 'incident_traffic' | 'student_absent' | 'incident_vehicle' | 'incident_accident' | 'complaint' | 'other' | string;
+    status: 'pending' | 'in_progress' | 'resolved' | 'rejected' | string;
+    createdAt: string;
+    imageUrl?: string;
+    // Optional enrichments depending on backend
+    senderId?: string;
+    tripId?: string;
+    studentId?: string;
+}
+
+export type ReportDetail = Report & {
+    sender?: { id: string; fullName: string };
+    trip?: { id: string; route?: { name?: string }; bus?: { licensePlate?: string } };
+    student?: { id: string; fullName: string };
 }
 
 export interface Conversation {
@@ -281,6 +302,30 @@ export const getTripAlerts = async (): Promise<TripAlert[]> => {
     } catch {
         return []
     }
+}
+
+// Reports APIs (driver-submitted incidents)
+export const getReports = async (): Promise<Report[]> => {
+    try {
+        const res = await fetch(`${API_BASE}/reports`, { headers: { ...authHeaders() } })
+        return await handleResponse<Report[]>(res, 'Failed to fetch reports')
+    } catch {
+        return []
+    }
+}
+
+export const getReportById = async (id: string): Promise<ReportDetail> => {
+    const res = await fetch(`${API_BASE}/reports/${id}`, { headers: { ...authHeaders() } })
+    return handleResponse<ReportDetail>(res, 'Failed to fetch report')
+}
+
+export const updateReport = async (id: string, data: Partial<Pick<Report, 'title' | 'content' | 'status'>>): Promise<ReportDetail> => {
+    const res = await fetch(`${API_BASE}/reports/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+    })
+    return handleResponse<ReportDetail>(res, 'Failed to update report')
 }
 
 // Hàm cập nhật chuyến đi (cho nút Chỉnh sửa)

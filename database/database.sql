@@ -49,6 +49,12 @@ CREATE TYPE attendance_status AS ENUM (
   'absent'
 );
 
+-- Fix: add missing enum for Students.status
+CREATE TYPE student_status AS ENUM (
+  'active',
+  'inactive'
+);
+
 CREATE TYPE notification_type AS ENUM (
   'alert',         -- cảnh báo (ví dụ: xe trễ, tai nạn)
   'info',          -- thông tin chung (ví dụ: thay đổi lộ trình)
@@ -68,14 +74,19 @@ CREATE TYPE report_type AS ENUM (
   'other'
 );
 
+-- Cập nhật report_status để hỗ trợ đầy đủ workflow
 CREATE TYPE report_status AS ENUM (
   'pending',
-  'resolved'
+  'in_progress',
+  'resolved',
+  'rejected'
 );
 
-CREATE TYPE student_status AS ENUM (
-  'active',
-  'inactive'
+-- Priority cho sự cố
+CREATE TYPE incident_priority AS ENUM (
+  'low',
+  'medium',
+  'high'
 );
 
 -- Chuẩn hóa trạng thái người dùng thành ENUM thay vì VARCHAR
@@ -124,6 +135,33 @@ BEGIN
   END IF;
 END $$;
 
+-- Patch: Bổ sung giá trị enum và các cột mới nếu DB đã tồn tại
+DO $$
+BEGIN
+  -- Mở rộng enum report_status nếu đã tạo trước đó
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'report_status') THEN
+    BEGIN
+      ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'in_progress';
+      ALTER TYPE report_status ADD VALUE IF NOT EXISTS 'rejected';
+    EXCEPTION
+      WHEN duplicate_object THEN NULL;
+    END;
+  END IF;
+
+  -- Tạo incident_priority nếu chưa có
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'incident_priority') THEN
+    CREATE TYPE incident_priority AS ENUM ('low','medium','high');
+  END IF;
+
+  -- Thêm cột mới cho bảng Reports nếu thiếu
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables WHERE table_name = 'Reports'
+  ) THEN
+    ALTER TABLE "Reports" ADD COLUMN IF NOT EXISTS "priority" incident_priority NOT NULL DEFAULT 'medium';
+    ALTER TABLE "Reports" ADD COLUMN IF NOT EXISTS "resolution_note" TEXT;
+  END IF;
+END $$;
+
 -- --- HÀM TỰ ĐỘNG CẬP NHẬT `updated_at` ---
 CREATE OR REPLACE FUNCTION trigger_set_timestamp()
 RETURNS TRIGGER AS $$
@@ -163,7 +201,6 @@ CREATE TABLE "Stops" (
   "updated_at" TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Buses
 -- Buses
 CREATE TABLE "Buses" (
   "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -323,6 +360,8 @@ CREATE TABLE "Reports" (
   "content" TEXT NOT NULL,
   "type" report_type NOT NULL,
   "status" report_status NOT NULL DEFAULT 'pending',
+  "priority" incident_priority NOT NULL DEFAULT 'medium',
+  "resolution_note" TEXT,
   "image_url" VARCHAR(255),
   "created_at" TIMESTAMPTZ DEFAULT NOW(),
   "updated_at" TIMESTAMPTZ DEFAULT NOW(),
@@ -1630,7 +1669,7 @@ BEGIN
         FROM "Students" WHERE route_id = rec_route.id;
       END IF;
 
-      -- === B. CHIỀU ===
+      -- === B. CHIều ===
       IF v_trip_date = CURRENT_DATE THEN 
          v_trip_status := 'scheduled'; 
       END IF;

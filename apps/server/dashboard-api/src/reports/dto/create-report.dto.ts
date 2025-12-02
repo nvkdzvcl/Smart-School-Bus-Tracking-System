@@ -1,5 +1,5 @@
 import { IsUUID, IsString, IsNotEmpty, IsEnum, IsOptional } from 'class-validator'
-import { ReportType } from '../../common/enums'
+import { ReportType, IncidentPriority } from '../../common/enums'
 export class CreateReportDto {
     @IsUUID() @IsOptional() senderId?: string
     @IsUUID() @IsOptional() tripId?: string
@@ -8,4 +8,6 @@ export class CreateReportDto {
     @IsString() @IsNotEmpty() content: string
     @IsEnum(ReportType) type: ReportType
     @IsString() @IsOptional() imageUrl?: string
+    @IsEnum(IncidentPriority) @IsOptional() priority?: IncidentPriority
+    @IsString() @IsOptional() resolutionNote?: string
 }
