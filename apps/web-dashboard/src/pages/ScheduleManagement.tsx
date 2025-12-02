@@ -183,8 +183,13 @@ export default function ScheduleManagement() {
   const [autoRefresh] = useState(true)
   const POLL_INTERVAL_MS = 8000
 
-  const loadData = async () => {
-    setLoading(true); setError(null)
+const loadData = async (isBackground = false) => {
+    // --- SỬA Ở ĐÂY: Chỉ hiện loading nếu KHÔNG phải chạy ngầm ---
+    if (!isBackground) {
+      setLoading(true)
+    }
+    
+    setError(null)
     try {
       const [tripList, driverList, busList, routeList] = await Promise.all([
         getTrips(),
@@ -228,17 +233,22 @@ export default function ScheduleManagement() {
       setRoutes(routeList.map(r => ({ id: String(r.id), name: r.name })))
     } catch (e: any) {
       setError(e?.message || 'Không thể tải dữ liệu')
-    } finally { setLoading(false) }
+    } finally { 
+      // Luôn đảm bảo tắt loading khi xong việc
+      setLoading(false) 
+    }
   }
 
-  useEffect(() => {
+useEffect(() => {
     let mounted = true
-    loadData()
+    loadData(false) // Lần đầu: false để hiện loading
+
     if (!autoRefresh) return
     const iv = setInterval(() => {
       if (!mounted) return
-      loadData()
+      loadData(true) // Lặp lại: true để chạy ngầm (không hiện loading)
     }, POLL_INTERVAL_MS)
+
     return () => { mounted = false; clearInterval(iv) }
   }, [autoRefresh])
 

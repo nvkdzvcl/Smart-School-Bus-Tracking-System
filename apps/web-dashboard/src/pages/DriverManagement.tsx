@@ -1,23 +1,21 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search, Phone, Mail,
-  Users, UserCheck, UserX, AlertTriangle, CreditCard,
-  ChevronLeft, ChevronRight // Thêm icon điều hướng
+  Users, UserCheck, AlertTriangle, CreditCard, // Đã xóa UserX (icon nghỉ phép)
+  ChevronLeft, ChevronRight
 } from 'lucide-react'
 
-// Import API thực tế
 import {
   getDrivers,
   createDriver,
   updateDriver,
   deleteDriver,
   Driver
-} from '../lib/api' 
+} from '../lib/api'
 
-// CẤU HÌNH TRẠNG THÁI
+// 1. CẤU HÌNH TRẠNG THÁI: Chỉ còn Active và Locked
 const DRIVER_STATUSES = {
   'active': { label: 'Đang làm việc', color: 'bg-green-100 text-green-800' },
-  'inactive': { label: 'Nghỉ phép', color: 'bg-gray-100 text-gray-800' },
   'locked': { label: 'Đã khóa', color: 'bg-red-100 text-red-800' },
 }
 
@@ -26,8 +24,8 @@ export default function DriverManagement() {
   
   // UI State
   const [searchTerm, setSearchTerm] = useState('')
-  const [page, setPage] = useState(1) // State trang hiện tại
-  const pageSize = 8 // Số dòng mỗi trang
+  const [page, setPage] = useState(1)
+  const pageSize = 8
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
@@ -39,7 +37,7 @@ export default function DriverManagement() {
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
 
-  // Form States - Add
+  // Form States - Add (Mặc định active)
   const [addFullName, setAddFullName] = useState('')
   const [addPhone, setAddPhone] = useState('')
   const [addEmail, setAddEmail] = useState('')
@@ -47,7 +45,7 @@ export default function DriverManagement() {
   const [addLicenseClass, setAddLicenseClass] = useState('')
   const [addLicenseExpiry, setAddLicenseExpiry] = useState('') 
   const [addPassword, setAddPassword] = useState('')
-  const [addStatus, setAddStatus] = useState<'active' | 'inactive' | 'locked'>('active')
+  const [addStatus, setAddStatus] = useState<'active' | 'locked'>('active') // Xóa inactive
 
   // Form States - Edit
   const [editFullName, setEditFullName] = useState('')
@@ -57,9 +55,9 @@ export default function DriverManagement() {
   const [editLicenseClass, setEditLicenseClass] = useState('')
   const [editLicenseExpiry, setEditLicenseExpiry] = useState('') 
   const [editPassword, setEditPassword] = useState('')
-  const [editStatus, setEditStatus] = useState<'active' | 'inactive' | 'locked'>('active')
+  const [editStatus, setEditStatus] = useState<'active' | 'locked'>('active') // Xóa inactive
 
-  // --- 1. LOAD DỮ LIỆU TỪ DB ---
+  // --- LOAD DỮ LIỆU ---
   useEffect(() => {
     fetchDrivers()
   }, [])
@@ -83,9 +81,7 @@ export default function DriverManagement() {
     if (!dateString) return '';
     try {
       return new Date(dateString).toISOString().split('T')[0];
-    } catch {
-      return '';
-    }
+    } catch { return ''; }
   }
 
   const formatDateDisplay = (dateString: string | undefined | null) => {
@@ -127,7 +123,7 @@ export default function DriverManagement() {
     })
   }, [drivers, searchTerm])
 
-  // --- LOGIC PHÂN TRANG (PAGINATION) ---
+  // --- LOGIC PHÂN TRANG ---
   const maxPage = Math.max(1, Math.ceil(filteredDrivers.length / pageSize))
   
   const paginatedDrivers = useMemo(() => {
@@ -137,17 +133,14 @@ export default function DriverManagement() {
 
   const resetPage = () => setPage(1)
 
-  // Stats
+  // Stats: Đã xóa inactive
   const stats = useMemo(() => ({
     total: drivers.length,
     active: drivers.filter(d => d.status === 'active').length,
-    inactive: drivers.filter(d => d.status === 'inactive').length,
     locked: drivers.filter(d => d.status === 'locked').length
   }), [drivers])
 
-
   // --- HANDLERS ---
-
   const handleEditDriver = (driver: Driver) => {
     setEditingDriver(driver)
     setEditFullName(driver.fullName || '')
@@ -157,8 +150,9 @@ export default function DriverManagement() {
     setEditLicenseClass(driver.licenseClass || '')
     setEditLicenseExpiry(toInputDate(driver.licenseExpiry))
 
-    const currentStatus = (driver.status && ['active', 'inactive', 'locked'].includes(driver.status))
-      ? driver.status as 'active' | 'inactive' | 'locked'
+    // Logic set status: Nếu data cũ lỡ có inactive thì vẫn fallback về active để tránh lỗi form
+    const currentStatus = (driver.status && ['active', 'locked'].includes(driver.status))
+      ? driver.status as 'active' | 'locked'
       : 'active';
     setEditStatus(currentStatus)
 
@@ -181,35 +175,35 @@ export default function DriverManagement() {
         licenseExpiry: addLicenseExpiry || undefined,
         status: addStatus
       })
-
       await fetchDrivers()
       setShowAddModal(false)
-
-      // Reset form & Page
+      // Reset form
       setAddFullName(''); setAddPhone(''); setAddEmail('');
       setAddLicenseNumber(''); setAddLicenseClass(''); setAddLicenseExpiry('');
       setAddPassword(''); setAddStatus('active')
-      resetPage() // Về trang 1 khi thêm mới
+      resetPage()
     } catch (e: any) {
       alert(e.message || 'Thêm tài xế thất bại')
-    } finally {
-      setActionLoading(false)
-    }
+    } finally { setActionLoading(false) }
   }
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
+const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingDriver || !editingDriver.id) return
     setActionLoading(true)
+    
+    console.log("Đang gửi cập nhật với status:", editStatus); 
+
     try {
-      const payload: Partial<Driver> & { password?: string } = {
+      // --- SỬA Ở ĐÂY: Đổi kiểu thành 'any' để TypeScript không bắt lỗi thiếu status ---
+      const payload: any = {
         fullName: editFullName,
         phone: editPhone,
         email: editEmail || undefined,
         licenseNumber: editLicenseNumber,
         licenseClass: editLicenseClass || undefined,
         licenseExpiry: editLicenseExpiry || undefined,
-        status: editStatus as any
+        status: editStatus // Bây giờ dòng này sẽ không bị đỏ nữa
       }
 
       if (editPassword) {
@@ -222,8 +216,8 @@ export default function DriverManagement() {
       setEditingDriver(null)
     } catch (e: any) {
       alert(e.message || 'Cập nhật tài xế thất bại')
-    } finally {
-      setActionLoading(false)
+    } finally { 
+      setActionLoading(false) 
     }
   }
 
@@ -232,17 +226,15 @@ export default function DriverManagement() {
     try {
       await deleteDriver(driver.id)
       setDrivers(prev => prev.filter(d => d.id !== driver.id))
-      // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
-      if (paginatedDrivers.length === 1 && page > 1) {
-        setPage(p => p - 1)
-      }
+      if (paginatedDrivers.length === 1 && page > 1) setPage(p => p - 1)
     } catch (e: any) {
       alert(e.message || 'Xóa tài xế thất bại')
     }
   }
 
   const renderStatusBadge = (status: string | undefined) => {
-    const normalizedStatus = (status && ['active', 'inactive', 'locked'].includes(status))
+    // Chỉ render badge cho active và locked
+    const normalizedStatus = (status && ['active', 'locked'].includes(status))
       ? status as keyof typeof DRIVER_STATUSES
       : 'active';
     const config = DRIVER_STATUSES[normalizedStatus];
@@ -256,13 +248,13 @@ export default function DriverManagement() {
 
   return (
     <div className="space-y-6">
-      {/* HEADER & STATS */}
+      {/* HEADER & STATS: Đã xóa card Nghỉ phép */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Quản lý tài xế</h1>
         <p className="text-gray-600 text-sm">Quản lý thông tin và trạng thái đội ngũ tài xế</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0"><Users className="w-6 h-6 text-blue-600" /></div>
           <div><p className="text-sm font-medium text-gray-500">Tổng tài xế</p><p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p></div>
@@ -271,10 +263,7 @@ export default function DriverManagement() {
           <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0"><UserCheck className="w-6 h-6 text-green-600" /></div>
           <div><p className="text-sm font-medium text-gray-500">Đang làm việc</p><p className="text-2xl font-bold text-gray-900 mt-1">{stats.active}</p></div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-4 shadow-sm">
-          <div className="w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0"><UserX className="w-6 h-6 text-gray-600" /></div>
-          <div><p className="text-sm font-medium text-gray-500">Nghỉ phép</p><p className="text-2xl font-bold text-gray-900 mt-1">{stats.inactive}</p></div>
-        </div>
+        {/* Đã xóa card Nghỉ phép */}
         <div className="bg-white p-4 rounded-xl border border-gray-200 flex items-center gap-4 shadow-sm">
           <div className="w-12 h-12 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0"><AlertTriangle className="w-6 h-6 text-red-600" /></div>
           <div><p className="text-sm font-medium text-gray-500">Đã khóa</p><p className="text-2xl font-bold text-gray-900 mt-1">{stats.locked}</p></div>
@@ -285,7 +274,6 @@ export default function DriverManagement() {
 
       {/* TABLE SECTION */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        {/* Header Table */}
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/50">
           <h2 className="text-lg font-bold text-gray-900">Danh sách tài xế ({filteredDrivers.length})</h2>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -295,7 +283,7 @@ export default function DriverManagement() {
                 type="text" 
                 placeholder="Tìm tên, SĐT, bằng lái..." 
                 value={searchTerm} 
-                onChange={e => { setSearchTerm(e.target.value); resetPage() }} // Reset trang khi search
+                onChange={e => { setSearchTerm(e.target.value); resetPage() }} 
                 className="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white" 
               />
             </div>
@@ -305,7 +293,6 @@ export default function DriverManagement() {
           </div>
         </div>
 
-        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -325,7 +312,6 @@ export default function DriverManagement() {
               ) : filteredDrivers.length === 0 ? (
                 <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">Không tìm thấy tài xế nào</td></tr>
               ) : (
-                // Dùng paginatedDrivers thay vì filteredDrivers
                 paginatedDrivers.map(driver => (
                   <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -377,7 +363,6 @@ export default function DriverManagement() {
           </table>
         </div>
 
-        {/* --- PAGINATION FOOTER (MỚI) --- */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm bg-gray-50/50">
           <div className="text-gray-600">Hiển thị <b>{paginatedDrivers.length}</b> / <b>{filteredDrivers.length}</b> tài xế</div>
           <div className="flex items-center gap-2">
@@ -401,7 +386,7 @@ export default function DriverManagement() {
 
       </div>
 
-      {/* ADD MODAL */}
+      {/* ADD MODAL: Đã xóa option inactive */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all scale-100">
@@ -430,7 +415,6 @@ export default function DriverManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
                   <select value={addStatus} onChange={e => setAddStatus(e.target.value as any)} className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="active">Đang làm việc</option>
-                    <option value="inactive">Nghỉ phép</option>
                     <option value="locked">Đã khóa</option>
                   </select>
                 </div>
@@ -446,7 +430,7 @@ export default function DriverManagement() {
         </div>
       )}
 
-      {/* EDIT MODAL */}
+      {/* EDIT MODAL: Đã xóa option inactive */}
       {showEditModal && editingDriver && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -475,7 +459,6 @@ export default function DriverManagement() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
                   <select value={editStatus} onChange={e => setEditStatus(e.target.value as any)} className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                     <option value="active">Đang làm việc</option>
-                    <option value="inactive">Nghỉ phép</option>
                     <option value="locked">Đã khóa</option>
                   </select>
                 </div>

@@ -30,6 +30,9 @@ export interface Driver {
     licenseNumber?: string
     licenseClass?: string
     licenseExpiry?: string // ISO date string
+    // --- THÊM DÒNG NÀY ---
+    status?: 'active' | 'inactive' | 'locked' 
+    // ---------------------
     createdAt?: string
     updatedAt?: string
 }
