@@ -77,11 +77,8 @@ export class UsersService {
       return null;
     }
 
-    // console.log('student: ', student);
-    console.log('tripStudents: ', tripStudents);
 
     const tripIds = tripStudents.map((ts) => ts.tripId);
-    console.log('tripIds: ..............', tripIds);
 
     // 2. Tạo ngày hôm nay (Date) – đúng kiểu với tripDate: Date
     const today = new Date();
@@ -99,7 +96,6 @@ export class UsersService {
         createdAt: 'DESC',
       },
     });
-    console.log('trips: ', trips);
 
     if (trips.length === 0) {
       return null;

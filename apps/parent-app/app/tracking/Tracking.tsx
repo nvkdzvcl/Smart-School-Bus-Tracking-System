@@ -1,386 +1,222 @@
-// apps/parent-app/app/tracking/Tracking.tsx
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-  useContext,
-} from "react";
-import ReactMapGL, {
-  Marker,
-  Source,
-  Layer,
-} from "@goongmaps/goong-map-react";
+"use client";
+
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import { io, Socket } from "socket.io-client";
 import { UserContext } from "@/context/UserContext";
 
-type Stop = {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  stop_order: number;
+// Import Component bản đồ dùng chung
+import BusMap, { type MapStop, type BusLocation } from "@/components/BusMap";
+import Header from "../layout/components/Header";
+import BottomNav from "../layout/components/BottomNav";
+
+// URL API
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
+// --- CẤU HÌNH TRẠNG THÁI TRIP (STATUS MAP) ---
+// Định nghĩa màu sắc và label cho từng trạng thái
+const TRIP_STATUS_MAP: Record<string, { label: string; className: string; icon?: string }> = {
+  scheduled: {
+    label: "Sắp chạy",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+    icon: "🕒"
+  },
+  in_progress: {
+    label: "Đang di chuyển",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse", // Thêm hiệu ứng nhấp nháy nhẹ
+    icon: "●"
+  },
+  completed: {
+    label: "Đã hoàn thành",
+    className: "bg-gray-100 text-gray-600 border-gray-200",
+    icon: "🏁"
+  },
+  cancelled: {
+    label: "Đã hủy",
+    className: "bg-red-50 text-red-700 border-red-200",
+    icon: "✕"
+  },
 };
 
-type Location = {
-  latitude: number;
-  longitude: number;
-  timestamp: string;
-};
-
-type MapViewport = {
-  latitude: number;
-  longitude: number;
-  zoom: number;
-};
-
-const containerStyle: React.CSSProperties = {
-  width: "100%",
-  height: "100vh",
-};
+// --- ICONS SVG ---
+const ExpandIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+);
+const CompressIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+);
+const UserIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+);
 
 const ParentTracking: React.FC = () => {
   const { user: profile } = useContext(UserContext)!;
 
-  const [selectedStudentId, setSelectedStudentId] = useState<
-    string | undefined
-  >(undefined);
-  console.log("profile: ", profile)
-
+  // --- STATE ---
+  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
   const [trip, setTrip] = useState<any>(null);
-  const [stops, setStops] = useState<Stop[]>([]);
-  const [busPosition, setBusPosition] = useState<Location | null>(null);
-  const [busTrail, setBusTrail] = useState<Location[]>([]);
+  const [stops, setStops] = useState<MapStop[]>([]);
+  const [busPosition, setBusPosition] = useState<BusLocation | null>(null);
 
-  const [viewport, setViewport] = useState<MapViewport>({
-    latitude: 10.77653,
-    longitude: 106.70098,
-    zoom: 14,
-  });
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-
-
-  // Danh sách con của phụ huynh
   const students = useMemo(() => profile?.students ?? [], [profile]);
 
-  // Chọn học sinh: nếu chưa chọn thì ưu tiên đứa đầu tiên
   const selectedStudent = useMemo(() => {
     if (!students || students.length === 0) return undefined;
-
-    if (!selectedStudentId) {
-      return students[0];
-    }
-
+    if (!selectedStudentId) return students[0];
     return students.find((s: any) => s.id === selectedStudentId) ?? students[0];
   }, [students, selectedStudentId]);
 
+  // --- LOGIC FETCH DATA ---
   useEffect(() => {
     if (!selectedStudent?.id) return;
+    
+    // Reset state
+    setTrip(null); setStops([]); setBusPosition(null);
 
     let socket: Socket | null = null;
 
     const fetchData = async () => {
       try {
-        // 1. Trip hiện tại của học sinh
-        const tripRes = await fetch(
-          `${API_BASE}/users/students/${selectedStudent.id}/current-trip`
-        );
-        if (!tripRes.ok) {
-          console.error("Failed to fetch current trip");
-          setTrip(null);
-          setStops([]);
-          setBusPosition(null);
-          setBusTrail([]);
-          return;
-        }
-
-
+        const tripRes = await fetch(`${API_BASE}/users/students/${selectedStudent.id}/current-trip`);
+        if (!tripRes.ok) return;
+        
         const tripData = await tripRes.json();
-        console.log("tripRes: ", tripData)
-
-        if (!tripData) {
-          setTrip(null);
-          setStops([]);
-          setBusPosition(null);
-          setBusTrail([]);
-          return;
-        }
-
+        if (!tripData || Object.keys(tripData).length === 0) return;
+        
         setTrip(tripData);
 
-
-        // 2. Route stops
         const stopsRes = await fetch(`${API_BASE}/routes/${tripData.route_id}/stops`);
         const stopsData = await stopsRes.json();
-
-        const mappedStops: Stop[] = (stopsData || []).map((rs: any) => ({
-          id: rs.stop_id,
-          name: rs.stop.name,
-          latitude: Number(rs.stop.latitude),
-          longitude: Number(rs.stop.longitude),
+        const mappedStops: MapStop[] = (stopsData || []).map((rs: any) => ({
+          id: rs.stop_id, name: rs.stop.name,
+          latitude: Number(rs.stop.latitude), longitude: Number(rs.stop.longitude),
           stop_order: rs.stop_order,
         }));
         setStops(mappedStops);
 
-        // 3. Các location gần nhất (lấy 50 điểm để vẽ hành trình)
-        const locRes = await fetch(
-          `${API_BASE}/trips/${tripData.id}/locations?limit=50`
-        );
+        const locRes = await fetch(`${API_BASE}/trips/${tripData.id}/locations?limit=1`);
         if (locRes.ok) {
           const locData = await locRes.json();
-          const mappedLocs: Location[] = (locData || []).map((l: any) => ({
-            latitude: Number(l.latitude),
-            longitude: Number(l.longitude),
-            timestamp: l.timestamp,
-          }));
-
-          if (mappedLocs.length > 0) {
-            // locData sort DESC (mới nhất trước) → đảo lại để vẽ từ cũ -> mới
-            const trail = [...mappedLocs].reverse();
-            setBusTrail(trail);
-
-            const last = mappedLocs[0];
-            setBusPosition(last);
-
-            setViewport((vp: MapViewport) => ({
-              ...vp,
-              latitude: last.latitude,
-              longitude: last.longitude,
-            }));
-          } else if (mappedStops.length > 0) {
-            // Không có location -> center vào stop đầu
-            setBusTrail([]);
-            setViewport((vp: MapViewport) => ({
-              ...vp,
-              latitude: mappedStops[0].latitude,
-              longitude: mappedStops[0].longitude,
-            }));
+          if (locData && locData.length > 0) {
+            const last = locData[0];
+            setBusPosition({ latitude: Number(last.latitude), longitude: Number(last.longitude), heading: 0 });
           }
         }
 
-        // 4. Socket realtime
-        socket = io("http://localhost:3000/tracking", {
-          transports: ["websocket"],
-        });
-
+        socket = io(API_BASE.replace("/api", "") || "http://localhost:3000/tracking", { transports: ["websocket"], path: "/socket.io" });
         socket.emit("joinTrip", { tripId: tripData.id });
-
         socket.on("locationUpdate", (loc: any) => {
-          const newPos: Location = {
-            latitude: Number(loc.latitude),
-            longitude: Number(loc.longitude),
-            timestamp: loc.timestamp,
-          };
-          setBusPosition(newPos);
-          setBusTrail((prev) => [...prev, newPos]);
-
-          setViewport((vp: MapViewport) => ({
-            ...vp,
-            latitude: newPos.latitude,
-            longitude: newPos.longitude,
-          }));
+          setBusPosition({ latitude: Number(loc.latitude), longitude: Number(loc.longitude), heading: loc.heading || 0, speed: loc.speed || 0 });
         });
       } catch (err) {
-        console.error("Error loading tracking data:", err);
+        console.error("Error:", err);
       }
     };
-
     fetchData();
-
-    return () => {
-      if (socket) socket.disconnect();
-    };
+    return () => { if (socket) socket.disconnect(); };
   }, [selectedStudent?.id]);
 
-  // GeoJSON cho polyline tuyến (theo stops)
-  const routeGeoJson = useMemo(() => {
-    if (stops.length < 2) return null;
+  if (!profile) return <div className="p-4 text-center text-gray-500">Đang tải...</div>;
+  if (!students || students.length === 0) return <div className="p-4 text-center text-gray-500">Chưa có dữ liệu học sinh.</div>;
 
-    return {
-      type: "Feature" as const,
-      geometry: {
-        type: "LineString" as const,
-        coordinates: stops.map((s) => [s.longitude, s.latitude]),
-      },
-      properties: {},
-    };
-  }, [stops]);
-
-  // GeoJSON cho hành trình xe (theo Bus_Locations)
-  const busTrailGeoJson = useMemo(() => {
-    if (busTrail.length < 2) return null;
-
-    return {
-      type: "Feature" as const,
-      geometry: {
-        type: "LineString" as const,
-        coordinates: busTrail.map((p) => [p.longitude, p.latitude]),
-      },
-      properties: {},
-    };
-  }, [busTrail]);
-
-  const goongToken = import.meta.env.VITE_GOONG_MAPTILES_KEY as string;
-
-  if (!goongToken) {
-    return <div>Chưa cấu hình VITE_GOONG_MAPTILES_KEY</div>;
-  }
-
-  if (!profile) {
-    return <div>Đang tải thông tin phụ huynh...</div>;
-  }
-
-  if (!students || students.length === 0) {
-    return <div>Phụ huynh hiện chưa có học sinh nào được gán.</div>;
-  }
-        console.log("trip: ", trip)
+  // Lấy config hiển thị dựa trên status hiện tại (mặc định là scheduled nếu không khớp)
+  const statusConfig = trip ? (TRIP_STATUS_MAP[trip.status] || TRIP_STATUS_MAP.scheduled) : null;
 
   return (
-    <div style={{ width: "100%", height: "100vh", position: "relative" }}>
-      {/* Chọn học sinh (nếu có nhiều con) */}
-      <div
-        style={{
-          position: "absolute",
-          top: 16,
-          left: 16,
-          zIndex: 10,
-          background: "white",
-          padding: 8,
-          borderRadius: 8,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        }}
-      >
-        <div style={{ marginBottom: 4 }}>
-          <b>Phụ huynh:</b>{" "}
-          {profile.fullName || profile.fullName || profile.phone || profile.id}
-        </div>
-        <label>
-          <b>Chọn học sinh:&nbsp;</b>
-          <select
-            value={selectedStudent?.id}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-          >
-            {students.map((s: any) => (
-              <option key={s.id} value={s.id}>
-                {s.full_name || s.fullName || s.name || s.id}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <Header title="Theo Dõi" />
+      
+      <main className="max-w-2xl mx-auto min-h-screen relative">
+        
+        {/* --- PHẦN 1: CHỌN HỌC SINH --- */}
+        <div className="px-4 pt-4">
+          <h1 className="text-xl font-bold text-gray-800 mb-3">Theo dõi đưa đón</h1>
 
-      <ReactMapGL
-        {...viewport}
-        width={containerStyle.width as string}
-        height={containerStyle.height as string}
-        mapStyle="https://tiles.goong.io/assets/goong_map_web.json"
-        goongApiAccessToken={goongToken}
-        onViewportChange={(vp: any) =>
-          setViewport({
-            latitude: vp.latitude,
-            longitude: vp.longitude,
-            zoom: vp.zoom,
-          } as MapViewport)
-        }
-      >
-        {/* Polyline tuyến chuẩn (Stops) */}
-        {routeGeoJson && (
-          <Source id="route" type="geojson" data={routeGeoJson}>
-            <Layer
-              id="route-line"
-              type="line"
-              paint={{
-                "line-color": "#007bff",
-                "line-width": 4,
-              }}
-            />
-          </Source>
-        )}
-
-        {/* Polyline hành trình xe (Bus_Locations) */}
-        {busTrailGeoJson && (
-          <Source id="bus-trail" type="geojson" data={busTrailGeoJson}>
-            <Layer
-              id="bus-trail-line"
-              type="line"
-              paint={{
-                "line-color": "#ff8800",
-                "line-width": 3,
-              }}
-            />
-          </Source>
-        )}
-
-        {/* Marker các điểm dừng */}
-        {stops.map((s) => (
-          <Marker key={s.id} longitude={s.longitude} latitude={s.latitude}>
-            <div
-              style={{
-                background: "#fff",
-                borderRadius: "50%",
-                width: 24,
-                height: 24,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                border: "2px solid #007bff",
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-              title={s.name}
-            >
-              {s.stop_order}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-gray-600">
+                <UserIcon />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-gray-500 block mb-1 font-medium">Học sinh</label>
+                
+                <div className="relative">
+                  <select
+                    className="w-full text-base font-bold text-gray-900 bg-transparent border-none p-0 pr-6 cursor-pointer focus:ring-0 focus:outline-none appearance-none truncate"
+                    value={selectedStudent?.id}
+                    onChange={(e) => setSelectedStudentId(e.target.value)}
+                  >
+                    {students.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.fullName}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
-          </Marker>
-        ))}
 
-        {/* Marker xe buýt */}
-        {busPosition && (
-          <Marker
-            longitude={busPosition.longitude}
-            latitude={busPosition.latitude}
-          >
-            <img
-              src="/bus-icon.png"
-              alt="Bus"
-              style={{ width: 40, height: 40 }}
-            />
-          </Marker>
-        )}
-      </ReactMapGL>
+            {/* Thông tin trạng thái chuyến đi (Dùng TRIP_STATUS_MAP) */}
+            {trip && statusConfig ? (
+              <div className="flex flex-wrap gap-2">
+                <span className={`text-xs px-2.5 py-1 rounded-md font-semibold border flex items-center gap-1.5 ${statusConfig.className}`}>
+                  {/* Icon trạng thái */}
+                  {statusConfig.icon && <span>{statusConfig.icon}</span>}
+                  {/* Label tiếng Việt */}
+                  {statusConfig.label}
+                </span>
+                <span className="text-xs px-2.5 py-1 rounded-md font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                  {trip.route_name || "Tuyến chưa đặt tên"}
+                </span>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500 italic">Hiện không có chuyến đi nào đang hoạt động.</div>
+            )}
+          </div>
+        </div>
 
-      {/* Overlay info */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 16,
-          left: 16,
-          padding: 12,
-          background: "white",
-          borderRadius: 8,
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-        }}
-      >
-        <div>
-          <b>Học sinh:</b>{" "}
-          {selectedStudent?.fullName ||
-            selectedStudent?.id}
+        {/* --- PHẦN 2: BẢN ĐỒ --- */}
+        <div className="mx-4 mt-4 h-[350px] rounded-2xl overflow-hidden border border-gray-200 shadow-md bg-gray-100 relative">
+          <BusMap
+            stops={stops}
+            busLocation={busPosition}
+            className="w-full h-full"
+          />
         </div>
-        <div>
-          <b>Tuyến:</b> {trip?.route_name || trip?.route_id || "Không có"}
-        </div>
-        <div>
-          <b>Trạng thái chuyến:</b> {trip?.status || "N/A"}
-        </div>
-        {busPosition && (
-          <div>
-            <b>Vị trí cập nhật lúc:</b>{" "}
-            {new Date(busPosition.timestamp).toLocaleTimeString()}
+
+        {/* --- PHẦN 3: CHI TIẾT --- */}
+        {trip && (
+          <div className="px-4 mt-5">
+            <h3 className="text-base font-bold text-gray-800 mb-3 px-1">Chi tiết hành trình</h3>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+              <div className="relative pl-2">
+                <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-gray-100"></div>
+                {stops.map((stop, index) => (
+                  <div key={stop.id} className="mb-6 relative last:mb-0 pl-6">
+                    <div className={`
+                      absolute left-0 top-1 w-4 h-4 rounded-full border-[3px] border-white shadow-sm box-content
+                      ${index === 0 ? "bg-emerald-500 ring-1 ring-emerald-200" : index === stops.length - 1 ? "bg-red-500 ring-1 ring-red-200" : "bg-blue-500 ring-1 ring-blue-200"}
+                    `}></div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-gray-800 leading-none mb-1">{stop.name}</span>
+                        {index === 0 && <span className="text-xs font-medium text-emerald-600">Điểm đón</span>}
+                        {index === stops.length - 1 && <span className="text-xs font-medium text-red-600">Điểm trả</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 text-xs text-center text-gray-400 font-medium">
+              Cập nhật lần cuối: {new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
         )}
-        {!trip && (
-          <div>Hôm nay chưa có chuyến nào cho học sinh này.</div>
-        )}
-      </div>
+      </main>
+      <BottomNav />
     </div>
   );
 };
