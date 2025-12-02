@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search,
   Bus as BusIcon, CheckCircle, Wrench, WifiOff, MoreVertical,
-  MapPin, ShieldCheck, Calendar // Thêm icon mới
+  MapPin, ShieldCheck, ChevronLeft, ChevronRight // Thêm icon điều hướng
 } from 'lucide-react'
 import { getAllBuses, createBus, updateBus, deleteBus, Bus } from '../lib/api'
 
-// Mở rộng type Bus local để demo các trường mới (nếu API chưa có thì sẽ undefined)
+// Mở rộng type Bus local để demo các trường mới
 interface BusWithDetails extends Bus {
   gpsDeviceId?: string;
   insuranceExpiry?: string;
 }
 
-// 1. CẤU HÌNH STATUS CHO BADGE (LIGHT MODE COLORS)
+// 1. CẤU HÌNH STATUS CHO BADGE
 const BUS_STATUSES = {
   'active': {
     label: 'Đang hoạt động',
@@ -30,7 +30,13 @@ const BUS_STATUSES = {
 
 export default function BusManagement() {
   const [buses, setBuses] = useState<BusWithDetails[]>([])
+  
+  // UI State
   const [searchTerm, setSearchTerm] = useState('')
+  const [page, setPage] = useState(1) // State trang hiện tại
+  const pageSize = 8 // Số dòng mỗi trang
+
+  // Modal State
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingBus, setEditingBus] = useState<BusWithDetails | null>(null)
@@ -39,15 +45,15 @@ export default function BusManagement() {
   const [newLicensePlate, setNewLicensePlate] = useState('')
   const [newCapacity, setNewCapacity] = useState<number | ''>('')
   const [newStatus, setNewStatus] = useState('active')
-  const [newGpsDevice, setNewGpsDevice] = useState('') // Mới
-  const [newInsuranceExpiry, setNewInsuranceExpiry] = useState('') // Mới
+  const [newGpsDevice, setNewGpsDevice] = useState('')
+  const [newInsuranceExpiry, setNewInsuranceExpiry] = useState('')
 
   // State cho form EDIT
   const [editLicensePlate, setEditLicensePlate] = useState('')
   const [editCapacity, setEditCapacity] = useState<number | ''>('')
   const [editStatus, setEditStatus] = useState('active')
-  const [editGpsDevice, setEditGpsDevice] = useState('') // Mới
-  const [editInsuranceExpiry, setEditInsuranceExpiry] = useState('') // Mới
+  const [editGpsDevice, setEditGpsDevice] = useState('')
+  const [editInsuranceExpiry, setEditInsuranceExpiry] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -70,17 +76,30 @@ export default function BusManagement() {
   }, [])
 
   // --- LOGIC TÍNH TOÁN THỐNG KÊ ---
-  const stats = {
+  const stats = useMemo(() => ({
     total: buses.length,
     active: buses.filter(b => (b.status || '').toLowerCase() === 'active').length,
     maintenance: buses.filter(b => (b.status || '').toLowerCase() === 'maintenance').length,
     inactive: buses.filter(b => (b.status || '').toLowerCase() === 'inactive').length
-  }
+  }), [buses])
 
-  const filteredBuses = buses.filter(bus =>
-    bus.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (bus.gpsDeviceId || '').toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // --- LOGIC SEARCH & FILTER ---
+  const filteredBuses = useMemo(() => {
+    return buses.filter(bus =>
+      bus.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (bus.gpsDeviceId || '').toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [buses, searchTerm])
+
+  // --- LOGIC PHÂN TRANG (PAGINATION) ---
+  const maxPage = Math.max(1, Math.ceil(filteredBuses.length / pageSize))
+  
+  const paginatedBuses = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredBuses.slice(start, start + pageSize)
+  }, [filteredBuses, page])
+
+  const resetPage = () => setPage(1)
 
   // --- HANDLERS ---
   const handleEditBus = (bus: BusWithDetails) => {
@@ -88,7 +107,6 @@ export default function BusManagement() {
     setEditLicensePlate(bus.licensePlate)
     setEditCapacity(bus.capacity || '')
     setEditStatus((bus.status || 'active').toLowerCase())
-    // Map dữ liệu mới nếu có, không thì để trống
     setEditGpsDevice(bus.gpsDeviceId || '')
     setEditInsuranceExpiry(bus.insuranceExpiry || '')
     setShowEditModal(true)
@@ -107,7 +125,6 @@ export default function BusManagement() {
         insuranceExpiry: newInsuranceExpiry || undefined,
       })
 
-      // Giả lập hiển thị dữ liệu mới ở frontend ngay lập tức
       const createdWithDetails = {
         ...created,
         gpsDeviceId: newGpsDevice,
@@ -116,10 +133,10 @@ export default function BusManagement() {
 
       setBuses(prev => [...prev, createdWithDetails])
       setShowAddModal(false)
-
-      // Reset form
+      // Reset form & page
       setNewLicensePlate(''); setNewCapacity(''); setNewStatus('active');
       setNewGpsDevice(''); setNewInsuranceExpiry('');
+      resetPage()
     } catch (e: any) {
       alert(e.message || 'Thêm xe buýt thất bại')
     } finally {
@@ -161,6 +178,10 @@ export default function BusManagement() {
     try {
       await deleteBus(String(bus.id))
       setBuses(prev => prev.filter(b => b.id !== bus.id))
+      // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
+      if (paginatedBuses.length === 1 && page > 1) {
+          setPage(p => p - 1)
+      }
     } catch (e: any) {
       alert(e.message || 'Xóa xe buýt thất bại')
     }
@@ -250,7 +271,7 @@ export default function BusManagement() {
                 type="text"
                 placeholder="Tìm biển số, GPS..."
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={e => { setSearchTerm(e.target.value); resetPage() }} // Reset trang khi search
                 className="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 rounded-lg text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               />
             </div>
@@ -282,9 +303,10 @@ export default function BusManagement() {
               ) : filteredBuses.length === 0 ? (
                 <tr><td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">Không tìm thấy xe buýt nào</td></tr>
               ) : (
-                filteredBuses.map(bus => (
+                // MAP QUA PAGINATED BUSES THAY VÌ FILTERED
+                paginatedBuses.map(bus => (
                   <tr key={bus.id} className="hover:bg-gray-50 transition-colors">
-                    {/* Cột Thông tin xe (Gộp Biển số + Sức chứa cho gọn) */}
+                    {/* Cột Thông tin xe */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-gray-900">{bus.licensePlate}</span>
@@ -292,7 +314,7 @@ export default function BusManagement() {
                       </div>
                     </td>
 
-                    {/* Cột GPS Device (Mới) */}
+                    {/* Cột GPS Device */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-gray-400" />
@@ -302,7 +324,7 @@ export default function BusManagement() {
                       </div>
                     </td>
 
-                    {/* Cột Bảo hiểm (Mới) */}
+                    {/* Cột Bảo hiểm */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="w-4 h-4 text-gray-400" />
@@ -339,6 +361,29 @@ export default function BusManagement() {
             </tbody>
           </table>
         </div>
+
+        {/* --- PAGINATION FOOTER (MỚI) --- */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm">
+          <div className="text-gray-600">Hiển thị <b>{paginatedBuses.length}</b> / <b>{filteredBuses.length}</b> xe</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+            >
+              <ChevronLeft className="h-4 w-4" /> Trước
+            </button>
+            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <button
+              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
+              disabled={page >= maxPage}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50"
+            >
+              Sau <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* --- ADD MODAL --- */}

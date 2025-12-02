@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Search, Clock, User, Bus } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  Plus, Edit, Trash2, Search, Clock, User, Bus,
+  ChevronLeft, ChevronRight // Thêm icon điều hướng
+} from 'lucide-react'
 import { getTrips, getDrivers, getAllBuses, getRoutes, createTrip, updateTrip, deleteTrip, Trip } from '../lib/api'
 
 interface Schedule {
@@ -19,12 +22,20 @@ export default function ScheduleManagement() {
   const [drivers, setDrivers] = useState<{ id: string; name: string }[]>([])
   const [buses, setBuses] = useState<{ id: string; licensePlate: string }[]>([])
   const [routes, setRoutes] = useState<{ id: string; name: string }[]>([])
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // UI Filters State
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  
+  // Pagination State
+  const [page, setPage] = useState(1)
+  const pageSize = 6 // Hiển thị 6 card mỗi trang
+
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
@@ -39,7 +50,7 @@ export default function ScheduleManagement() {
   const [addBusId, setAddBusId] = useState<string | undefined>(undefined)
   const [addLoading, setAddLoading] = useState(false)
 
-  // Thêm state cho modal chỉnh sửa
+  // edit modal form state
   const [editRouteId, setEditRouteId] = useState<string | undefined>(undefined)
   const [editTripDate, setEditTripDate] = useState<string>('')
   const [editSession, setEditSession] = useState<'morning' | 'afternoon' | undefined>(undefined)
@@ -47,7 +58,8 @@ export default function ScheduleManagement() {
   const [editStartTime, setEditStartTime] = useState<string>('')
   const [editDriverId, setEditDriverId] = useState<string | undefined>(undefined)
   const [editBusId, setEditBusId] = useState<string | undefined>(undefined)
-  const [editLoading, setEditLoading] = useState(false) // Thêm state loading cho modal edit
+  const [editLoading, setEditLoading] = useState(false)
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'scheduled': return 'bg-blue-100 text-blue-800'
@@ -74,15 +86,32 @@ export default function ScheduleManagement() {
   const getTypeColor = (type: string) => {
     return type === 'morning' ? 'bg-orange-100 text-orange-800' : 'bg-purple-100 text-purple-800'
   }
-  const filteredSchedules = schedules.filter(schedule => {
-    const matchesSearch = schedule.routeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      schedule.busLicensePlate.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDate = !dateFilter || schedule.date === dateFilter
-    const matchesStatus = statusFilter === 'all' || schedule.status === statusFilter
-    const matchesType = typeFilter === 'all' || schedule.type === typeFilter
-    return matchesSearch && matchesDate && matchesStatus && matchesType
-  })
+
+  // --- LOGIC SEARCH & FILTER ---
+  const filteredSchedules = useMemo(() => {
+    return schedules.filter(schedule => {
+      const matchesSearch = schedule.routeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        schedule.driverName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        schedule.busLicensePlate.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesDate = !dateFilter || schedule.date === dateFilter
+      const matchesStatus = statusFilter === 'all' || schedule.status === statusFilter
+      const matchesType = typeFilter === 'all' || schedule.type === typeFilter
+      return matchesSearch && matchesDate && matchesStatus && matchesType
+    })
+  }, [schedules, searchTerm, dateFilter, statusFilter, typeFilter])
+
+  // --- LOGIC PHÂN TRANG ---
+  const maxPage = Math.max(1, Math.ceil(filteredSchedules.length / pageSize))
+  
+  const paginatedSchedules = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredSchedules.slice(start, start + pageSize)
+  }, [filteredSchedules, page])
+
+  const resetPage = () => setPage(1)
+
+  // --- Handlers ---
+
   const handleEditSchedule = (schedule: Schedule) => {
     setEditingSchedule(schedule)
     const currentRoute = routes.find(r => r.name === schedule.routeName)
@@ -99,6 +128,7 @@ export default function ScheduleManagement() {
     setEditStartTime(schedule.startTime || '');
     setShowEditModal(true)
   }
+
   const handleSaveEditSchedule = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingSchedule || !editRouteId) return alert('Dữ liệu không hợp lệ.')
@@ -114,27 +144,32 @@ export default function ScheduleManagement() {
         startTime: editStartTime,
         type: editingSchedule.type as any
       }
-      await updateTrip(editingSchedule.id, updateData as any) // Gọi API cập nhật
+      await updateTrip(editingSchedule.id, updateData as any)
       setShowEditModal(false)
       setEditingSchedule(null)
-      await loadData() // Tải lại danh sách
+      await loadData()
     } catch (err: any) {
       const msg = (err && err.message) ? String(err.message) : 'Cập nhật lịch trình thất bại!'
       alert(msg)
     } finally { setEditLoading(false) }
   }
-  // Thêm hàm này vào cùng nơi với handleEditSchedule
+
   const handleDeleteSchedule = async (schedule: Schedule) => {
     if (!confirm(`Bạn có chắc chắn muốn xóa lịch trình của tuyến "${schedule.routeName}" ngày ${schedule.date}?`)) {
       return
     }
     try {
-      await deleteTrip(schedule.id) // Gọi API xóa
-      await loadData() // Tải lại danh sách lịch trình
+      await deleteTrip(schedule.id)
+      // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
+      if (paginatedSchedules.length === 1 && page > 1) {
+          setPage(p => p - 1)
+      }
+      await loadData()
     } catch (e: any) {
       alert(e.message || 'Xóa lịch trình thất bại!')
     }
   }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('vi-VN', {
@@ -144,8 +179,10 @@ export default function ScheduleManagement() {
       day: 'numeric'
     })
   }
+
   const [autoRefresh] = useState(true)
   const POLL_INTERVAL_MS = 8000
+
   const loadData = async () => {
     setLoading(true); setError(null)
     try {
@@ -157,18 +194,12 @@ export default function ScheduleManagement() {
       ])
 
       const mappedSchedules: Schedule[] = tripList.map((t: Trip) => {
-        // 1. Lấy giá trị thô từ API (thử nhiều trường khác nhau)
         const rawTime = (t as any).startTime || (t as any).plannedStartTime || (t as any).scheduledStartTime;
-
-        // 2. Logic xử lý hiển thị thời gian linh hoạt
         let displayTime = '';
         if (rawTime) {
-          // Nếu là chuỗi giờ đơn giản (VD: "06:30:00" hoặc "06:30") -> Cắt lấy 5 ký tự đầu
           if (typeof rawTime === 'string' && rawTime.includes(':') && rawTime.length <= 8) {
             displayTime = rawTime.substring(0, 5);
-          }
-          // Nếu là chuỗi Date đầy đủ (ISO) -> Dùng Date để format
-          else {
+          } else {
             try {
               const d = new Date(rawTime);
               if (!isNaN(d.getTime())) {
@@ -183,7 +214,7 @@ export default function ScheduleManagement() {
           routeName: t.route?.name || '',
           driverName: t.driver?.fullName || '',
           busLicensePlate: t.bus?.licensePlate || '',
-          startTime: displayTime, // <--- Đã sửa ở đây
+          startTime: displayTime,
           date: t.tripDate,
           type: t.session,
           status: t.status,
@@ -199,7 +230,7 @@ export default function ScheduleManagement() {
       setError(e?.message || 'Không thể tải dữ liệu')
     } finally { setLoading(false) }
   }
-  // initial load + polling
+
   useEffect(() => {
     let mounted = true
     loadData()
@@ -210,6 +241,7 @@ export default function ScheduleManagement() {
     }, POLL_INTERVAL_MS)
     return () => { mounted = false; clearInterval(iv) }
   }, [autoRefresh])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -237,7 +269,7 @@ export default function ScheduleManagement() {
               aria-label="Tìm kiếm"
               placeholder="Tìm kiếm..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => { setSearchTerm(e.target.value); resetPage() }} // Reset Page
               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
@@ -245,13 +277,13 @@ export default function ScheduleManagement() {
             type="date"
             aria-label="Lọc theo ngày"
             value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
+            onChange={(e) => { setDateFilter(e.target.value); resetPage() }} // Reset Page
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
           <select
             aria-label="Lọc theo trạng thái"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); resetPage() }} // Reset Page
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="all">Tất cả trạng thái</option>
@@ -263,7 +295,7 @@ export default function ScheduleManagement() {
           <select
             aria-label="Lọc theo ca"
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            onChange={(e) => { setTypeFilter(e.target.value); resetPage() }} // Reset Page
             className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="all">Tất cả ca</option>
@@ -278,7 +310,10 @@ export default function ScheduleManagement() {
 
       {/* Schedule Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredSchedules.map((schedule) => (
+        {loading && <div className="col-span-full text-center text-sm text-gray-500">Đang tải dữ liệu...</div>}
+        
+        {/* Render từ Paginated Schedules */}
+        {!loading && paginatedSchedules.map((schedule) => (
           <div key={schedule.id} className="card">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -342,6 +377,30 @@ export default function ScheduleManagement() {
         ))}
       </div>
 
+      {/* --- PAGINATION FOOTER (MỚI) --- */}
+      {!loading && filteredSchedules.length > 0 && (
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 pt-6 text-sm">
+          <div className="text-gray-600">Hiển thị <b>{paginatedSchedules.length}</b> / <b>{filteredSchedules.length}</b> lịch trình</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" /> Trước
+            </button>
+            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <button
+              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
+              disabled={page >= maxPage}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+            >
+              Sau <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Add Schedule Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -357,12 +416,12 @@ export default function ScheduleManagement() {
                 setShowAddModal(false)
                 // reset form
                 setAddRouteId(undefined); setAddTripDate(''); setAddSession('morning'); setAddType('pickup'); setAddStartTime(''); setAddDriverId(undefined); setAddBusId(undefined)
-                // refresh data
+                // refresh data, reset page
                 await loadData()
+                resetPage()
               } catch (err: any) {
                 const msg = (err && err.message) ? String(err.message) : ''
                 if (msg.toLowerCase().includes('conflicting')) {
-                  // Avoid showing raw server details/code in the alert. Show a friendly, non-sensitive message instead.
                   alert('Lịch bị trùng với lịch khác. Vui lòng kiểm tra thông tin và thử lại.')
                 } else {
                   alert(msg || 'Tạo lịch thất bại')
@@ -631,7 +690,7 @@ export default function ScheduleManagement() {
           </div>
         </div>
       )}
-      {loading && <div className="text-sm text-gray-500">Đang tải dữ liệu...</div>}
+      
       {error && <div className="text-sm text-red-600">{error}</div>}
     </div>
   )

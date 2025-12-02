@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Edit, Trash2, Search, MapPin, Users, GraduationCap, ArrowRight } from 'lucide-react'
+import {
+  Plus, Edit, Trash2, Search, MapPin, Users,
+  GraduationCap, ArrowRight, ChevronLeft, ChevronRight // Thêm icon điều hướng
+} from 'lucide-react'
 import { getRoutes, getStudents, getStops, createRoute, updateRoute, deleteRoute } from '../lib/api'
 
 // Định nghĩa trạng thái hiển thị tiếng Việt
@@ -31,8 +34,11 @@ export default function RouteManagement() {
   const [students, setStudents] = useState<UiStudent[]>([])
   const [allStops, setAllStops] = useState<UiStop[]>([])
 
+  // UI State
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [page, setPage] = useState(1) // Trang hiện tại
+  const pageSize = 6 // Số lượng card mỗi trang (6 card = 3 hàng x 2 cột)
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [showStudentsModal, setShowStudentsModal] = useState(false)
@@ -110,6 +116,7 @@ export default function RouteManagement() {
     load()
   }, [])
 
+  // --- LOGIC SEARCH & FILTER ---
   const filteredRoutes = useMemo(() => routes.filter(route => {
     const matchesSearch = route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (route.description || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -117,12 +124,21 @@ export default function RouteManagement() {
     return matchesSearch && matchesStatus
   }), [routes, searchTerm, statusFilter])
 
+  // --- LOGIC PHÂN TRANG ---
+  const maxPage = Math.max(1, Math.ceil(filteredRoutes.length / pageSize))
+  const paginatedRoutes = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredRoutes.slice(start, start + pageSize)
+  }, [filteredRoutes, page])
+
+  // Hàm reset page về 1
+  const resetPage = () => setPage(1)
+
   // --- Handlers ---
 
   const handleAddStopToNewRoute = () => {
     if (!selectedStopForRoute) return
     const stop = allStops.find(s => s.id === selectedStopForRoute)
-    // Cho phép thêm điểm dừng, kiểm tra trùng lặp nếu cần (ở đây cho phép đi vòng vèo nên không chặn trùng)
     if (stop && !newRouteStops.find(s => s.id === stop.id)) {
       setNewRouteStops(prev => [...prev, stop])
       setSelectedStopForRoute('')
@@ -154,12 +170,12 @@ export default function RouteManagement() {
         name: newRouteName,
         description: newRouteDescription,
         status: newRouteStatus,
-        stopIds: newRouteStops.map(s => s.id) // Gửi mảng ID theo thứ tự
+        stopIds: newRouteStops.map(s => s.id)
       })
 
       // Update local state
       const stopList: UiStop[] = newRouteStops;
-      const studentCount = 0; // Mới tạo chưa có học sinh
+      const studentCount = 0;
 
       setRoutes(r => [...r, {
         id: created.id,
@@ -171,8 +187,9 @@ export default function RouteManagement() {
       }])
 
       setShowAddModal(false)
-      // Reset form
+      // Reset form & page
       setNewRouteName(''); setNewRouteDescription(''); setNewRouteStatus('active'); setNewRouteStops([]); setSelectedStopForRoute('')
+      resetPage()
     } catch (e: any) { alert(e.message || 'Thêm tuyến đường thất bại') } finally { setSaving(false) }
   }
 
@@ -216,7 +233,14 @@ export default function RouteManagement() {
 
   const handleDeleteRoute = async (route: UiRoute) => {
     if (!confirm(`Xóa tuyến đường "${route.name}"?`)) return
-    try { await deleteRoute(route.id); setRoutes(prev => prev.filter(r => r.id !== route.id)) } catch (e: any) { alert(e.message || 'Xóa tuyến đường thất bại') }
+    try {
+      await deleteRoute(route.id);
+      setRoutes(prev => prev.filter(r => r.id !== route.id))
+      // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
+      if (paginatedRoutes.length === 1 && page > 1) {
+        setPage(p => p - 1)
+      }
+    } catch (e: any) { alert(e.message || 'Xóa tuyến đường thất bại') }
   }
 
   const renderStatusBadge = (status: string) => {
@@ -241,9 +265,18 @@ export default function RouteManagement() {
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap">
           <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Tìm kiếm theo tên hoặc mô tả..." className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+            <input
+              value={searchTerm}
+              onChange={e => { setSearchTerm(e.target.value); resetPage() }}
+              placeholder="Tìm kiếm theo tên hoặc mô tả..."
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
           </div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="w-[180px] shrink-0 border border-gray-300 rounded-lg px-3 py-2">
+          <select
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); resetPage() }}
+            className="w-[180px] shrink-0 border border-gray-300 rounded-lg px-3 py-2"
+          >
             <option value="all">Tất cả trạng thái</option>
             <option value="active">Đang hoạt động</option>
             <option value="inactive">Ngừng hoạt động</option>
@@ -255,7 +288,9 @@ export default function RouteManagement() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {loading && <div className="col-span-full text-center text-gray-500">Đang tải...</div>}
-        {!loading && filteredRoutes.map(route => (
+
+        {/* --- RENDER LIST (PAGINATED) --- */}
+        {!loading && paginatedRoutes.map(route => (
           <div key={route.id} className="card flex flex-col h-full">
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -304,6 +339,30 @@ export default function RouteManagement() {
           </div>
         ))}
       </div>
+
+      {/* --- PAGINATION FOOTER (MỚI) --- */}
+      {!loading && filteredRoutes.length > 0 && (
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 pt-6 text-sm">
+          <div className="text-gray-600">Hiển thị <b>{paginatedRoutes.length}</b> / <b>{filteredRoutes.length}</b> tuyến</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" /> Trước
+            </button>
+            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <button
+              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
+              disabled={page >= maxPage}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+            >
+              Sau <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- ADD MODAL --- */}
       {showAddModal && (

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search, Phone, Mail,
-  Users, UserCheck, UserX, AlertTriangle, CreditCard
+  Users, UserCheck, UserX, AlertTriangle, CreditCard,
+  ChevronLeft, ChevronRight // Thêm icon điều hướng
 } from 'lucide-react'
 
 // Import API thực tế
@@ -11,9 +12,9 @@ import {
   updateDriver,
   deleteDriver,
   Driver
-} from '../lib/api' // Đảm bảo đường dẫn đúng tới file api.ts
+} from '../lib/api' 
 
-// CẤU HÌNH TRẠNG THÁI (Khớp với ENUM trong SQL: active, inactive, locked)
+// CẤU HÌNH TRẠNG THÁI
 const DRIVER_STATUSES = {
   'active': { label: 'Đang làm việc', color: 'bg-green-100 text-green-800' },
   'inactive': { label: 'Nghỉ phép', color: 'bg-gray-100 text-gray-800' },
@@ -22,7 +23,11 @@ const DRIVER_STATUSES = {
 
 export default function DriverManagement() {
   const [drivers, setDrivers] = useState<Driver[]>([])
+  
+  // UI State
   const [searchTerm, setSearchTerm] = useState('')
+  const [page, setPage] = useState(1) // State trang hiện tại
+  const pageSize = 8 // Số dòng mỗi trang
 
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false)
@@ -40,7 +45,7 @@ export default function DriverManagement() {
   const [addEmail, setAddEmail] = useState('')
   const [addLicenseNumber, setAddLicenseNumber] = useState('')
   const [addLicenseClass, setAddLicenseClass] = useState('')
-  const [addLicenseExpiry, setAddLicenseExpiry] = useState('') // Chuỗi YYYY-MM-DD
+  const [addLicenseExpiry, setAddLicenseExpiry] = useState('') 
   const [addPassword, setAddPassword] = useState('')
   const [addStatus, setAddStatus] = useState<'active' | 'inactive' | 'locked'>('active')
 
@@ -50,7 +55,7 @@ export default function DriverManagement() {
   const [editEmail, setEditEmail] = useState('')
   const [editLicenseNumber, setEditLicenseNumber] = useState('')
   const [editLicenseClass, setEditLicenseClass] = useState('')
-  const [editLicenseExpiry, setEditLicenseExpiry] = useState('') // Chuỗi YYYY-MM-DD
+  const [editLicenseExpiry, setEditLicenseExpiry] = useState('') 
   const [editPassword, setEditPassword] = useState('')
   const [editStatus, setEditStatus] = useState<'active' | 'inactive' | 'locked'>('active')
 
@@ -74,25 +79,21 @@ export default function DriverManagement() {
   }
 
   // --- HELPER FUNCTIONS ---
-
-  // Helper chuyển đổi Date từ DB/API sang chuỗi YYYY-MM-DD cho input type="date"
   const toInputDate = (dateString: string | undefined | null) => {
     if (!dateString) return '';
     try {
-      // Nếu là ISO string (2025-11-30T00:00:00.000Z) -> cắt lấy phần đầu
       return new Date(dateString).toISOString().split('T')[0];
     } catch {
       return '';
     }
   }
 
-  // Helper hiển thị ngày tháng đẹp cho người dùng VN
   const formatDateDisplay = (dateString: string | undefined | null) => {
     if (!dateString) return '-'
     try {
       const date = new Date(dateString)
       if (isNaN(date.getTime())) return '-'
-      return new Intl.DateTimeFormat('vi-VN').format(date) // 30/11/2025
+      return new Intl.DateTimeFormat('vi-VN').format(date) 
     } catch { return '-' }
   }
 
@@ -100,7 +101,7 @@ export default function DriverManagement() {
     if (!dateString) return false
     const expiry = new Date(dateString)
     const today = new Date()
-    today.setHours(0, 0, 0, 0) // Reset giờ về 0
+    today.setHours(0, 0, 0, 0)
     const diffTime = expiry.getTime() - today.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays < 30 && diffDays >= 0
@@ -114,22 +115,36 @@ export default function DriverManagement() {
     return expiry < today
   }
 
+  // --- LOGIC SEARCH & FILTER ---
+  const filteredDrivers = useMemo(() => {
+    return drivers.filter(d => {
+      const term = searchTerm.toLowerCase()
+      return (
+        (d.fullName || '').toLowerCase().includes(term) ||
+        (d.phone || '').includes(searchTerm) ||
+        (d.licenseNumber || '').toLowerCase().includes(term)
+      )
+    })
+  }, [drivers, searchTerm])
+
+  // --- LOGIC PHÂN TRANG (PAGINATION) ---
+  const maxPage = Math.max(1, Math.ceil(filteredDrivers.length / pageSize))
+  
+  const paginatedDrivers = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredDrivers.slice(start, start + pageSize)
+  }, [filteredDrivers, page])
+
+  const resetPage = () => setPage(1)
+
   // Stats
-  const stats = {
+  const stats = useMemo(() => ({
     total: drivers.length,
     active: drivers.filter(d => d.status === 'active').length,
     inactive: drivers.filter(d => d.status === 'inactive').length,
     locked: drivers.filter(d => d.status === 'locked').length
-  }
+  }), [drivers])
 
-  const filteredDrivers = drivers.filter(d => {
-    const term = searchTerm.toLowerCase()
-    return (
-      (d.fullName || '').toLowerCase().includes(term) ||
-      (d.phone || '').includes(searchTerm) ||
-      (d.licenseNumber || '').toLowerCase().includes(term)
-    )
-  })
 
   // --- HANDLERS ---
 
@@ -140,8 +155,6 @@ export default function DriverManagement() {
     setEditEmail(driver.email || '')
     setEditLicenseNumber(driver.licenseNumber || '')
     setEditLicenseClass(driver.licenseClass || '')
-
-    // QUAN TRỌNG: Chuyển ngày từ DB sang định dạng input cần (YYYY-MM-DD)
     setEditLicenseExpiry(toInputDate(driver.licenseExpiry))
 
     const currentStatus = (driver.status && ['active', 'inactive', 'locked'].includes(driver.status))
@@ -165,7 +178,6 @@ export default function DriverManagement() {
         licenseNumber: addLicenseNumber,
         password: addPassword,
         licenseClass: addLicenseClass || undefined,
-        // Nếu chuỗi rỗng thì gửi undefined để backend lưu null
         licenseExpiry: addLicenseExpiry || undefined,
         status: addStatus
       })
@@ -173,10 +185,11 @@ export default function DriverManagement() {
       await fetchDrivers()
       setShowAddModal(false)
 
-      // Reset form
+      // Reset form & Page
       setAddFullName(''); setAddPhone(''); setAddEmail('');
       setAddLicenseNumber(''); setAddLicenseClass(''); setAddLicenseExpiry('');
       setAddPassword(''); setAddStatus('active')
+      resetPage() // Về trang 1 khi thêm mới
     } catch (e: any) {
       alert(e.message || 'Thêm tài xế thất bại')
     } finally {
@@ -195,8 +208,6 @@ export default function DriverManagement() {
         email: editEmail || undefined,
         licenseNumber: editLicenseNumber,
         licenseClass: editLicenseClass || undefined,
-        // Quan trọng: Nếu người dùng xóa ngày (chuỗi rỗng), gửi null hoặc chuỗi rỗng tùy backend xử lý
-        // Ở đây gửi chuỗi rỗng để service nhận biết và set null
         licenseExpiry: editLicenseExpiry || undefined,
         status: editStatus as any
       }
@@ -221,13 +232,16 @@ export default function DriverManagement() {
     try {
       await deleteDriver(driver.id)
       setDrivers(prev => prev.filter(d => d.id !== driver.id))
+      // Nếu xóa item cuối cùng của trang hiện tại, lùi về trang trước
+      if (paginatedDrivers.length === 1 && page > 1) {
+        setPage(p => p - 1)
+      }
     } catch (e: any) {
       alert(e.message || 'Xóa tài xế thất bại')
     }
   }
 
   const renderStatusBadge = (status: string | undefined) => {
-    // Ép kiểu an toàn để tránh lỗi undefined index
     const normalizedStatus = (status && ['active', 'inactive', 'locked'].includes(status))
       ? status as keyof typeof DRIVER_STATUSES
       : 'active';
@@ -269,14 +283,21 @@ export default function DriverManagement() {
 
       {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">{error}</div>}
 
-      {/* TABLE */}
+      {/* TABLE SECTION */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        {/* Header Table */}
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gray-50/50">
           <h2 className="text-lg font-bold text-gray-900">Danh sách tài xế ({filteredDrivers.length})</h2>
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input type="text" placeholder="Tìm tên, SĐT, bằng lái..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white" />
+              <input 
+                type="text" 
+                placeholder="Tìm tên, SĐT, bằng lái..." 
+                value={searchTerm} 
+                onChange={e => { setSearchTerm(e.target.value); resetPage() }} // Reset trang khi search
+                className="pl-10 pr-4 py-2 w-full sm:w-64 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white" 
+              />
             </div>
             <button onClick={() => setShowAddModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm">
               <Plus className="w-4 h-4" /> Thêm tài xế
@@ -284,6 +305,7 @@ export default function DriverManagement() {
           </div>
         </div>
 
+        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -303,7 +325,8 @@ export default function DriverManagement() {
               ) : filteredDrivers.length === 0 ? (
                 <tr><td colSpan={7} className="px-6 py-8 text-center text-sm text-gray-500">Không tìm thấy tài xế nào</td></tr>
               ) : (
-                filteredDrivers.map(driver => (
+                // Dùng paginatedDrivers thay vì filteredDrivers
+                paginatedDrivers.map(driver => (
                   <tr key={driver.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -319,7 +342,6 @@ export default function DriverManagement() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono font-medium">{driver.licenseNumber || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {/* Hiển thị hạng bằng */}
                       {driver.licenseClass ? (
                         <span className="bg-gray-100 text-gray-800 text-xs font-bold px-2 py-0.5 rounded border border-gray-300">
                           {driver.licenseClass}
@@ -329,7 +351,6 @@ export default function DriverManagement() {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {/* Hiển thị ngày hết hạn với cảnh báo màu sắc */}
                       <div className="flex items-center gap-2">
                         {driver.licenseExpiry ? (
                           <>
@@ -355,6 +376,29 @@ export default function DriverManagement() {
             </tbody>
           </table>
         </div>
+
+        {/* --- PAGINATION FOOTER (MỚI) --- */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-gray-200 p-3 text-sm bg-gray-50/50">
+          <div className="text-gray-600">Hiển thị <b>{paginatedDrivers.length}</b> / <b>{filteredDrivers.length}</b> tài xế</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" /> Trước
+            </button>
+            <span className="text-gray-700">Trang <b>{page}</b> / <b>{maxPage}</b></span>
+            <button
+              onClick={() => setPage(p => Math.min(maxPage, p + 1))}
+              disabled={page >= maxPage}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+            >
+              Sau <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {/* ADD MODAL */}
