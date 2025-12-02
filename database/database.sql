@@ -948,7 +948,7 @@ BEGIN
 END $$;
 DO $$
 DECLARE
-  -- Cấu hình số lượng (Đúng theo yêu cầu của thầy)
+  -- Cấu hình số lượng
   CONST_BUS_COUNT     INT := 400;
   CONST_DRIVER_COUNT  INT := 500;
   CONST_STUDENT_COUNT INT := 5000;
@@ -956,38 +956,40 @@ DECLARE
   CONST_PARENT_COUNT  INT := 2000;
   CONST_STOP_COUNT    INT := 300;
 
-  -- Biến chạy
+  -- Biến chạy chung
   i INT;
   v_stop_id UUID;
   v_route_id UUID;
   v_parent_id UUID;
+  
+  -- Biến hỗ trợ Trip
   v_bus_id UUID;
   v_trip_id UUID;
+  rec_route RECORD;
+  v_trip_date DATE;
+  v_trip_status trip_status;
+  v_actual_start TIMESTAMPTZ;
+  v_actual_end TIMESTAMPTZ;
+  v_random_bus UUID;
+  v_random_driver UUID;
   
-  -- Mảng tên mẫu để random
+  -- Mảng tên mẫu
   arr_ho    TEXT[] := ARRAY['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Huỳnh', 'Hoàng', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý'];
   arr_dem   TEXT[] := ARRAY['Văn', 'Thị', 'Minh', 'Thanh', 'Quốc', 'Gia', 'Đình', 'Ngọc', 'Hồng', 'Thảo', 'Phương', 'Hữu', 'Đức'];
   arr_ten   TEXT[] := ARRAY['An', 'Bình', 'Cường', 'Dũng', 'Giang', 'Huy', 'Hùng', 'Khánh', 'Lan', 'Minh', 'Nam', 'Nga', 'Phúc', 'Quân', 'Sơn', 'Thảo', 'Trang', 'Tú', 'Uyên', 'Vy', 'Yến'];
   
-  -- Biến tạm
+  -- Biến tạm tạo tên
   v_random_ho TEXT; v_random_dem TEXT; v_random_ten TEXT; v_full_name TEXT;
   v_phone TEXT; v_email TEXT; v_license TEXT;
-  
-  -- Biến hỗ trợ Trip
-  v_trip_date DATE;
-  rec_route RECORD;
-  v_random_driver UUID;
-  v_random_bus UUID;
 
 BEGIN
-  -- (Tùy chọn) Xóa sạch dữ liệu cũ để tránh lỗi ID trùng lặp nếu chạy lại nhiều lần
-  -- Nếu muốn giữ dữ liệu cũ thì comment dòng dưới lại
+  -- (Tùy chọn) Xóa sạch dữ liệu cũ
   -- TRUNCATE "Trip_Students", "Trips", "Students", "Users", "Buses", "Routes", "Route_Stops", "Stops" CASCADE;
 
   RAISE NOTICE '=== BẮT ĐẦU QUÁ TRÌNH TẠO FULL DỮ LIỆU ===';
 
   ---------------------------------------------------------
-  -- 1. TẠO STOPS (300 điểm)
+  -- 1. TẠO STOPS
   ---------------------------------------------------------
   RAISE NOTICE '--> 1/7: Đang tạo % điểm dừng...', CONST_STOP_COUNT;
   FOR i IN 1..CONST_STOP_COUNT LOOP
@@ -996,18 +998,17 @@ BEGIN
   END LOOP;
 
   ---------------------------------------------------------
-  -- 2. TẠO ROUTES (100 tuyến)
+  -- 2. TẠO ROUTES
   ---------------------------------------------------------
   RAISE NOTICE '--> 2/7: Đang tạo % tuyến đường...', CONST_ROUTE_COUNT;
   FOR i IN 1..CONST_ROUTE_COUNT LOOP
     INSERT INTO "Routes"(name, description, status) VALUES ('Tuyến Số ' || i, 'Lộ trình số ' || i, 'active') RETURNING id INTO v_route_id;
-    -- Gán điểm dừng random
     INSERT INTO "Route_Stops"(route_id, stop_id, stop_order)
     SELECT v_route_id, id, row_number() OVER () FROM "Stops" ORDER BY random() LIMIT (5 + floor(random() * 5)::int);
   END LOOP;
 
   ---------------------------------------------------------
-  -- 3. TẠO BUSES (400 xe)
+  -- 3. TẠO BUSES
   ---------------------------------------------------------
   RAISE NOTICE '--> 3/7: Đang tạo % xe buýt...', CONST_BUS_COUNT;
   FOR i IN 1..CONST_BUS_COUNT LOOP
@@ -1017,7 +1018,7 @@ BEGIN
   END LOOP;
 
   ---------------------------------------------------------
-  -- 4. TẠO DRIVERS (500 tài xế)
+  -- 4. TẠO DRIVERS
   ---------------------------------------------------------
   RAISE NOTICE '--> 4/7: Đang tạo % tài xế...', CONST_DRIVER_COUNT;
   FOR i IN 1..CONST_DRIVER_COUNT LOOP
@@ -1033,7 +1034,7 @@ BEGIN
   END LOOP;
 
   ---------------------------------------------------------
-  -- 5. TẠO PARENTS (2000 phụ huynh)
+  -- 5. TẠO PARENTS
   ---------------------------------------------------------
   RAISE NOTICE '--> 5/7: Đang tạo % phụ huynh...', CONST_PARENT_COUNT;
   FOR i IN 1..CONST_PARENT_COUNT LOOP
@@ -1048,7 +1049,7 @@ BEGIN
   END LOOP;
 
   ---------------------------------------------------------
-  -- 6. TẠO STUDENTS (5000 học sinh)
+  -- 6. TẠO STUDENTS
   ---------------------------------------------------------
   RAISE NOTICE '--> 6/7: Đang tạo % học sinh...', CONST_STUDENT_COUNT;
   FOR i IN 1..CONST_STUDENT_COUNT LOOP
@@ -1057,11 +1058,9 @@ BEGIN
     v_random_ten := arr_ten[1 + floor(random() * array_length(arr_ten, 1))];
     v_full_name  := v_random_ho || ' ' || v_random_dem || ' ' || v_random_ten;
 
-    -- Lấy ngẫu nhiên Parent và Route
     SELECT id INTO v_parent_id FROM "Users" WHERE role = 'parent' OFFSET floor(random() * CONST_PARENT_COUNT) LIMIT 1;
     SELECT id INTO v_route_id FROM "Routes" OFFSET floor(random() * CONST_ROUTE_COUNT) LIMIT 1;
     
-    -- Lấy điểm dừng thuộc Route
     WITH route_points AS (SELECT stop_id FROM "Route_Stops" WHERE route_id = v_route_id ORDER BY stop_order)
     INSERT INTO "Students"(full_name, parent_id, route_id, pickup_stop_id, dropoff_stop_id, class, status)
     VALUES (
@@ -1072,70 +1071,105 @@ BEGIN
     );
   END LOOP;
 
----------------------------------------------------------
--- 7. TẠO TRIPS SÁNG (PICKUP) + CHIỀU (DROPOFF)
----------------------------------------------------------
-RAISE NOTICE '--> 7/7: Đang sinh dữ liệu Trips (Sáng/Chiều)...';
+  ---------------------------------------------------------
+  -- 7. TẠO TRIPS (Fix lỗi ép kiểu ENUM)
+  ---------------------------------------------------------
+  RAISE NOTICE '--> 7/7: Đang sinh dữ liệu Trips (Quá khứ & Tương lai)...';
 
-FOR i IN 0..6 LOOP
-  v_trip_date := CURRENT_DATE - i;
+  FOR i IN -3..3 LOOP
+    v_trip_date := CURRENT_DATE + i;
 
-  -- Random 50% tuyến mỗi ngày
-  FOR rec_route IN (
-    SELECT id FROM "Routes" ORDER BY random() LIMIT (CONST_ROUTE_COUNT / 2)
-  ) LOOP
+    FOR rec_route IN (
+      SELECT id FROM "Routes" ORDER BY random() LIMIT (CONST_ROUTE_COUNT / 2)
+    ) LOOP
 
-    -- Random tài xế + bus cho sáng
-    SELECT id INTO v_random_bus FROM "Buses" ORDER BY random() LIMIT 1;
-    SELECT id INTO v_random_driver FROM "Users" WHERE role='driver' ORDER BY random() LIMIT 1;
+      -- Reset trạng thái
+      IF v_trip_date < CURRENT_DATE THEN
+          v_trip_status := 'completed';
+      ELSIF v_trip_date = CURRENT_DATE THEN
+          v_trip_status := 'in_progress'; 
+      ELSE
+          v_trip_status := 'scheduled';
+      END IF;
 
-    -- TRIP SÁNG - PICKUP
-    v_trip_id := NULL;
-    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status,
-                        actual_start_time, actual_end_time)
-    VALUES (
-      rec_route.id, v_random_bus, v_random_driver, v_trip_date,
-      'morning', 'pickup', 'completed',
-      (v_trip_date + interval '06:30'), (v_trip_date + interval '07:30')
-    )
-    ON CONFLICT DO NOTHING
-    RETURNING id INTO v_trip_id;
+      -- === A. SÁNG ===
+      IF v_trip_status = 'scheduled' THEN
+         v_actual_start := NULL;
+         v_actual_end := NULL;
+      ELSE
+         v_actual_start := (v_trip_date + interval '06:30');
+         v_actual_end   := (v_trip_date + interval '07:30');
+      END IF;
 
-    -- Điểm danh sáng
-    IF v_trip_id IS NOT NULL THEN
-      INSERT INTO "Trip_Students"(trip_id, student_id, status)
-      SELECT v_trip_id, id,
-        (CASE WHEN random() > 0.05 THEN 'attended' ELSE 'absent' END)
-      FROM "Students" WHERE route_id = rec_route.id;
-    END IF;
+      SELECT id INTO v_random_bus FROM "Buses" ORDER BY random() LIMIT 1;
+      SELECT id INTO v_random_driver FROM "Users" WHERE role='driver' ORDER BY random() LIMIT 1;
 
+      v_trip_id := NULL;
+      INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status,
+                          actual_start_time, actual_end_time, scheduled_start_time)
+      VALUES (
+        rec_route.id, v_random_bus, v_random_driver, v_trip_date,
+        'morning', 'pickup', 
+        -- [FIX]: Ép kiểu ::trip_status
+        (CASE WHEN v_trip_date = CURRENT_DATE THEN 'completed'::trip_status ELSE v_trip_status END),
+        v_actual_start, v_actual_end,
+        (v_trip_date + interval '06:30')
+      )
+      ON CONFLICT DO NOTHING
+      RETURNING id INTO v_trip_id;
 
-    -- Random tài xế + bus cho chiều (khác)
-    SELECT id INTO v_random_bus FROM "Buses" ORDER BY random() LIMIT 1;
-    SELECT id INTO v_random_driver FROM "Users" WHERE role='driver' ORDER BY random() LIMIT 1;
+      IF v_trip_id IS NOT NULL THEN
+        INSERT INTO "Trip_Students"(trip_id, student_id, status)
+        SELECT v_trip_id, id,
+          CASE 
+            -- [FIX]: Ép kiểu ::attendance_status cho từng giá trị chuỗi
+            WHEN v_trip_status = 'scheduled' THEN 'pending'::attendance_status
+            ELSE (CASE WHEN random() > 0.05 THEN 'attended'::attendance_status ELSE 'absent'::attendance_status END)
+          END
+        FROM "Students" WHERE route_id = rec_route.id;
+      END IF;
 
-    -- TRIP CHIỀU - DROPOFF
-    v_trip_id := NULL;
-    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status,
-                        actual_start_time, actual_end_time)
-    VALUES (
-      rec_route.id, v_random_bus, v_random_driver, v_trip_date,
-      'afternoon', 'dropoff', 'completed',
-      (v_trip_date + interval '16:00'), (v_trip_date + interval '17:00')
-    )
-    ON CONFLICT DO NOTHING
-    RETURNING id INTO v_trip_id;
+      -- === B. CHIỀU ===
+      IF v_trip_date = CURRENT_DATE THEN 
+         v_trip_status := 'scheduled'; 
+      END IF;
 
-    -- Điểm danh chiều
-    IF v_trip_id IS NOT NULL THEN
-      INSERT INTO "Trip_Students"(trip_id, student_id, status)
-      SELECT v_trip_id, id,
-        (CASE WHEN random() > 0.05 THEN 'attended' ELSE 'absent' END)
-      FROM "Students" WHERE route_id = rec_route.id;
-    END IF;
+      IF v_trip_status = 'scheduled' THEN 
+         v_actual_start := NULL;
+         v_actual_end := NULL;
+      ELSE
+         v_actual_start := (v_trip_date + interval '16:00');
+         v_actual_end   := (v_trip_date + interval '17:00');
+      END IF;
 
+      SELECT id INTO v_random_bus FROM "Buses" ORDER BY random() LIMIT 1;
+      SELECT id INTO v_random_driver FROM "Users" WHERE role='driver' ORDER BY random() LIMIT 1;
+
+      v_trip_id := NULL;
+      INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status,
+                          actual_start_time, actual_end_time, scheduled_start_time)
+      VALUES (
+        rec_route.id, v_random_bus, v_random_driver, v_trip_date,
+        'afternoon', 'dropoff', v_trip_status,
+        v_actual_start, v_actual_end,
+        (v_trip_date + interval '16:00')
+      )
+      ON CONFLICT DO NOTHING
+      RETURNING id INTO v_trip_id;
+
+      IF v_trip_id IS NOT NULL THEN
+        INSERT INTO "Trip_Students"(trip_id, student_id, status)
+        SELECT v_trip_id, id,
+          CASE 
+            -- [FIX]: Ép kiểu ::attendance_status
+            WHEN v_trip_status = 'scheduled' THEN 'pending'::attendance_status
+            ELSE (CASE WHEN random() > 0.05 THEN 'attended'::attendance_status ELSE 'absent'::attendance_status END)
+          END
+        FROM "Students" WHERE route_id = rec_route.id;
+      END IF;
+
+    END LOOP;
   END LOOP;
-END LOOP;
 
   RAISE NOTICE '=== SUCCESSS: ĐÃ TẠO XONG TOÀN BỘ DỮ LIỆU ===';
 END $$;
