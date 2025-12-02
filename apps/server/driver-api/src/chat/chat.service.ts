@@ -104,19 +104,25 @@ export class ChatService {
 
   /**
    * MỚI: Đánh dấu tất cả tin nhắn từ 1 người là đã đọc
+/**
+   * MỚI: Đánh dấu tất cả tin nhắn từ 1 người là đã đọc
+   */
+/**
+   * MỚI: Đánh dấu tất cả tin nhắn từ 1 người là đã đọc
+   * Sử dụng QueryBuilder để tránh xung đột giữa Column và Relation
    */
   async markConversationAsRead(senderId: string, recipientId: string): Promise<void> {
-    await this.messageRepo.update(
-      {
-        // Điều kiện tìm:
-        sender_id: senderId,
-        recipient_id: recipientId,
-        is_read: false,
-      },
-      {
-        // Cập nhật:
-        is_read: true,
-      },
-    );
+    console.log(`DEBUG BE: Bắt đầu đánh dấu đã đọc [Sender: ${senderId}] -> [Me: ${recipientId}]`);
+
+    // Dùng createQueryBuilder để bắn thẳng lệnh SQL update vào DB
+    const result = await this.messageRepo.createQueryBuilder()
+      .update(Message)
+      .set({ is_read: true }) // Cập nhật cột is_read thành true
+      .where("sender_id = :senderId", { senderId })
+      .andWhere("recipient_id = :recipientId", { recipientId })
+      .andWhere("is_read = :isRead", { isRead: false })
+      .execute();
+
+    console.log(`DEBUG BE: Số tin nhắn đã cập nhật:`, result.affected);
   }
 }
