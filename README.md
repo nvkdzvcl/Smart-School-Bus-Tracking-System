@@ -1,73 +1,147 @@
-# React + TypeScript + Vite
+# Smart School Bus Tracking System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive system for tracking school buses, managing schedules, and facilitating communication between parents, drivers, and schools.
 
-Currently, two official plugins are available:
+## Project Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project is a monorepo containing the following applications:
 
-## React Compiler
+-   **Web Dashboard** (`apps/web-dashboard`): A React-based admin dashboard for school managers to manage buses, drivers, students, routes, and view reports.
+-   **Driver App** (`apps/driver-app`): A mobile-first web application for drivers to view their schedules, check-in students, and report incidents.
+-   **Parent App** (`apps/parent-app`): A mobile-first web application for parents to track their children's bus location and receive notifications.
+-   **Dashboard API** (`apps/server/dashboard-api`): The backend API service for the dashboard, built with NestJS.
+-   **Driver API** (`apps/server/driver-api`): The backend API service for the driver app, built with NestJS.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Prerequisites
 
-## Expanding the ESLint configuration
+Before you begin, ensure you have the following installed:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+-   **Node.js** (v18 or higher recommended)
+-   **pnpm** (Package manager)
+-   **PostgreSQL** (Database)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Installation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    cd Smart-School-Bus-Tracking-System
+    ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2.  Install dependencies for all workspaces:
+    ```bash
+    pnpm install
+    ```
+
+## Configuration
+
+You need to configure environment variables for the backend services.
+
+### Database Setup
+
+Ensure you have a PostgreSQL database running. You can create a database named `smart_school_bus` (or any name you prefer).
+
+### Backend Configuration
+
+Create a `.env` file in `apps/server/dashboard-api` and `apps/server/driver-api` with the following content (adjust values to match your local setup):
+
+**`apps/server/dashboard-api/.env`**
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=your_password
+DB_NAME=smart_school_bus
+JWT_SECRET=your_jwt_secret
+PORT=3001
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+**`apps/server/driver-api/.env`**
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=your_password
+DB_NAME=smart_school_bus
+JWT_SECRET=your_jwt_secret
+PORT=3002
 ```
+
+### Frontend Configuration
+
+The frontends use `Vite` and load environment variables from `.env` files.
+
+**`apps/web-dashboard/.env`**
+```env
+VITE_DASHBOARD_API_URL=http://localhost:3001
+```
+
+**`apps/driver-app/.env`**
+```env
+VITE_API_URL=http://localhost:3002
+```
+
+## Running the Application
+
+You can run the applications individually or concurrently.
+
+### 1. Start the Backends
+
+Open a terminal for the Dashboard API:
+```bash
+cd apps/server/dashboard-api
+pnpm start:dev
+```
+*Runs on http://localhost:3001*
+
+Open another terminal for the Driver API:
+```bash
+cd apps/server/driver-api
+pnpm start:dev
+```
+*Runs on http://localhost:3002*
+
+### 2. Start the Frontends
+
+You can use the root scripts to start the frontends:
+
+**Web Dashboard:**
+```bash
+pnpm dev:web
+```
+*Runs on http://localhost:5173 (default)*
+
+**Driver App:**
+```bash
+pnpm dev:driver
+```
+*Runs on http://localhost:5174 (default)*
+
+**Parent App:**
+```bash
+pnpm dev:parent
+```
+
+## Project Structure
+
+```
+Smart-School-Bus-Tracking-System/
+├── apps/
+│   ├── web-dashboard/       # Admin Dashboard (React + Vite)
+│   ├── driver-app/          # Driver App (React + Vite)
+│   ├── parent-app/          # Parent App (React + Vite)
+│   └── server/
+│       ├── dashboard-api/   # NestJS API for Dashboard
+│       └── driver-api/      # NestJS API for Driver App
+├── packages/                # Shared packages (if any)
+├── package.json             # Root configuration & scripts
+└── pnpm-workspace.yaml      # Workspace definition
+```
+
+## Features
+
+-   **Real-time Tracking**: Track bus locations in real-time.
+-   **Management**: CRUD operations for Buses, Drivers, Students, and Routes.
+-   **Scheduling**: Manage daily trips and assignments.
+-   **Notifications**: Alert parents about pickup/drop-off status.
+-   **Reporting**: Drivers can report incidents directly from the app.
