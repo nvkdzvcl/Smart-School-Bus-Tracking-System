@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Send, Plus, X, Phone, MoreHorizontal, Paperclip, Search } from 'lucide-react'
+import { Send, Plus, X, Phone, MoreHorizontal, Paperclip, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getConversationsForUser, getConversationMessages, sendChatMessage, getOrCreateConversation, Conversation, ChatMessage, getUsers } from '../lib/api'
 
 export default function Messages() {
@@ -258,36 +258,166 @@ export default function Messages() {
 
 function NewConversationModal({ users, currentUserId, onStart, onClose, userSearch, setUserSearch }: { users: any[]; currentUserId?: string; onStart: (id: string) => void; onClose: () => void; userSearch: string; setUserSearch: (v: string) => void }) {
   const [selectedId, setSelectedId] = useState('')
+  // Thêm: State quản lý tab hoạt động
+  const [activeTab, setActiveTab] = useState<'driver' | 'parent'>('parent')
+  // Thêm: State quản lý phân trang
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
+
   if (!currentUserId) return null
-  const filtered = users.filter(u => (u.fullName || u.phone || '').toLowerCase().includes(userSearch.toLowerCase()))
+
+  // Lọc theo tab và search
+  const filtered = users.filter(u => {
+    // Backend API (getUsers) cần phải trả về trường 'role' (ví dụ: 'parent' hoặc 'driver')
+    const searchQuery = userSearch.toLowerCase()
+    const fullName = (u.fullName || '').toLowerCase()
+    const phone = (u.phone || '').toLowerCase()
+    const matchesSearch = fullName.includes(searchQuery) || phone.includes(searchQuery)
+    // Giả định backend trả về u.role là 'parent' hoặc 'driver'
+    const matchesTab = u.role === activeTab
+    
+    // Đảm bảo không hiển thị chính người dùng đang đăng nhập (đã lọc ở Messages, nhưng lọc lại cho an toàn)
+    return matchesSearch && matchesTab && u.id !== currentUserId
+  })
+
+  // Tính toán phân trang
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedUsers = filtered.slice(startIndex, endIndex)
+
+  // Reset về trang 1 và bỏ chọn khi đổi tab hoặc search
+  useEffect(() => {
+    setCurrentPage(1)
+    setSelectedId('')
+  }, [activeTab, userSearch])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200 p-5 flex flex-col">
+      <div className="relative w-full max-w-md bg-white rounded-lg shadow-lg border border-gray-200 p-5 flex flex-col max-h-[80vh]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-gray-900">Tạo hội thoại mới</h2>
-          <button onClick={onClose} aria-label="Đóng" title="Đóng" className="p-1 rounded hover:bg-gray-100"><X className="w-4 h-4 text-gray-600" /></button>
+          <h2 className="text-lg font-semibold text-gray-900">Tạo hội thoại mới</h2>
+          <button onClick={onClose} aria-label="Đóng" title="Đóng" className="p-1 rounded hover:bg-gray-100">
+            <X className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4 border-b">
+          <button
+            onClick={() => setActiveTab('parent')}
+            className={`flex-1 pb-2 text-sm font-medium transition-colors ${
+              activeTab === 'parent'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Phụ huynh
+          </button>
+          <button
+            onClick={() => setActiveTab('driver')}
+            className={`flex-1 pb-2 text-sm font-medium transition-colors ${
+              activeTab === 'driver'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Tài xế
+          </button>
+        </div>
+
+        {/* Search */}
         <div className="relative mb-3">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-          <input value={userSearch} onChange={e => { setUserSearch(e.target.value); setSelectedId('') }} placeholder="Tìm theo tên / số điện thoại..." className="w-full h-9 pl-8 pr-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          <input
+            value={userSearch}
+            onChange={e => { setUserSearch(e.target.value); setSelectedId('') }}
+            placeholder="Tìm theo tên / số điện thoại..."
+            className="w-full h-9 pl-8 pr-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
         </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar mb-4 border rounded-md">
-          {filtered.length === 0 && <p className="p-3 text-xs text-gray-500">Không tìm thấy người dùng.</p>}
+
+        {/* User List */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar mb-3 border rounded-md min-h-[300px]">
+          {paginatedUsers.length === 0 && (
+            <p className="p-4 text-sm text-gray-500 text-center">
+              {userSearch ? 'Không tìm thấy người dùng phù hợp.' : `Không có ${activeTab === 'parent' ? 'phụ huynh' : 'tài xế'} nào.`}
+            </p>
+          )}
           <ul>
-            {filtered.map(u => (
+            {paginatedUsers.map(u => (
               <li key={u.id}>
-                <button onClick={() => setSelectedId(u.id)} className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between border-b last:border-b-0 ${selectedId === u.id ? 'bg-primary-50' : 'hover:bg-gray-50'}`}>
-                  <span className="truncate">{u.fullName || u.phone || u.id}</span>
-                  <span className="text-[10px] text-gray-500 ml-2">{u.role}</span>
+                <button
+                  onClick={() => setSelectedId(u.id)}
+                  className={`w-full text-left px-3 py-2.5 text-sm flex items-center gap-3 border-b last:border-b-0 transition ${
+                    selectedId === u.id ? 'bg-primary-50 border-primary-200' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {/* Avatar Initial */}
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                    {(u.fullName || u.phone || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{u.fullName || u.phone || u.id}</p>
+                    <p className="text-xs text-gray-500">{u.phone}</p>
+                  </div>
+                  {selectedId === u.id && (
+                    <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
                 </button>
               </li>
             ))}
           </ul>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mb-4 text-sm">
+            <span className="text-gray-600">
+              Trang {currentPage} / {totalPages} ({filtered.length} người)
+            </span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Trang trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded border border-gray-300 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Trang sau"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
         <div className="flex gap-2">
-          <button onClick={onClose} type="button" className="flex-1 h-9 rounded-md border border-gray-300 text-sm font-medium hover:bg-gray-50">Hủy</button>
-          <button onClick={() => selectedId && onStart(selectedId)} disabled={!selectedId} className="flex-1 h-9 rounded-md bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium disabled:opacity-50">Bắt đầu</button>
+          <button
+            onClick={onClose}
+            type="button"
+            className="flex-1 h-9 rounded-md border border-gray-300 text-sm font-medium hover:bg-gray-50"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={() => selectedId && onStart(selectedId)}
+            disabled={!selectedId}
+            className="flex-1 h-9 rounded-md bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Bắt đầu
+          </button>
         </div>
       </div>
     </div>
