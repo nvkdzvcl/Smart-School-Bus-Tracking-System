@@ -1,11 +1,20 @@
-<<<<<<< HEAD
-import { Search, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Search, User, Bell } from 'lucide-react'
+import { getDriverSocket } from '../lib/socket'
 
 export default function Header() {
+  const navigate = useNavigate()
+  // User Info State (from HEAD)
   const [userName, setUserName] = useState('Quản lý')
   const [userRole, setUserRole] = useState('')
 
+  // Notification State (from Remote)
+  const [open, setOpen] = useState(false)
+  const [count, setCount] = useState(0)
+  const [items, setItems] = useState<{ id: string; title: string; time: string }[]>([])
+
+  // Effect for User Info (from HEAD)
   useEffect(() => {
     const infoStr = localStorage.getItem('user_info')
     if (infoStr) {
@@ -19,18 +28,7 @@ export default function Header() {
     }
   }, [])
 
-=======
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Search, User, Bell } from 'lucide-react'
-import { getDriverSocket } from '../lib/socket'
-
-export default function Header() {
-  const navigate = useNavigate()
-  const [open, setOpen] = useState(false)
-  const [count, setCount] = useState(0)
-  const [items, setItems] = useState<{ id: string; title: string; time: string }[]>([])
-
+  // Effect for Notifications (from Remote)
   useEffect(() => {
     const socket = getDriverSocket()
     const onCreated = (r: any) => {
@@ -43,7 +41,6 @@ export default function Header() {
 
   const toggle = () => { setOpen((o) => !o); if (!open) setCount(0) }
 
->>>>>>> 660c63f512e57e872eda72481a91911577430a97
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -53,11 +50,7 @@ export default function Header() {
           </h1>
         </div>
 
-<<<<<<< HEAD
-        <div className="flex items-center space-x-4">
-=======
         <div className="flex items-center space-x-4 relative">
->>>>>>> 660c63f512e57e872eda72481a91911577430a97
           {/* Search */}
           <div className="relative hidden md:block">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -68,8 +61,6 @@ export default function Header() {
             />
           </div>
 
-<<<<<<< HEAD
-=======
           {/* Notifications */}
           <div className="relative">
             <button aria-label="Thông báo" onClick={toggle} className={`relative p-2 rounded-lg hover:bg-gray-100 ${open ? 'bg-gray-100' : ''}`}>
@@ -100,7 +91,6 @@ export default function Header() {
             )}
           </div>
 
->>>>>>> 660c63f512e57e872eda72481a91911577430a97
           {/* User Menu */}
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
