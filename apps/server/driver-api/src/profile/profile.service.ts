@@ -23,86 +23,94 @@ export class ProfileService {
   // -----------------------------------------------------------------
   // HÀM ĐÃ ĐƯỢC SỬA LẠI
   // -----------------------------------------------------------------
-  async getChatContacts(driverId: string) {
-    // Hàm phụ để tạo subquery đếm tin nhắn chưa đọc
-    const unreadCountSubQuery = (subQuery) => {
-      return subQuery
-        .select('COUNT(msg.id)', 'count')
-        .from('Messages', 'msg') // Tên bảng Messages của bạn
-        .where('msg.sender_id = user.id') // Tin nhắn GỬI TỪ 'user' (quản lý/phụ huynh)
-        .andWhere('msg.recipient_id = :driverId') // GỬI ĐẾN tài xế (driverId)
-        .andWhere('msg.is_read = false');
-    };
+async getChatContacts(driverId: string) {
+    // BƯỚC 1: Lấy danh sách Users (Quản lý + Phụ huynh có chuyến đi hôm nay)
+    // Sử dụng UNION để gộp 2 nhóm người này lại
+    const rawContacts = await this.userRepository.query(
+      `
+      -- 1. Lấy tất cả Quản lý
+      SELECT u.id, u.full_name, u.role, u.phone
+      FROM "Users" u
+      WHERE u.role = 'manager'
 
-const lastMessageTimeSubQuery = (subQuery) => {
-      return subQuery
-        .select('MAX(lm.created_at)')
-        .from('Messages', 'lm')
-        .where(
-          '(lm.sender_id = user.id AND lm.recipient_id = :driverId)',
-        )
-        .orWhere(
-          '(lm.recipient_id = user.id AND lm.sender_id = :driverId)',
-        );
-    };
+      UNION
 
-    // 1. Lấy tất cả Quản lý (đổi sang QueryBuilder)
-    const managers = await this.userRepository
-      .createQueryBuilder('user')
-      .select('user.id', 'id')
-      .addSelect('user.fullName', 'fullName')
-      .addSelect('user.role', 'role')
-      // Thêm cột unreadCount
-      .addSelect(unreadCountSubQuery, 'unreadCount')
-    .addSelect(lastMessageTimeSubQuery, 'lastMessageTimestamp')
-      .where('user.role = :role', { role: UserRole.MANAGER })
-      .setParameter('driverId', driverId) // Cung cấp driverId cho subquery
-      .getRawMany();
+      -- 2. Lấy Phụ huynh có con đi chuyến xe của tài xế (chỉ tính hôm nay hoặc tương lai)
+      SELECT DISTINCT u.id, u.full_name, u.role, u.phone
+      FROM "Users" u
+      INNER JOIN "Students" s ON s.parent_id = u.id
+      INNER JOIN "Trip_Students" ts ON ts.student_id = s.id
+      INNER JOIN "Trips" t ON t.id = ts.trip_id
+      WHERE t.driver_id = $1
+        AND t.trip_date >= CURRENT_DATE 
+        AND t.status != 'cancelled'
+      `,
+      [driverId],
+    );
 
-    // 2. Lấy tất cả Phụ huynh
-    const parents = await this.userRepository
-      .createQueryBuilder('user')
-      .select('user.id', 'id')
-      .addSelect('user.fullName', 'fullName')
-      .addSelect('user.role', 'role')
-      // Thêm cột unreadCount
-      .addSelect(unreadCountSubQuery, 'unreadCount')
-        .addSelect(lastMessageTimeSubQuery, 'lastMessageTimestamp')
-      .distinct(true)
-      .innerJoin('Students', 's', 's.parent_id = user.id')
-      .innerJoin('Trip_Students', 'ts', 'ts.student_id = s.id')
-      .innerJoin('Trips', 't', 'ts.trip_id = t.id')
-      .where('user.role = :role', { role: UserRole.PARENT })
-      .andWhere('t.driver_id = :driverId', { driverId })
-      .andWhere('t.trip_date = CURRENT_DATE')
-      .andWhere("t.status IN ('scheduled', 'in_progress')")
-      .getRawMany();
+    // BƯỚC 2: Lặp qua từng người để lấy thông tin hội thoại (Conversation)
+    // (Làm cách này dễ debug hơn là viết 1 câu SQL khổng lồ)
+    const result = await Promise.all(
+      rawContacts.map(async (contact: any) => {
+        // A. Tìm cuộc hội thoại giữa Tài xế và Người này
+        const conversations = await this.userRepository.query(
+          `
+          SELECT id, last_message_at
+          FROM "Conversations"
+          WHERE (participant_1_id = $1 AND participant_2_id = $2)
+             OR (participant_1_id = $2 AND participant_2_id = $1)
+          LIMIT 1
+          `,
+          [driverId, contact.id],
+        );
 
-    // 3. Gộp 2 danh sách
-    // Dùng Map để đảm bảo không trùng lặp
-    const allContactsMap = new Map<string, any>();
+        let conversationId = null;
+        let lastMessageTimestamp = null;
+        let unreadCount = 0;
 
-    // Hàm xử lý data từ .getRawMany()
-    const processContact = (contact: any) => {
-      // getRawMany trả về unreadCount là string, cần chuyển sang number
-      const processedContact = {
-        id: contact.id,
-        fullName: contact.fullName,
-        role: contact.role,
-        unreadCount: parseInt(contact.unreadCount, 10) || 0,
-        lastMessageTimestamp: contact.lastMessageTimestamp,
-      };
-      allContactsMap.set(processedContact.id, processedContact);
-    };
+        if (conversations.length > 0) {
+          conversationId = conversations[0].id;
+          lastMessageTimestamp = conversations[0].last_message_at;
 
-    managers.forEach(processContact);
-    parents.forEach(processContact);
+          // B. Đếm tin nhắn chưa đọc trong hội thoại này
+          // (Người gửi là Contact, Người nhận là Driver, Chưa đọc)
+          const unreadRes = await this.userRepository.query(
+            `
+            SELECT COUNT(*) as count
+            FROM "Messages"
+            WHERE conversation_id = $1
+              AND sender_id = $2
+              AND is_read = false
+            `,
+            [conversationId, contact.id],
+          );
+          unreadCount = parseInt(unreadRes[0].count, 10);
+        }
 
-    // Xóa chính tài xế khỏi danh sách
-    allContactsMap.delete(driverId);
+        // C. Map dữ liệu trả về đúng chuẩn FE yêu cầu (ConversationState)
+        return {
+          id: contact.id,
+          fullName: contact.full_name, // Lưu ý: SQL trả về snake_case
+          role: contact.role,
+          phone: contact.phone,
+          conversationId: conversationId,
+          unreadCount: unreadCount,
+          lastMessageTimestamp: lastMessageTimestamp,
+        };
+      }),
+    );
 
-    return Array.from(allContactsMap.values());
-  }
+    // BƯỚC 3: Sắp xếp danh sách (Ai nhắn gần nhất thì đưa lên đầu)
+    return result.sort((a, b) => {
+      const timeA = a.lastMessageTimestamp
+        ? new Date(a.lastMessageTimestamp).getTime()
+        : 0;
+      const timeB = b.lastMessageTimestamp
+        ? new Date(b.lastMessageTimestamp).getTime()
+        : 0;
+      return timeB - timeA;
+    });
+  }
 
   // -----------------------------------------------------------------
   // CÁC HÀM KHÁC GIỮ NGUYÊN
