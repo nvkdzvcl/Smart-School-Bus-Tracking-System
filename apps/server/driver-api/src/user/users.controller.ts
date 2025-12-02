@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, Req } from '@nestjs/common';
 import { User } from './user.entity';
 import { UpdateParentDto } from './dto/update-user.dto';
 import { UsersService } from './users.service';
@@ -10,6 +10,11 @@ export class UsersController {
   @Get('students/:studentId/current-trip')
   getCurrentTripForStudent(@Param('studentId') studentId: string, @Req() req) {
     return this.userService.getCurrentTripForStudent(studentId);
+  }
+
+  @Get('search')
+  async searchUsers(@Query('q') query: string) {
+    return this.userService.searchUsersToChat(query);
   }
 
   @Get(':id')

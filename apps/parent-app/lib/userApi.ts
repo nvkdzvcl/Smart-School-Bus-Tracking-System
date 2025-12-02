@@ -15,3 +15,9 @@ export async function updateParentInfo(
     email: parent.email,
   });
 }
+
+export async function searchUser(query: string) {
+  // Gọi API search user theo query (tên hoặc sđt)
+  const res = await apiClient.get(`/users/search?q=${query}`);
+  return res.data;
+}

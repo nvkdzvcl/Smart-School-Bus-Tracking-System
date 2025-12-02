@@ -249,7 +249,7 @@ export class TripService {
         status: TripStatus.IN_PROGRESS,
       },
       // Join bảng tripStudents và bảng student để lấy thông tin
-      relations: ['tripStudents', 'tripStudents.student'], 
+      relations: ['tripStudents', 'tripStudents.student'],
     });
 
     // Nếu không có chuyến nào đang chạy -> Trả về rỗng
@@ -258,19 +258,21 @@ export class TripService {
     }
     const students = activeTrip.tripStudents as any;
     // Map dữ liệu để trả về format gọn nhẹ cho Frontend
-return students
-      // 1. Thêm hàm filter để lọc status là 'pending'
-      .filter((ts: any) => ts.status === 'pending') 
-      // 2. Sau đó mới map dữ liệu
-      .map((ts: any) => ({
-        id: ts.student.id,
-        full_name: ts.student.fullName,
-        status: ts.status, 
-        imageUrl: ts.student.imageUrl || null,
-      }));
+    return (
+      students
+        // 1. Thêm hàm filter để lọc status là 'pending'
+        .filter((ts: any) => ts.status === 'pending')
+        // 2. Sau đó mới map dữ liệu
+        .map((ts: any) => ({
+          id: ts.student.id,
+          full_name: ts.student.fullName,
+          status: ts.status,
+          imageUrl: ts.student.imageUrl || null,
+        }))
+    );
   }
 
-    /**
+  /**
    * Lấy danh sách vị trí của 1 trip, sort mới nhất trước
    * Dùng cho: GET /trips/:tripId/locations?limit=1
    */
@@ -291,4 +293,34 @@ return students
     }));
   }
 
+  async getSimulationTrips() {
+    // ⚠️ LƯU Ý: Đây là một query lớn, chỉ nên dùng cho mục đích Demo/Quản lý.
+    return (
+      this.tripRepository
+        .createQueryBuilder('trip')
+        // Join Bus và Driver
+        .leftJoinAndSelect('trip.bus', 'bus')
+        .leftJoinAndSelect('trip.driver', 'driver')
+        // Join Route và các RouteStop
+        .leftJoinAndSelect('trip.route', 'route')
+        .leftJoinAndSelect('route.routeStops', 'routeStop')
+        // Join Stop (điểm dừng) thông qua RouteStop
+        .leftJoinAndSelect('routeStop.stop', 'stop')
+        // Join TripStudents (để biết ai đi chuyến này)
+        .leftJoinAndSelect('trip.tripStudents', 'tripStudent')
+        .leftJoinAndSelect('tripStudent.student', 'student')
+
+        // Lọc các chuyến chưa hoàn thành
+        .where('trip.status IN (:...statuses)', {
+          statuses: ['scheduled', 'in_progress'],
+        })
+
+        // Sắp xếp theo ngày gần nhất và thời gian
+        .orderBy('trip.tripDate', 'ASC')
+        .addOrderBy('trip.session', 'ASC')
+        .addOrderBy('routeStop.stopOrder', 'ASC') // Quan trọng: sắp xếp stops theo thứ tự
+
+        .getMany()
+    );
+  }
 }

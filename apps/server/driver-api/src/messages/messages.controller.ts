@@ -40,4 +40,5 @@ export class MessagesController {
     // Bạn có thể viết logic query từ bảng Message để group theo conversationId
     return await this.messagesService.getConversations();
   }
+  
 }

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ILike, In, Repository } from 'typeorm';
+import { Brackets, ILike, In, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Student } from 'src/student/student.entity';
@@ -141,5 +141,28 @@ export class UsersService {
           }
         : null,
     };
+  }
+
+  async searchUsersToChat(query: string) {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    // Tìm user có (Tên khớp OR SĐT khớp) AND (Role là driver hoặc manager)
+    return await this.userRepository.find({
+      where: [
+        {
+          fullName: ILike(`%${query}%`),
+          role: In(['driver', 'manager']),
+        },
+        {
+          phone: ILike(`%${query}%`),
+          role: In(['driver', 'manager']),
+        },
+      ],
+      // Chỉ lấy các trường cần thiết để hiển thị
+      select: ['id', 'fullName', 'phone', 'role', 'email'],
+      take: 5, // Giới hạn 5 kết quả
+    });
   }
 }

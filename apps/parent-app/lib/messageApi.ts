@@ -16,6 +16,6 @@ export async function getMessagesByConversationId(conversationId: string) {
   return await apiClient.get(`/messages/conversation/${conversationId}`);
 }
 
-// export async function getConversations() {
-//   return await apiClient.get('/messages/conversations');
-// }
+export async function getConversations() {
+  return await apiClient.get('/messages/conversations');
+}

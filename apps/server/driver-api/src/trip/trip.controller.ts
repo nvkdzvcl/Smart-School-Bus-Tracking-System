@@ -70,4 +70,9 @@ export class TripController {
   ) {
     return this.tripService.getTripLocations(tripId, Number(limit) || 1);
   }
+
+  @Get('simulation-data')
+  async getSimulationData() {
+    return this.tripService.getSimulationTrips();
+  }
 }

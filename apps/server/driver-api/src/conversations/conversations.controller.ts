@@ -1,5 +1,14 @@
-import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
+import { CreateConversationDto } from './dto/create-conversation.dto';
 
 @Controller('conversations')
 export class ConversationsController {
@@ -24,5 +33,27 @@ export class ConversationsController {
     // Frontend sẽ nhận được một mảng các [Conversation]
     // đã bao gồm 2 object lồng nhau là [participant1] và [participant2]
     return conversations;
+  }
+
+  @Post()
+  async create(@Body() dto: CreateConversationDto, @Req() req) {
+    // Lấy ID người dùng hiện tại từ token/session
+    const userId = req.user.userId;
+
+    return this.conversationsService.createOrGetConversation(
+      userId,
+      dto.partnerId,
+    );
+  }
+
+  @Post('get-or-create')
+  async getOrCreate(
+    @Body() body: { participant1Id: string; participant2Id: string },
+  ) {
+    const { participant1Id, participant2Id } = body;
+    return this.conversationsService.getOrCreateConversation(
+      participant1Id,
+      participant2Id,
+    );
   }
 }

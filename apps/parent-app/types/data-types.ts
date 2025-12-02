@@ -52,12 +52,13 @@ export interface CreateMessageDto {
   content: string;
   senderId: string;
   recipientId: string;
-  conversationId: string;
+  conversationId?: string;
 }
 
 export interface Participant {
   id: string;
   fullName: string;
+  phone?: string;
   // Thêm avatar nếu có, nếu không thì dùng fallback
   // avatarUrl?: string;
 }
@@ -214,3 +215,26 @@ export type ParentTripNotification = {
   createdAt: string;
   isRead: boolean;
 };
+
+export type UserRole = 'manager' | 'driver' | 'parent';
+
+// 2. Interface User chuẩn
+export interface User {
+  id: string;
+  fullName: string;       // Map từ 'full_name' trong DB
+  phone: string;          // Bắt buộc (Unique)
+  email?: string;         // Có thể null
+  role: UserRole;
+  
+  // Các trường bổ sung (Optional)
+  avatarUrl?: string;     // URL ảnh đại diện (thường ghép thêm ở backend hoặc lấy từ UI)
+  licenseNumber?: string; // Chỉ dành cho Driver
+  fcmToken?: string;      // Token để bắn thông báo
+  
+  // Quan hệ (Relations - Tùy API có trả về không)
+  students?: any[];       // Danh sách học sinh (nếu là Parent)
+
+  // Timestamps
+  createdAt?: string;
+  updatedAt?: string;
+}

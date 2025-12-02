@@ -1,21 +1,17 @@
 import { useContext, useEffect, useState } from "react";
-import Header from "@/app/layout/components/Header.tsx";
-import BottomNav from "@/app/layout/components/BottomNav.tsx";
+import Header from "@/app/layout/components/Header";
+import BottomNav from "@/app/layout/components/BottomNav";
 import NotificationList from "./components/NotificationList";
 import ConversationList from "./components/ConversationList";
 import ConversationView from "./components/ConversationView";
 import { getNotificationsByUserId } from "@/lib/notificationApi";
 import { UserContext } from "@/context/UserContext";
 import type { Conversation, Notification } from "@/types/data-types";
-import { getConversationsByUserId } from "@/lib/conversationApi";
+import { getConversationsByUserId, getOrCreateConversation } from "@/lib/conversationApi";
 
 export default function MessagesPage() {
-  // State này quản lý việc người dùng đang xem
-  // 'list' (danh sách) hay 'chat' (một cuộc trò chuyện cụ thể)
   const [currentView, setCurrentView] = useState<"list" | "chat">("list");
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifLoading, setNotifLoading] = useState(true);
@@ -34,7 +30,6 @@ export default function MessagesPage() {
       return;
     }
 
-    // Tải Notifications (giống như cũ)
     const fetchNotifications = async () => {
       try {
         setNotifLoading(true);
@@ -47,7 +42,6 @@ export default function MessagesPage() {
       }
     };
 
-    // Tải Conversations (MỚI)
     const fetchConversations = async () => {
       try {
         setConvoLoading(true);
@@ -61,19 +55,46 @@ export default function MessagesPage() {
     };
 
     fetchNotifications();
-    fetchConversations(); // <-- Gọi hàm mới
-  }, [user]); // Chạy lại khi có user
+    fetchConversations();
+  }, [user]);
 
-  // Hàm này được gọi bởi ConversationList khi người dùng bấm vào 1 tin nhắn
+  // Chọn hội thoại cũ
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
     setCurrentView("chat");
   };
 
-  // Hàm này được gọi bởi ConversationView để quay lại
+  // Bắt đầu chat từ ô tìm kiếm (luôn get-or-create trên server)
+  const handleStartNewChat = async (partner: { id: string; fullName: string }) => {
+    if (!user) return;
+
+    try {
+      const res = await getOrCreateConversation(user.id, partner.id);
+      const convo: Conversation = res.data;
+
+      // Đảm bảo cuộc hội thoại tồn tại trong state
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === convo.id);
+        if (exists) return prev;
+        return [convo, ...prev];
+      });
+
+      setSelectedConversationId(convo.id);
+      setCurrentView("chat");
+    } catch (e) {
+      console.error(e);
+      setConvoError("Không thể tạo cuộc trò chuyện.");
+    }
+  };
+
   const handleBackToList = () => {
     setSelectedConversationId(null);
     setCurrentView("list");
+
+    // (Optional) reload lại danh sách hội thoại sau khi chat
+    if (user) {
+      getConversationsByUserId(user.id).then((res) => setConversations(res.data));
+    }
   };
 
   const selectedConvo =
@@ -81,35 +102,31 @@ export default function MessagesPage() {
       ? conversations.find((convo) => convo.id === selectedConversationId)
       : undefined;
 
-  const recipient =
-    selectedConvo && user
-      ? selectedConvo.participant1.id === user.id
-        ? selectedConvo.participant2
-        : selectedConvo.participant1
-      : null;
+  let recipientName = "";
+  let recipientId = "";
 
-  const recipientName = recipient?.fullName ?? "";
-  const recipientId = recipient?.id ?? null;
+  if (selectedConvo && user) {
+    const recipient =
+      selectedConvo.participant1.id === user.id
+        ? selectedConvo.participant2
+        : selectedConvo.participant1;
+
+    recipientName = recipient?.fullName ?? "Người dùng";
+    recipientId = recipient?.id ?? "";
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header sẽ thay đổi tiêu đề và nút Back tùy theo view */}
       <Header
         title="Messages"
-        showBack
+        showBack={currentView === "chat"}
         showNotifications
-        notificationCount={2}
+        notificationCount={notifications.length}
       />
 
       <main className="max-w-2xl mx-auto space-y-6 p-4">
-        {/*
-          Sử dụng toán tử 3 ngôi để hiển thị:
-          - Hoặc là Danh sách (Thông báo + Hội thoại)
-          - Hoặc là một cuộc hội thoại cụ thể
-        */}
         {currentView === "list" ? (
           <>
-            {/* 1. Phần Thông báo (từ bảng Notifications) */}
             <section>
               <h2 className="text-lg font-semibold mb-3">Thông báo hệ thống</h2>
               <NotificationList
@@ -119,7 +136,6 @@ export default function MessagesPage() {
               />
             </section>
 
-            {/* 2. Phần Tin nhắn (từ bảng Messages) */}
             <section>
               <h2 className="text-lg font-semibold mb-3">Tin nhắn trao đổi</h2>
               <ConversationList
@@ -127,17 +143,19 @@ export default function MessagesPage() {
                 isLoading={isConvoLoading}
                 error={convoError}
                 onSelectConversation={handleSelectConversation}
+                onStartNewChat={handleStartNewChat}
               />
             </section>
           </>
         ) : (
-          // 3. Phần Chat chi tiết
-          <ConversationView
-            conversationId={selectedConversationId!}
-            onBack={handleBackToList}
-            recipientName={recipientName}
-            recipientId={recipientId!}
-          />
+          selectedConvo && (
+            <ConversationView
+              conversationId={selectedConversationId!}
+              onBack={handleBackToList}
+              recipientName={recipientName}
+              recipientId={recipientId}
+            />
+          )
         )}
       </main>
 
