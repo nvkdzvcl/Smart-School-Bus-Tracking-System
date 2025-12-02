@@ -368,12 +368,82 @@ ALTER TABLE "Users" ADD COLUMN IF NOT EXISTS "license_expiry" DATE;
 
 -- ========== PHẦN 2: DỮ LIỆU MẪU (CÓ SÁNG/CHIỀU + 7 NGÀY) ==========
 
+CREATE OR REPLACE FUNCTION ensure_day_students(
+  p_parent_id UUID,
+  p_trip_date DATE,
+  p_route_id UUID
+) RETURNS UUID[] AS $$
+DECLARE
+  v_offset INT := (p_trip_date - CURRENT_DATE);
+  v_names TEXT[];
+  v_result UUID[] := ARRAY[]::UUID[];
+  v_name TEXT;
+  v_pickup_stop UUID;
+  v_dropoff_stop UUID;
+  v_student_id UUID;
+BEGIN
+  SELECT stop_id INTO v_pickup_stop
+  FROM "Route_Stops" WHERE route_id = p_route_id
+  ORDER BY stop_order ASC LIMIT 1;
+
+  SELECT stop_id INTO v_dropoff_stop
+  FROM "Route_Stops" WHERE route_id = p_route_id
+  ORDER BY stop_order DESC LIMIT 1;
+
+  CASE v_offset
+    WHEN -3 THEN v_names := ARRAY['Ngô Anh Tuấn', 'Trịnh Gia Phúc', 'Phan Ngọc Ánh'];
+    WHEN -2 THEN v_names := ARRAY['Huỳnh Minh Khang', 'Lê Gia Bảo', 'Nguyễn Tường Vi'];
+    WHEN -1 THEN v_names := ARRAY['Bùi Khánh An', 'Đỗ Mỹ Duyên', 'Trần Hải Đăng'];
+    WHEN 0  THEN v_names := ARRAY['Phạm Bảo Châu', 'Đặng Gia Hân', 'Trần Minh Khoa'];
+    WHEN 1  THEN v_names := ARRAY['Vũ Quang Khải', 'Nguyễn Ngọc Linh', 'Phạm Gia Khang'];
+    WHEN 2  THEN v_names := ARRAY['Lâm Nhật Hào', 'Hoàng Yến Nhi', 'Đào Thảo Nguyên'];
+    WHEN 3  THEN v_names := ARRAY['Tạ Anh Kiệt', 'Lê Ngọc Mai', 'Đinh Phúc Hậu'];
+    ELSE v_names := ARRAY[]::TEXT[];
+  END CASE;
+
+  IF v_names IS NULL OR array_length(v_names, 1) IS NULL THEN
+    RETURN v_result;
+  END IF;
+
+  FOREACH v_name IN ARRAY v_names LOOP
+    SELECT id INTO v_student_id FROM "Students"
+    WHERE full_name = v_name
+    LIMIT 1;
+
+    IF v_student_id IS NULL THEN
+      INSERT INTO "Students"(full_name, parent_id, pickup_stop_id, dropoff_stop_id, route_id)
+      VALUES (v_name, p_parent_id, v_pickup_stop, v_dropoff_stop, p_route_id)
+      RETURNING id INTO v_student_id;
+    ELSE
+      UPDATE "Students"
+      SET parent_id = p_parent_id,
+          pickup_stop_id = v_pickup_stop,
+          dropoff_stop_id = v_dropoff_stop,
+          route_id = p_route_id
+      WHERE id = v_student_id;
+    END IF;
+
+    v_result := array_append(v_result, v_student_id);
+  END LOOP;
+
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql;
+
 DO $$
 DECLARE
   -- Users
   v_driver_1_id UUID; -- Trần Văn B (Tài xế)
   v_driver_2_id UUID; -- Lê Thị C (Tài xế)
   v_parent_id UUID;
+  v_parent_minus3_id UUID;
+  v_parent_minus2_id UUID;
+  v_parent_minus1_id UUID;
+  v_parent_zero_id UUID;
+  v_parent_plus1_id UUID;
+  v_parent_plus2_id UUID;
+  v_parent_plus3_id UUID;
+  v_parent_for_day UUID;
   v_manager_id UUID;  -- Nhà trường (Văn phòng)
 
   -- Stops, Bus, Route
@@ -429,12 +499,31 @@ DECLARE
   v_convo_2_id UUID; -- Parent <-> Manager (Nhà trường)
   v_convo_3_id UUID; -- Parent <-> Driver 2
 
+  v_parent_ids UUID[];
+  v_driver_choices UUID[];
+  v_driver_for_parent UUID;
+  v_parent_msg_samples TEXT[];
+  v_driver_msg_samples TEXT[];
+  v_messages_to_send INT;
+  v_loop_msg INT;
+  v_conversation_id UUID;
+  v_message_at TIMESTAMPTZ;
+  v_last_message_text TEXT;
+  v_last_preview TEXT;
+  v_last_sender_is_parent BOOLEAN;
+  v_cycle_sender UUID;
+  v_cycle_recipient UUID;
+  v_last_message_at TIMESTAMPTZ;
+
   -- BIẾN MỚI DÙNG CHO VÒNG LẶP TẠO 7 NGÀY
   v_loop_i INT;
   v_gen_date DATE;
   v_gen_trip_id UUID;
   v_gen_status trip_status;
   v_gen_student_status attendance_status;
+  v_new_student_id UUID;
+  v_current_day_student_ids UUID[];
+  v_idx INT;
 
 BEGIN
   RAISE NOTICE '--- Seeding Users (with all chat participants) ---';
@@ -451,6 +540,54 @@ BEGIN
   SELECT id INTO v_parent_id FROM "Users" WHERE phone='0922222222';
   SELECT id INTO v_manager_id FROM "Users" WHERE phone='0933333333';
   SELECT id INTO v_driver_2_id FROM "Users" WHERE phone='0944444444';
+
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến -3', '0961000003', 'parent_day_minus3@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_minus3_id;
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến -2', '0961000004', 'parent_day_minus2@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_minus2_id;
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến -1', '0961000005', 'parent_day_minus1@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_minus1_id;
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến 0', '0961000006', 'parent_day_0@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_zero_id;
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến +1', '0961000007', 'parent_day_plus1@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_plus1_id;
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến +2', '0961000008', 'parent_day_plus2@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_plus2_id;
+  INSERT INTO "Users"(full_name, phone, email, password_hash, role)
+  VALUES ('Phụ huynh Tuyến +3', '0961000009', 'parent_day_plus3@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  RETURNING id INTO v_parent_plus3_id;
+
+  v_parent_ids := ARRAY[
+    v_parent_minus3_id,
+    v_parent_minus2_id,
+    v_parent_minus1_id,
+    v_parent_zero_id,
+    v_parent_plus1_id,
+    v_parent_plus2_id,
+    v_parent_plus3_id
+  ];
+  v_driver_choices := ARRAY[v_driver_1_id, v_driver_2_id];
+  v_parent_msg_samples := ARRAY[
+    'Chào tài xế, sáng mai đón các bé giúp em nhé.',
+    'Nhà em sẽ cho các bé ra sớm 5 phút.',
+    'Cảm ơn tài xế hôm qua đã hỗ trợ.',
+    'Các bé hơi say xe, mong anh chạy chậm giúp.',
+    'Hôm nay có kẹt xe không anh?',
+    'Cho em xin cập nhật khi xe tới gần.'
+  ];
+  v_driver_msg_samples := ARRAY[
+    'Vâng, tôi sẽ ghé đúng giờ ạ.',
+    'Được rồi, tôi sẽ nhắn trước khi tới.',
+    'Tuyến đường ổn, không kẹt xe đâu ạ.',
+    'Cảm ơn anh/chị đã thông báo.',
+    'Tôi sẽ nhắc các bé thắt dây an toàn.'
+  ];
 
   RAISE NOTICE '--- Seeding Stops ---';
   INSERT INTO "Stops"(name, address, latitude, longitude)
@@ -622,53 +759,89 @@ BEGIN
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
   VALUES (v_route_minus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'morning', 'pickup', 'completed', ((CURRENT_DATE - 1) + interval '6 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '12 hours 47 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 35 minutes');
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 40 minutes');
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '6 hours 45 minutes');
+  v_current_day_student_ids := ensure_day_students(v_parent_minus1_id, CURRENT_DATE - 1, v_route_minus1_id);
+  v_idx := 0;
+  FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+    v_idx := v_idx + 1;
+    INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+    VALUES (
+      v_trip_pickup_morning,
+      v_new_student_id,
+      'attended',
+      ((CURRENT_DATE - 1) + interval '6 hours 50 minutes') + ((v_idx - 1) * interval '5 minutes')
+    );
+  END LOOP;
 
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
   VALUES (v_route_minus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE - 1, 'afternoon', 'dropoff', 'completed', ((CURRENT_DATE - 1) + interval '16 hours 30 minutes'), ((CURRENT_DATE - 1) + interval '20 hours 21 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 35 minutes');
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 40 minutes');
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'attended', (CURRENT_DATE - 1) + interval '16 hours 45 minutes');
+  v_current_day_student_ids := ensure_day_students(v_parent_minus1_id, CURRENT_DATE - 1, v_route_minus1_id);
+  v_idx := 0;
+  FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+    v_idx := v_idx + 1;
+    INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+    VALUES (
+      v_trip_dropoff_afternoon,
+      v_new_student_id,
+      'attended',
+      ((CURRENT_DATE - 1) + interval '16 hours 50 minutes') + ((v_idx - 1) * interval '5 minutes')
+    );
+  END LOOP;
 
   -- 2. HÔM NAY (TODAY) - Sáng xong, Chiều chưa
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
   VALUES (v_route_today_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'attended', CURRENT_DATE + interval '6 hours 35 minutes');
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'attended', CURRENT_DATE + interval '6 hours 40 minutes');
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'attended', CURRENT_DATE + interval '6 hours 45 minutes');
+  v_current_day_student_ids := ensure_day_students(v_parent_zero_id, CURRENT_DATE, v_route_today_id);
+  v_idx := 0;
+  FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+    v_idx := v_idx + 1;
+    INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+    VALUES (
+      v_trip_pickup_morning,
+      v_new_student_id,
+      'attended',
+      (CURRENT_DATE + interval '6 hours 50 minutes') + ((v_idx - 1) * interval '5 minutes')
+    );
+  END LOOP;
 
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
   VALUES (v_route_today_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'afternoon', 'dropoff', 'scheduled', (CURRENT_DATE + interval '16 hours 30 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'pending', NULL);
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'pending', NULL);
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'pending', NULL);
+  v_current_day_student_ids := ensure_day_students(v_parent_zero_id, CURRENT_DATE, v_route_today_id);
+  FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+    INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+    VALUES (v_trip_dropoff_afternoon, v_new_student_id, 'pending', NULL);
+  END LOOP;
 
   -- 3. NGÀY MAI (TOMORROW) - Tất cả SẮP CHẠY
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
   VALUES (v_route_plus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'morning', 'pickup', 'scheduled', ((CURRENT_DATE + 1) + interval '6 hours 30 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_1_id, 'pending', NULL);
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_2_id, 'pending', NULL);
-  INSERT INTO "Trip_Students" VALUES (v_trip_pickup_morning, v_student_3_id, 'pending', NULL);
+  v_current_day_student_ids := ensure_day_students(v_parent_plus1_id, CURRENT_DATE + 1, v_route_plus1_id);
+  FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+    INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+    VALUES (v_trip_pickup_morning, v_new_student_id, 'pending', NULL);
+  END LOOP;
 
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time)
   VALUES (v_route_plus1_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE + 1, 'afternoon', 'dropoff', 'scheduled', ((CURRENT_DATE + 1) + interval '16 hours 30 minutes'))
   RETURNING id INTO v_trip_dropoff_afternoon;
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_1_id, 'pending', NULL);
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_2_id, 'pending', NULL);
-  INSERT INTO "Trip_Students" VALUES (v_trip_dropoff_afternoon, v_student_3_id, 'pending', NULL);
+  v_current_day_student_ids := ensure_day_students(v_parent_plus1_id, CURRENT_DATE + 1, v_route_plus1_id);
+  FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+    INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+    VALUES (v_trip_dropoff_afternoon, v_new_student_id, 'pending', NULL);
+  END LOOP;
 
   -- =========================================================================
-  -- TỰ ĐỘNG GEN THÊM CHO CÁC NGÀY TRONG TUẦN (Từ T+2 đến T+7)
+  -- TỰ ĐỘNG GEN THÊM CHO CÁC NGÀY TRONG TUẦN (Từ T-3 đến T+3, bỏ các ngày đã seed thủ công)
   -- =========================================================================
   RAISE NOTICE '--- Auto Seeding Remaining Days of Week ---';
   
-  FOR v_loop_i IN 2..7 LOOP
+  FOR v_loop_i IN -3..3 LOOP
+    IF v_loop_i IN (-1, 0, 1) THEN
+      CONTINUE;
+    END IF;
 
     v_gen_date := CURRENT_DATE + v_loop_i;
 
@@ -684,17 +857,29 @@ BEGIN
     v_current_route_id := CASE v_loop_i
       WHEN -3 THEN v_route_minus3_id
       WHEN -2 THEN v_route_minus2_id
-      WHEN -1 THEN v_route_minus1_id
-      WHEN 0  THEN v_route_today_id
-      WHEN 1  THEN v_route_plus1_id
       WHEN 2  THEN v_route_plus2_id
       WHEN 3  THEN v_route_plus3_id
-      WHEN 4  THEN v_route_plus4_id
-      WHEN 5  THEN v_route_plus5_id
-      WHEN 6  THEN v_route_plus6_id
-      WHEN 7  THEN v_route_plus7_id
-      ELSE v_route_today_id
+      ELSE NULL
     END;
+
+    IF v_current_route_id IS NULL THEN
+      CONTINUE;
+    END IF;
+
+    v_parent_for_day := CASE v_loop_i
+      WHEN -3 THEN v_parent_minus3_id
+      WHEN -2 THEN v_parent_minus2_id
+      WHEN 2  THEN v_parent_plus2_id
+      WHEN 3  THEN v_parent_plus3_id
+      ELSE NULL
+    END;
+
+    IF v_parent_for_day IS NULL THEN
+      CONTINUE;
+    END IF;
+
+    v_current_day_student_ids := ensure_day_students(v_parent_for_day, v_gen_date, v_current_route_id);
+
 
     -- 1. SÁNG (Pickup)
     INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
@@ -707,9 +892,21 @@ BEGIN
     RETURNING id INTO v_gen_trip_id;
 
     -- Add học sinh
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_1_id, v_gen_student_status);
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_2_id, v_gen_student_status);
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_3_id, v_gen_student_status);
+    v_idx := 0;
+    FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+      v_idx := v_idx + 1;
+      INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+      VALUES (
+        v_gen_trip_id,
+        v_new_student_id,
+        v_gen_student_status,
+        CASE
+          WHEN v_gen_status = 'completed' THEN (v_gen_date + interval '6 hours 50 minutes') + ((v_idx - 1) * interval '5 minutes')
+          ELSE NULL
+        END
+      );
+    END LOOP;
+
 
     -- 2. CHIỀU (Dropoff)
     INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
@@ -722,9 +919,21 @@ BEGIN
     RETURNING id INTO v_gen_trip_id;
 
     -- Add học sinh
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_1_id, v_gen_student_status);
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_2_id, v_gen_student_status);
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_gen_trip_id, v_student_3_id, v_gen_student_status);
+    v_idx := 0;
+    FOREACH v_new_student_id IN ARRAY v_current_day_student_ids LOOP
+      v_idx := v_idx + 1;
+      INSERT INTO "Trip_Students"(trip_id, student_id, status, attended_at)
+      VALUES (
+        v_gen_trip_id,
+        v_new_student_id,
+        v_gen_student_status,
+        CASE
+          WHEN v_gen_status = 'completed' THEN (v_gen_date + interval '16 hours 50 minutes') + ((v_idx - 1) * interval '5 minutes')
+          ELSE NULL
+        END
+      );
+    END LOOP;
+
 
   END LOOP;
 
@@ -780,10 +989,66 @@ BEGIN
   UPDATE "Conversations"
   SET last_message_preview = 'Bạn: Cảm ơn chị.'
   WHERE id = v_convo_3_id;
+
+  FOREACH v_parent_for_day IN ARRAY v_parent_ids LOOP
+    IF v_parent_for_day IS NULL THEN
+      CONTINUE;
+    END IF;
+
+    v_driver_for_parent := v_driver_choices[1 + floor(random() * array_length(v_driver_choices, 1))];
+    INSERT INTO "Conversations"(participant_1_id, participant_2_id, last_message_at)
+    VALUES (
+      LEAST(v_parent_for_day, v_driver_for_parent),
+      GREATEST(v_parent_for_day, v_driver_for_parent),
+      NOW() - interval '2 hours'
+    )
+    RETURNING id INTO v_conversation_id;
+
+    v_messages_to_send := 3 + floor(random() * 3); -- 3-5 tin nhắn
+    v_cycle_sender := v_parent_for_day;
+    v_message_at := NOW() - interval '2 hours';
+    v_last_message_at := v_message_at;
+
+    FOR v_loop_msg IN 1..v_messages_to_send LOOP
+      v_message_at := v_message_at + interval '5 minutes';
+
+      IF v_cycle_sender = v_parent_for_day THEN
+        v_cycle_recipient := v_driver_for_parent;
+        v_last_sender_is_parent := true;
+        v_last_message_text := v_parent_msg_samples[1 + floor(random() * array_length(v_parent_msg_samples, 1))];
+      ELSE
+        v_cycle_recipient := v_parent_for_day;
+        v_last_sender_is_parent := false;
+        v_last_message_text := v_driver_msg_samples[1 + floor(random() * array_length(v_driver_msg_samples, 1))];
+      END IF;
+
+      INSERT INTO "Messages"(conversation_id, sender_id, recipient_id, content, created_at)
+      VALUES (v_conversation_id, v_cycle_sender, v_cycle_recipient, v_last_message_text, v_message_at);
+
+      v_last_message_at := v_message_at;
+      v_cycle_sender := CASE
+        WHEN v_cycle_sender = v_parent_for_day THEN v_driver_for_parent
+        ELSE v_parent_for_day
+      END;
+    END LOOP;
+
+    v_last_preview := CASE
+      WHEN v_last_sender_is_parent THEN 'Bạn: ' || v_last_message_text
+      ELSE 'Tài xế: ' || v_last_message_text
+    END;
+
+    UPDATE "Conversations"
+    SET last_message_preview = v_last_preview,
+        last_message_at = v_last_message_at,
+        updated_at = NOW()
+    WHERE id = v_conversation_id;
+  END LOOP;
   
   RAISE NOTICE '--- Seeding Part 2 Completed Successfully ---';
 
 END $$;
+
+DROP FUNCTION IF EXISTS ensure_day_students(UUID, DATE, UUID);
 
 -- SELECT ... WHERE t.session='afternoon' AND t.type='dropoff';
 -- ========== PHẦN 4: DỮ LIỆU BÁO CÁO & THÔNG BÁO MẪU (THÊM VÀO) ==========
@@ -934,6 +1199,11 @@ DECLARE
 
   v_pickup_morning_r2 UUID;
   v_dropoff_afternoon_r2 UUID;
+  v_saturday_date DATE;
+  v_sat_pickup UUID;
+  v_sat_dropoff UUID;
+  v_temp_student UUID;
+  v_base_students UUID[];
 BEGIN
   -- ===== USERS =====
   -- lấy từ phần cũ (đã có)
@@ -1012,6 +1282,7 @@ BEGIN
   END IF;
   SELECT id INTO v_student_nga  FROM "Students" WHERE full_name='Lê Thảo Nga' LIMIT 1;
   SELECT id INTO v_student_khoa FROM "Students" WHERE full_name='Võ Minh Khoa' LIMIT 1;
+  v_base_students := ARRAY[v_student_an, v_student_binh, v_student_huy];
 
   -- ===== TRIPS HÔM NAY (ROUTE A: driver1, ROUTE B: driver2) =====
   -- Route A (driver1)
@@ -1084,27 +1355,53 @@ BEGIN
   END IF;
 
   -- ===== TRIP_STUDENTS (gán nhanh) =====
-  -- Route A sáng: An, Bình
-  PERFORM 1 FROM "Trip_Students" WHERE trip_id=v_pickup_morning AND student_id=v_student_an;
-  IF NOT FOUND THEN
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_pickup_morning, v_student_an, 'pending');
-  END IF;
-  PERFORM 1 FROM "Trip_Students" WHERE trip_id=v_pickup_morning AND student_id=v_student_binh;
-  IF NOT FOUND THEN
-    INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_pickup_morning, v_student_binh, 'pending');
+  -- Route A: chuyển học sinh mặc định sang chuyến thứ Bảy
+  v_saturday_date := CURRENT_DATE + ((6 + 7 - EXTRACT(DOW FROM CURRENT_DATE)::INT) % 7);
+  IF v_saturday_date = CURRENT_DATE THEN
+    v_saturday_date := CURRENT_DATE + 7;
   END IF;
 
-  -- Route A chiều đón: Huy
-  -- PERFORM 1 FROM "Trip_Students" WHERE trip_id=v_pickup_afternoon AND student_id=v_student_huy;
-  -- IF NOT FOUND THEN
-  --   INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_pickup_afternoon, v_student_huy, 'pending');
-  -- END IF;
+  SELECT id INTO v_sat_pickup
+  FROM "Trips"
+  WHERE driver_id = v_driver1
+    AND trip_date = v_saturday_date
+    AND session = 'morning'
+    AND type = 'pickup'
+  LIMIT 1;
 
-  -- Route A chiều trả: An, Bình, Huy
-  FOREACH v_student_an IN ARRAY ARRAY[v_student_an, v_student_binh, v_student_huy] LOOP
-    PERFORM 1 FROM "Trip_Students" WHERE trip_id=v_dropoff_afternoon AND student_id=v_student_an;
+  IF v_sat_pickup IS NULL THEN
+    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, scheduled_start_time)
+    VALUES (v_route_1, v_bus_1, v_driver1, v_saturday_date, 'morning', 'pickup', 'scheduled', (v_saturday_date + interval '6 hours 30 minutes'))
+    RETURNING id INTO v_sat_pickup;
+  END IF;
+
+  SELECT id INTO v_sat_dropoff
+  FROM "Trips"
+  WHERE driver_id = v_driver1
+    AND trip_date = v_saturday_date
+    AND session = 'afternoon'
+    AND type = 'dropoff'
+  LIMIT 1;
+
+  IF v_sat_dropoff IS NULL THEN
+    INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, scheduled_start_time)
+    VALUES (v_route_1, v_bus_1, v_driver1, v_saturday_date, 'afternoon', 'dropoff', 'scheduled', (v_saturday_date + interval '16 hours 30 minutes'))
+    RETURNING id INTO v_sat_dropoff;
+  END IF;
+
+  FOREACH v_temp_student IN ARRAY v_base_students LOOP
+    IF v_temp_student IS NULL THEN
+      CONTINUE;
+    END IF;
+
+    PERFORM 1 FROM "Trip_Students" WHERE trip_id = v_sat_pickup AND student_id = v_temp_student;
     IF NOT FOUND THEN
-      INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_dropoff_afternoon, v_student_an, 'pending');
+      INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_sat_pickup, v_temp_student, 'pending');
+    END IF;
+
+    PERFORM 1 FROM "Trip_Students" WHERE trip_id = v_sat_dropoff AND student_id = v_temp_student;
+    IF NOT FOUND THEN
+      INSERT INTO "Trip_Students"(trip_id, student_id, status) VALUES (v_sat_dropoff, v_temp_student, 'pending');
     END IF;
   END LOOP;
 
