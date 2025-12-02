@@ -1,27 +1,27 @@
-// apps/driver-api/src/reports/reports.module.ts
+import { Module } from '@nestjs/common'
+import { ReportsService } from './reports.service'
+import { ReportsController } from './reports.controller'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { Report } from './entities/report.entity'
+import { Trip } from '../trip/trip.entity'
+import { AuthModule } from '../auth/auth.module'
+import { Student } from '../student/student.entity'
+import { Notification } from '../notification/notification.entity'
+import { TripStudent } from '../trip/trip-student.entity'
+import { ReportsGateway } from './reports.gateway'
 
-import { Module } from '@nestjs/common';
-import { ReportsService } from './reports.service';
-import { ReportsController } from './reports.controller';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { Report } from './entities/report.entity';
-import { Trip } from '../trip/trip.entity'; // <-- THÊM VÀO
-import { AuthModule } from '../auth/auth.module'; // <-- THÊM VÀO
-import { Student } from '../student/student.entity'; 
-import { Notification } from '../notification/notification.entity';
-import { TripStudent } from '../trip/trip-student.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Report,
-      Trip, // <-- THÊM VÀO
-      Student, 
+      Trip,
+      Student,
       Notification,
-      TripStudent
+      TripStudent,
     ]),
-    AuthModule, // <-- THÊM VÀO (để AuthGuard hoạt động)
+    AuthModule,
   ],
   controllers: [ReportsController],
-  providers: [ReportsService],
+  providers: [ReportsService, ReportsGateway],
 })
-export class ReportsModule {}
+export class ReportsModule { }

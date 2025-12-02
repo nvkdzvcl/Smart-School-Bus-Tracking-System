@@ -10,6 +10,7 @@ import ScheduleManagement from './pages/ScheduleManagement'
 import Messages from './pages/Messages'
 import Login from './pages/Login'
 import { RequireAuth } from './lib/RequireAuth'
+import Alerts from './pages/Alerts'
 
 function App() {
   return (
@@ -18,8 +19,8 @@ function App() {
       <Route path="/login" element={<Login />} />
 
       {/* Private routes */}
-      <Route element={<RequireAuth />}> 
-        <Route element={<Layout />}> 
+      <Route element={<RequireAuth />}>
+        <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/buses" element={<BusManagement />} />
           <Route path="/drivers" element={<DriverManagement />} />
@@ -27,6 +28,7 @@ function App() {
           <Route path="/routes" element={<RouteManagement />} />
           <Route path="/tracking" element={<RealTimeTracking />} />
           <Route path="/schedules" element={<ScheduleManagement />} />
+          <Route path="/alerts" element={<Alerts />} />
           <Route path="/messages" element={<Messages />} />
         </Route>
       </Route>
