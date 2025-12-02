@@ -13,7 +13,7 @@ export class MessagesService {
 
     // 3. (Nâng cao) Tiêm DataSource để dùng Transaction
     private dataSource: DataSource,
-  ) {}
+  ) { }
 
   async create(createMessageDto: CreateMessageDto) {
     // Sử dụng transaction để đảm bảo cả 2 thao tác (Tạo Message VÀ Cập nhật Conversation)

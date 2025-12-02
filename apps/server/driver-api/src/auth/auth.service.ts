@@ -10,7 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { User } from '../user/user.entity'; // <-- Entity MỚI
-import { UserRole } from '../user/user.roles.enum'; // <-- Enum MỚI
+import { UserRole, UserStatus } from '../user/user.roles.enum'; // <-- Enum MỚI
 import { LoginDto } from './dto/login.dto';
 import { RegisterDriverDto } from './dto/register-driver.dto';
 
@@ -38,6 +38,10 @@ export class AuthService {
     const isMatch = await bcrypt.compare(pass, user.passwordHash);
     if (!isMatch) {
       throw new UnauthorizedException('Sai mật khẩu');
+    }
+
+    if (user.status !== UserStatus.ACTIVE) { 
+      throw new UnauthorizedException('Tài khoản đã bị khóa');
     }
 
     // 3. (Quan trọng) Chỉ cho phép 'driver' đăng nhập

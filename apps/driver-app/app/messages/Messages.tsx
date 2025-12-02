@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/Ta
 // --- LẤY API URL TỪ .ENV ---
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000"
 
+
 // 1. Định nghĩa từ điển ngôn ngữ
 const TRANSLATIONS = {
   vi: {
@@ -116,6 +117,7 @@ interface ChatContact {
   id: string
   fullName: string
   role: "manager" | "parent"
+  conversationId?: string;
 }
 
 interface ConversationState extends ChatContact {
@@ -151,6 +153,9 @@ export default function MessagesPage() {
   const [chatHistory, setChatHistory] = useState<SocketMessage[]>([])
   const chatEndRef = useRef<HTMLDivElement>(null)
 
+  const lastMessageIdRef = useRef<string | null>(null)
+
+
   // Conversations & notifications
   const [conversations, setConversations] = useState<ConversationState[]>([])
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
@@ -160,6 +165,21 @@ export default function MessagesPage() {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
 
   const [error, setError] = useState<string | null>(null)
+
+  // --- THÊM ĐOẠN NÀY VÀO ---
+  // Tự động load lại tin nhắn mỗi 3 giây
+  useEffect(() => {
+    // Nếu chưa có socket hoặc chưa chọn người chat thì không làm gì
+    if (!socket || !selectedContactId) return;
+
+    const intervalId = setInterval(() => {
+      // Gửi yêu cầu lấy lại lịch sử chat
+      socket.emit("getHistory", { otherUserId: selectedContactId });
+    }, 3000); // 3000ms = 3 giây
+
+    // Dọn dẹp interval khi component unmount hoặc đổi người chat
+    return () => clearInterval(intervalId);
+  }, [socket, selectedContactId]);
 
   // 1. Auth check
   useEffect(() => {
@@ -174,47 +194,65 @@ export default function MessagesPage() {
       setDriverId(myId)
     }
   }, [navigate])
-
+const openedChatRef = useRef<string | null>(null);
   // 2. Fetch contacts + notifications
+// 2. Fetch contacts + notifications (CÓ LOGIC "ÂN HẠN" 3 GIÂY)
   useEffect(() => {
     if (!driverId) return
     const token = localStorage.getItem("access_token")
     if (!token) return
 
-    const fetchAllData = async () => {
-      setIsLoadingContacts(true)
-      setIsLoadingNotifications(true)
-      setError(null)
+    const fetchAllData = async (isBackground = false) => {
+      if (!isBackground) {
+        setIsLoadingContacts(true)
+        setIsLoadingNotifications(true)
+        setError(null)
+      }
 
       try {
         const [contactsRes, notificationsRes] = await Promise.all([
-          fetch(`${API_URL}/profile/chat-contacts`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_URL}/notifications`, {
-            headers: { Authorization: `Bearer ${token}` },
-            cache: 'no-store',
-          }),
+          fetch(`${API_URL}/profile/chat-contacts`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/notifications`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' }),
         ])
 
-        if (!contactsRes.ok) throw new Error("Không thể tải danh bạ")
+        if (!contactsRes.ok) throw new Error("Load contacts failed")
         const contactsData: ConversationState[] = await contactsRes.json()
-        setConversations(contactsData)
 
-        if (!notificationsRes.ok) throw new Error("Không thể tải thông báo")
+        // --- LOGIC XỬ LÝ BADGE THÔNG MINH ---
+        const processedContacts = contactsData.map(contact => {
+          // Nếu đang chat (selectedContactId)
+          // HOẶC vừa mới thoát chat chưa được 3 giây (openedChatRef)
+          // -> Ép số tin chưa đọc về 0
+          if (
+            contact.id === selectedContactId || 
+            contact.id === openedChatRef.current 
+          ) {
+            return { ...contact, unreadCount: 0 };
+          }
+          return contact;
+        });
+        // ------------------------------------
+
+        setConversations(processedContacts)
+
+        if (!notificationsRes.ok) throw new Error("Load notifications failed")
         const notificationsData: Notification[] = await notificationsRes.json()
         setNotifications(notificationsData)
       } catch (err: any) {
-        setError(err?.message || t.errorLoad)
+        if (!isBackground) setError(err?.message)
         console.error(err)
       } finally {
-        setIsLoadingContacts(false)
-        setIsLoadingNotifications(false)
+        if (!isBackground) {
+          setIsLoadingContacts(false)
+          setIsLoadingNotifications(false)
+        }
       }
     }
 
-    fetchAllData()
-  }, [driverId]) // language ko cần vào deps vì chỉ load lần đầu
+    fetchAllData(false)
+    const intervalId = setInterval(() => fetchAllData(true), 2000)
+    return () => clearInterval(intervalId)
+  }, [driverId, selectedContactId]) // Deps này ok
 
   // 3. Init socket
   useEffect(() => {
@@ -247,13 +285,19 @@ export default function MessagesPage() {
   }, [driverId, navigate])
 
   // 3.5 Listen newMessage
+// 3.5 Listen newMessage (SỬA LẠI: Check kỹ xem có đang mở chat không)
   useEffect(() => {
     if (!socket) return
     const handleNewMessage = (receivedMessage: SocketMessage) => {
+      // Nếu tin nhắn đến từ người đang chat -> Thêm vào lịch sử, KHÔNG tăng badge
       if (receivedMessage.sender_id === selectedContactId) {
         setChatHistory((prev) => [...prev, receivedMessage])
+        
+        // --- THÊM: Gửi luôn sự kiện đã đọc lên server để đồng bộ ---
+        socket.emit('markAsRead', { senderId: selectedContactId }); 
       }
       else {
+        // Nếu tin nhắn từ người khác -> Tăng badge lên 1
         setConversations(prevConvos =>
           prevConvos.map(convo =>
             convo.id === receivedMessage.sender_id
@@ -262,7 +306,6 @@ export default function MessagesPage() {
           )
         );
       }
-
     }
     socket.on("newMessage", handleNewMessage)
     return () => {
@@ -279,20 +322,37 @@ export default function MessagesPage() {
     }
   }, [socket, selectedContactId])
 
-  // 5. Scroll to bottom
+// 5. Scroll to bottom (SỬA LẠI: Xử lý cả khi mới mở chat)
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [chatHistory])
+    // Nếu chưa có tin nhắn hoặc chưa chọn ai thì thôi
+    if (chatHistory.length === 0 || !selectedContactId) return;
+
+    const lastMsg = chatHistory[chatHistory.length - 1];
+
+    // Logic cuộn:
+    // 1. Nếu là tin nhắn mới tinh (ID khác lần trước)
+    // 2. HOẶC là lần đầu tiên mở cuộc hội thoại này (lastMessageIdRef đang null hoặc khác context)
+    if (lastMsg.id !== lastMessageIdRef.current) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" }) // Hoặc "auto" cho nhanh
+      lastMessageIdRef.current = lastMsg.id;
+    }
+  }, [chatHistory, selectedContactId]) // <--- Thêm selectedContactId vào deps
+
+// Reset scroll ref khi đổi người chat
+  useEffect(() => {
+    lastMessageIdRef.current = null;
+  }, [selectedContactId]);
 
   // Send message
   const handleSendMessage = () => {
     if (!socket || !messageInput.trim() || !selectedContactId) {
       return
     }
-
+  const currentConversation = conversations.find(c => c.id === selectedContactId);
     socket.emit("sendMessage", {
       recipientId: selectedContactId,
       content: messageInput,
+      conversationId: currentConversation?.conversationId
     })
 
     setMessageInput("")
@@ -300,9 +360,11 @@ export default function MessagesPage() {
 
   const handleQuickReply = (reply: string) => {
     if (!socket || !selectedContactId) return
+    const currentConversation = conversations.find(c => c.id === selectedContactId);
     socket.emit("sendMessage", {
       recipientId: selectedContactId,
       content: reply,
+      conversationId: currentConversation?.conversationId
     })
   }
 
@@ -454,13 +516,29 @@ const handleNotificationClick = async (notificationId: string) => {
               <Card className="border-border/50 rounded-lg overflow-hidden">
                 <CardContent className="p-0">
                   <div className="p-4 border-b border-border/50 flex items-center gap-3">
-                    <Button
+<Button
                       variant="ghost"
                       size="icon"
+                      // --- SỰ KIỆN KHI BẤM NÚT BACK (THOÁT CHAT) ---
                       onClick={() => {
-                        setSelectedContactId(null)
-                        setChatHistory([])
+                        // 1. Gửi lệnh "Đã đọc" lên Server một lần nữa cho chắc
+                        if (socket && selectedContactId) {
+                           socket.emit('markAsRead', { senderId: selectedContactId });
+                        }
+
+                        // 2. Lưu lại ID vào Ref để "giả bộ" đã đọc trong 3s tới
+                        openedChatRef.current = selectedContactId;
+                        
+                        // 3. Thoát chat & Xóa lịch sử hiển thị
+                        setSelectedContactId(null);
+                        setChatHistory([]);
+
+                        // 4. Sau 3 giây, xóa Ref đi (lúc này DB chắc chắn đã update xong)
+                        setTimeout(() => {
+                          openedChatRef.current = null;
+                        }, 1500);
                       }}
+                      // ----------------------------------------------
                       className="text-foreground hover:bg-muted"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

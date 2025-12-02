@@ -155,21 +155,42 @@ export default function ScheduleManagement() {
         getAllBuses(),
         getRoutes()
       ])
+
       const mappedSchedules: Schedule[] = tripList.map((t: Trip) => {
-        const planned = (t as any).plannedStartTime || (t as any).scheduledStartTime || (t as any).startTime
-        const startTime = planned ? new Date(planned).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+        // 1. Lấy giá trị thô từ API (thử nhiều trường khác nhau)
+        const rawTime = (t as any).startTime || (t as any).plannedStartTime || (t as any).scheduledStartTime;
+
+        // 2. Logic xử lý hiển thị thời gian linh hoạt
+        let displayTime = '';
+        if (rawTime) {
+          // Nếu là chuỗi giờ đơn giản (VD: "06:30:00" hoặc "06:30") -> Cắt lấy 5 ký tự đầu
+          if (typeof rawTime === 'string' && rawTime.includes(':') && rawTime.length <= 8) {
+            displayTime = rawTime.substring(0, 5);
+          }
+          // Nếu là chuỗi Date đầy đủ (ISO) -> Dùng Date để format
+          else {
+            try {
+              const d = new Date(rawTime);
+              if (!isNaN(d.getTime())) {
+                displayTime = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false });
+              }
+            } catch (e) { console.error('Lỗi parse giờ:', e) }
+          }
+        }
+
         return {
           id: String(t.id),
           routeName: t.route?.name || '',
           driverName: t.driver?.fullName || '',
           busLicensePlate: t.bus?.licensePlate || '',
-          startTime,
+          startTime: displayTime, // <--- Đã sửa ở đây
           date: t.tripDate,
           type: t.session,
           status: t.status,
           studentsCount: (t as any).studentCount || (t as any).students?.length || 0
         }
       })
+
       setSchedules(mappedSchedules)
       setDrivers(driverList.map(d => ({ id: String(d.id), name: d.fullName })))
       setBuses(busList.map(b => ({ id: String(b.id), licensePlate: b.licensePlate })))

@@ -8,7 +8,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserRole } from './user.roles.enum'; // Import cái Enum vừa tạo
+import { UserRole, UserStatus } from './user.roles.enum';
 import { OneToMany } from 'typeorm';
 import { Student } from 'src/student/student.entity';
 import { Notification } from 'src/notification/notification.entity';
@@ -37,6 +37,13 @@ export class User {
     name: 'role',
   })
   role: UserRole;
+
+  @Column({
+    type: 'enum',
+    enum: UserStatus,
+    default: UserStatus.ACTIVE, // Mặc định là active
+  })
+  status: UserStatus;
 
   @Column({ name: 'fcm_token', nullable: true })
   fcmToken: string;
