@@ -77,11 +77,11 @@ export class AuthService {
   }
 
   // --- VIẾT LẠI HÀM REGISTER ---
-  async registerDriver(dto: RegisterDriverDto) {  
+  async registerDriver(dto: RegisterDriverDto) {
     // 1. Check xem SĐT (phone) đã tồn tại chưa
     const existingUser = await this.userRepository.findOne({
       where: [{ phone: dto.phone }, { email: dto.email }],
-  });
+    });
     if (existingUser) {
       throw new ConflictException('Số điện thoại hoặc email đã được đăng ký');
     }
@@ -116,17 +116,64 @@ export class AuthService {
       // Dùng jwtService (đã được inject) để xác thực
       // Nó sẽ tự kiểm tra chữ ký và hạn (expired)
       const payload = await this.jwtService.verifyAsync(token);
-      
+
       // Nếu bạn muốn cẩn thận hơn, kiểm tra xem user còn tồn tại không
       // const user = await this.userRepository.findOne({ where: { id: payload.sub } });
       // if (!user) {
       //   throw new UnauthorizedException('User không còn tồn tại');
       // }
-      
+
       return payload; // Trả về payload (chứa sub, phone, v.v.)
     } catch (e) {
       // Token hết hạn (expired) hoặc không hợp lệ
       throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
     }
+  }
+
+  async validateParent(phone: string, pass: string) {
+    // 1. Tìm tài khoản bằng 'phone'
+    const user = await this.userRepository.findOne({
+      where: { phone: phone },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Số điện thoại không tồn tại');
+    }
+
+    // 2. Kiểm tra mật khẩu (so sánh với 'passwordHash')
+    const isMatch = await bcrypt.compare(pass, user.passwordHash);
+    if (!isMatch) {
+      throw new UnauthorizedException('Sai mật khẩu');
+    }
+
+    // 3. (Quan trọng) Chỉ cho phép 'driver' đăng nhập
+    if (user.role !== UserRole.PARENT) {
+      throw new UnauthorizedException('Tài khoản không phải là phụ huynh');
+    }
+
+    return user;
+  }
+
+  async loginParent(dto: LoginDto) {
+    const user = await this.validateParent(dto.phone, dto.password);
+
+    // Thông tin sẽ lưu trong Token
+    const payload = {
+      sub: user.id, // ID người dùng (UUID)
+      phone: user.phone,
+      name: user.fullName,
+      role: user.role,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      message: 'Đăng nhập thành công',
+      parent: {
+        id: user.id,
+        name: user.fullName,
+        phone: user.phone,
+        email: user.email,
+      },
+    };
   }
 }

@@ -16,9 +16,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const result = await getUserById(
-          "2e2d9669-e45d-4b19-bf4f-e3ddb1ccc764"
-        );
+        // Lấy user từ localStorage (đã lưu khi login)
+        const storedUser = localStorage.getItem("user");
+        if (!storedUser) return;
+
+        const parsedUser = JSON.parse(storedUser);
+        const userId = parsedUser.id;
+
+        // Gọi API với userId thay vì hardcode
+        const result = await getUserById(userId);
         setUser(result.data);
       } catch (err) {
         console.error("Lỗi khi lấy thông tin phụ huynh:", err);

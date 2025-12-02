@@ -1,6 +1,14 @@
 {
   "extends": "../../tsconfig.app.json",
-  "include": ["app", "src", "components", "lib", "**/*.ts", "**/*.tsx"],
+  "include": [
+    "app",
+    "src",
+    "components",
+    "lib",
+    "**/*.ts",
+    "**/*.tsx",
+    "types/**/*.d.ts"
+  ],
   "compilerOptions": {
     "jsx": "react-jsx",
     "baseUrl": ".",

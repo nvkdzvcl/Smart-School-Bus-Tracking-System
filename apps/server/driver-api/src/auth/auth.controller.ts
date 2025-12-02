@@ -21,4 +21,9 @@ export class AuthController {
     return this.authService.registerDriver(registerDto);
   }
   // ---------------------------------
+
+  @Post('login-parent')
+  loginParent(@Body() dto: LoginDto) {
+    return this.authService.loginParent(dto);
+  }
 }

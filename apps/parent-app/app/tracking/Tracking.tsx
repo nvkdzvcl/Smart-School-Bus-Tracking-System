@@ -1,236 +1,388 @@
-"use client";
+// apps/parent-app/app/tracking/Tracking.tsx
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useContext,
+} from "react";
+import ReactMapGL, {
+  Marker,
+  Source,
+  Layer,
+} from "@goongmaps/goong-map-react";
+import { io, Socket } from "socket.io-client";
+import { UserContext } from "@/context/UserContext";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Bus, MapPin, Phone, User, ChevronDown, Map as MapIcon } from "lucide-react";
-import BottomNav from "../layout/components/BottomNav";
-import Header from "../layout/components/Header";
-
-interface TripData {
-  studentId: string;
-  studentName: string;
-  isBeingTracked: boolean;
-  trip: {
-    busPlate: string;
-    driverName: string;
-    driverPhone: string;
-    status: string;
-    eta: string;
-    lat: number;
-    lng: number;
-    stopName: string;
-    stopLat: number;
-    stopLng: number;
-    tripStatus: 'scheduled' | 'in_progress' | 'completed';
-  };
-}
-
-const MOCK_DATA = {
-  destinationStop: {
-    name: "Điểm trả mặc định",
-    address: "Quận 1, TP.HCM"
-  },
-  activeTrips: [
-    {
-      studentId: "student-an",
-      studentName: "Nguyễn Văn An",
-      isBeingTracked: true,
-      trip: {
-        busPlate: "51A-12345",
-        driverName: "Trần Văn B (Tài xế)",
-        driverPhone: "0912345678",
-        status: "Đang trên đường đến điểm đón",
-        eta: "5 phút",
-        lat: 10.775000, lng: 106.695000,
-        stopName: "Nhà Thờ Đức Bà",
-        stopLat: 10.779780, stopLng: 106.699430,
-        tripStatus: 'in_progress',
-      }
-    },
-    {
-      studentId: "student-binh",
-      studentName: "Trần Thị Bình",
-      isBeingTracked: false,
-      trip: {
-        busPlate: "51B-67890",
-        driverName: "Lê Văn C",
-        driverPhone: "0999999999",
-        status: "Đã lên lịch (Chiều)",
-        eta: "3 giờ",
-        lat: 10.700000, lng: 106.600000,
-        stopName: "Chợ Bến Thành",
-        stopLat: 10.77250, stopLng: 106.69800,
-        tripStatus: 'scheduled',
-      }
-    }
-  ] as TripData[],
+type Stop = {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  stop_order: number;
 };
 
-const useTrackingSimulation = (position: { lat: number, lng: number }, destination: { lat: number, lng: number }) => {
-  const [currentPosition, setCurrentPosition] = useState(position);
+type Location = {
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+};
+
+type MapViewport = {
+  latitude: number;
+  longitude: number;
+  zoom: number;
+};
+
+const containerStyle: React.CSSProperties = {
+  width: "100%",
+  height: "100vh",
+};
+
+const ParentTracking: React.FC = () => {
+  const { user: profile } = useContext(UserContext)!;
+
+  const [selectedStudentId, setSelectedStudentId] = useState<
+    string | undefined
+  >(undefined);
+  console.log("profile: ", profile)
+
+  const [trip, setTrip] = useState<any>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
+  const [busPosition, setBusPosition] = useState<Location | null>(null);
+  const [busTrail, setBusTrail] = useState<Location[]>([]);
+
+  const [viewport, setViewport] = useState<MapViewport>({
+    latitude: 10.77653,
+    longitude: 106.70098,
+    zoom: 14,
+  });
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
+
+  // Danh sách con của phụ huynh
+  const students = useMemo(() => profile?.students ?? [], [profile]);
+
+  // Chọn học sinh: nếu chưa chọn thì ưu tiên đứa đầu tiên
+  const selectedStudent = useMemo(() => {
+    if (!students || students.length === 0) return undefined;
+
+    if (!selectedStudentId) {
+      return students[0];
+    }
+
+    return students.find((s: any) => s.id === selectedStudentId) ?? students[0];
+  }, [students, selectedStudentId]);
 
   useEffect(() => {
-    setCurrentPosition(position);
+    if (!selectedStudent?.id) return;
 
-    if (position.lat === destination.lat && position.lng === destination.lng) return;
+    let socket: Socket | null = null;
 
-    const interval = setInterval(() => {
-      setCurrentPosition((prev) => ({
-        lat: prev.lat + (destination.lat - prev.lat) * 0.005,
-        lng: prev.lng + (destination.lng - prev.lng) * 0.005,
-      }));
-    }, 1500);
+    const fetchData = async () => {
+      try {
+        // 1. Trip hiện tại của học sinh
+        const tripRes = await fetch(
+          `${API_BASE}/users/students/${selectedStudent.id}/current-trip`
+        );
+        if (!tripRes.ok) {
+          console.error("Failed to fetch current trip");
+          setTrip(null);
+          setStops([]);
+          setBusPosition(null);
+          setBusTrail([]);
+          return;
+        }
 
-    return () => clearInterval(interval);
-  }, [position.lat, position.lng, destination.lat, destination.lng]);
 
-  return currentPosition;
-};
+        const tripData = await tripRes.json();
+        console.log("tripRes: ", tripData)
 
-export default function TrackingPage() {
-  const [trackingData] = useState(MOCK_DATA.activeTrips);
-  const [selectedStudentId, setSelectedStudentId] = useState(MOCK_DATA.activeTrips[0].studentId);
+        if (!tripData) {
+          setTrip(null);
+          setStops([]);
+          setBusPosition(null);
+          setBusTrail([]);
+          return;
+        }
 
-  const currentTrackedTrip = useMemo(() => {
-    return trackingData.find(t => t.studentId === selectedStudentId);
-  }, [trackingData, selectedStudentId]);
+        setTrip(tripData);
 
-  const simulatedPosition = useTrackingSimulation(
-    { lat: currentTrackedTrip?.trip.lat ?? 0, lng: currentTrackedTrip?.trip.lng ?? 0 },
-    { lat: currentTrackedTrip?.trip.stopLat ?? 0, lng: currentTrackedTrip?.trip.stopLng ?? 0 }
-  );
 
-  if (!currentTrackedTrip) {
-    return <p className="p-4 text-center">Không có chuyến đi nào đang hoạt động.</p>;
+        // 2. Route stops
+        const stopsRes = await fetch(`${API_BASE}/routes/${tripData.route_id}/stops`);
+        const stopsData = await stopsRes.json();
+
+        const mappedStops: Stop[] = (stopsData || []).map((rs: any) => ({
+          id: rs.stop_id,
+          name: rs.stop.name,
+          latitude: Number(rs.stop.latitude),
+          longitude: Number(rs.stop.longitude),
+          stop_order: rs.stop_order,
+        }));
+        setStops(mappedStops);
+
+        // 3. Các location gần nhất (lấy 50 điểm để vẽ hành trình)
+        const locRes = await fetch(
+          `${API_BASE}/trips/${tripData.id}/locations?limit=50`
+        );
+        if (locRes.ok) {
+          const locData = await locRes.json();
+          const mappedLocs: Location[] = (locData || []).map((l: any) => ({
+            latitude: Number(l.latitude),
+            longitude: Number(l.longitude),
+            timestamp: l.timestamp,
+          }));
+
+          if (mappedLocs.length > 0) {
+            // locData sort DESC (mới nhất trước) → đảo lại để vẽ từ cũ -> mới
+            const trail = [...mappedLocs].reverse();
+            setBusTrail(trail);
+
+            const last = mappedLocs[0];
+            setBusPosition(last);
+
+            setViewport((vp: MapViewport) => ({
+              ...vp,
+              latitude: last.latitude,
+              longitude: last.longitude,
+            }));
+          } else if (mappedStops.length > 0) {
+            // Không có location -> center vào stop đầu
+            setBusTrail([]);
+            setViewport((vp: MapViewport) => ({
+              ...vp,
+              latitude: mappedStops[0].latitude,
+              longitude: mappedStops[0].longitude,
+            }));
+          }
+        }
+
+        // 4. Socket realtime
+        socket = io("http://localhost:3000/tracking", {
+          transports: ["websocket"],
+        });
+
+        socket.emit("joinTrip", { tripId: tripData.id });
+
+        socket.on("locationUpdate", (loc: any) => {
+          const newPos: Location = {
+            latitude: Number(loc.latitude),
+            longitude: Number(loc.longitude),
+            timestamp: loc.timestamp,
+          };
+          setBusPosition(newPos);
+          setBusTrail((prev) => [...prev, newPos]);
+
+          setViewport((vp: MapViewport) => ({
+            ...vp,
+            latitude: newPos.latitude,
+            longitude: newPos.longitude,
+          }));
+        });
+      } catch (err) {
+        console.error("Error loading tracking data:", err);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [selectedStudent?.id]);
+
+  // GeoJSON cho polyline tuyến (theo stops)
+  const routeGeoJson = useMemo(() => {
+    if (stops.length < 2) return null;
+
+    return {
+      type: "Feature" as const,
+      geometry: {
+        type: "LineString" as const,
+        coordinates: stops.map((s) => [s.longitude, s.latitude]),
+      },
+      properties: {},
+    };
+  }, [stops]);
+
+  // GeoJSON cho hành trình xe (theo Bus_Locations)
+  const busTrailGeoJson = useMemo(() => {
+    if (busTrail.length < 2) return null;
+
+    return {
+      type: "Feature" as const,
+      geometry: {
+        type: "LineString" as const,
+        coordinates: busTrail.map((p) => [p.longitude, p.latitude]),
+      },
+      properties: {},
+    };
+  }, [busTrail]);
+
+  const goongToken = import.meta.env.VITE_GOONG_MAPTILES_KEY as string;
+
+  if (!goongToken) {
+    return <div>Chưa cấu hình VITE_GOONG_MAPTILES_KEY</div>;
   }
 
-  const { trip: activeTrip, studentName } = currentTrackedTrip;
+  if (!profile) {
+    return <div>Đang tải thông tin phụ huynh...</div>;
+  }
 
-  const destinationInfo = {
-    name: activeTrip.stopName,
-    address: "Điểm dừng xe bus"
-  };
+  if (!students || students.length === 0) {
+    return <div>Phụ huynh hiện chưa có học sinh nào được gán.</div>;
+  }
+        console.log("trip: ", trip)
 
   return (
-    <div className="min-h-screen bg-white max-w-md mx-auto overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+76px)]">
-      <Header title={`Theo dõi bé ${studentName}`} showBack showNotifications />
-
-      <main className="relative px-3">
-        {/* INFO CARD (chứa map thu nhỏ) */}
-        <div className="mt-3 bg-white shadow-2xl rounded-2xl p-3 sm:p-4 border-t-8 border-blue-500/10">
-          {/* Map thu nhỏ */}
-          <div className="bg-slate-100 rounded-xl border overflow-hidden">
-            <div className="flex items-center gap-3 p-3">
-              <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                <MapIcon className="w-7 h-7 text-blue-500" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">
-                  Bản đồ (mô phỏng)
-                </p>
-                <p className="text-xs text-slate-600 break-words">
-                  Vị trí xe: {simulatedPosition.lat.toFixed(6)}, {simulatedPosition.lng.toFixed(6)}
-                </p>
-              </div>
-            </div>
-            {/* Khung preview map (thumbnail) */}
-            <div className="h-28 sm:h-32 bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center">
-              <div className="flex items-center gap-2 text-blue-600">
-                <MapIcon className="w-5 h-5" />
-                <span className="text-xs font-medium">Map preview</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Selector Học Sinh */}
-          <div className="mt-4 mb-3 sm:mb-4 pb-2 sm:pb-3 border-b">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-50 p-1.5 rounded-full text-blue-600 shrink-0 flex items-center justify-center">
-                <User className="w-5 h-5" />
-              </div>
-
-              <div className="flex-1 relative min-w-0">
-                <select
-                  className="w-full bg-transparent text-base sm:text-lg font-bold text-slate-800 appearance-none focus:outline-none cursor-pointer pr-6 truncate"
-                  value={selectedStudentId}
-                  onChange={(e) => setSelectedStudentId(e.target.value)}
-                >
-                  {trackingData.map(t => (
-                    <option key={t.studentId} value={t.studentId}>
-                      {t.studentName}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-500 absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
-          {/* ETA */}
-          <div className="flex items-start sm:items-end justify-between gap-3 pb-2 sm:pb-3">
-            <div className="min-w-0">
-              <p className="text-[11px] sm:text-xs text-slate-500 uppercase font-medium tracking-wide">
-                DỰ KIẾN ĐẾN ĐIỂM DỪNG
-              </p>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-green-600 mt-1">
-                {activeTrip.eta}
-              </h2>
-            </div>
-            <span
-              className={`text-[11px] sm:text-xs font-medium px-2.5 py-1.5 rounded-full shrink-0
-              ${activeTrip.tripStatus === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}
-            >
-              {activeTrip.status}
-            </span>
-          </div>
-
-          {/* Chi tiết */}
-          <div className="space-y-3 pt-2 sm:pt-3">
-            {/* Biển số + Tài xế */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <Bus className="w-5 h-5 text-blue-600 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-sm sm:text-base font-medium text-slate-900 truncate">
-                    {activeTrip.busPlate}
-                  </p>
-                  <p className="text-xs text-slate-500">Biển số</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                <div className="text-right min-w-0">
-                  <p className="text-sm sm:text-base font-medium text-slate-900 truncate">
-                    {activeTrip.driverName}
-                  </p>
-                  <p className="text-xs text-slate-500">Tài xế</p>
-                </div>
-                <a
-                  href={`tel:${activeTrip.driverPhone}`}
-                  className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 hover:bg-green-100 transition shrink-0"
-                  aria-label="Gọi tài xế"
-                >
-                  <Phone className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-
-            {/* Điểm dừng */}
-            <div className="flex items-start gap-3 bg-slate-50 p-3 rounded-lg border">
-              <MapPin className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-sm sm:text-base font-medium text-slate-900 truncate">
-                  Điểm đón/trả: {destinationInfo.name}
-                </p>
-                <p className="text-xs sm:text-sm text-slate-500 break-words">
-                  {destinationInfo.address}
-                </p>
-              </div>
-            </div>
-          </div>
+    <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+      {/* Chọn học sinh (nếu có nhiều con) */}
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          left: 16,
+          zIndex: 10,
+          background: "white",
+          padding: 8,
+          borderRadius: 8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        }}
+      >
+        <div style={{ marginBottom: 4 }}>
+          <b>Phụ huynh:</b>{" "}
+          {profile.fullName || profile.fullName || profile.phone || profile.id}
         </div>
-      </main>
+        <label>
+          <b>Chọn học sinh:&nbsp;</b>
+          <select
+            value={selectedStudent?.id}
+            onChange={(e) => setSelectedStudentId(e.target.value)}
+          >
+            {students.map((s: any) => (
+              <option key={s.id} value={s.id}>
+                {s.full_name || s.fullName || s.name || s.id}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
-      <BottomNav />
+      <ReactMapGL
+        {...viewport}
+        width={containerStyle.width as string}
+        height={containerStyle.height as string}
+        mapStyle="https://tiles.goong.io/assets/goong_map_web.json"
+        goongApiAccessToken={goongToken}
+        onViewportChange={(vp: any) =>
+          setViewport({
+            latitude: vp.latitude,
+            longitude: vp.longitude,
+            zoom: vp.zoom,
+          } as MapViewport)
+        }
+      >
+        {/* Polyline tuyến chuẩn (Stops) */}
+        {routeGeoJson && (
+          <Source id="route" type="geojson" data={routeGeoJson}>
+            <Layer
+              id="route-line"
+              type="line"
+              paint={{
+                "line-color": "#007bff",
+                "line-width": 4,
+              }}
+            />
+          </Source>
+        )}
+
+        {/* Polyline hành trình xe (Bus_Locations) */}
+        {busTrailGeoJson && (
+          <Source id="bus-trail" type="geojson" data={busTrailGeoJson}>
+            <Layer
+              id="bus-trail-line"
+              type="line"
+              paint={{
+                "line-color": "#ff8800",
+                "line-width": 3,
+              }}
+            />
+          </Source>
+        )}
+
+        {/* Marker các điểm dừng */}
+        {stops.map((s) => (
+          <Marker key={s.id} longitude={s.longitude} latitude={s.latitude}>
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "50%",
+                width: 24,
+                height: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "2px solid #007bff",
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+              title={s.name}
+            >
+              {s.stop_order}
+            </div>
+          </Marker>
+        ))}
+
+        {/* Marker xe buýt */}
+        {busPosition && (
+          <Marker
+            longitude={busPosition.longitude}
+            latitude={busPosition.latitude}
+          >
+            <img
+              src="/bus-icon.png"
+              alt="Bus"
+              style={{ width: 40, height: 40 }}
+            />
+          </Marker>
+        )}
+      </ReactMapGL>
+
+      {/* Overlay info */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 16,
+          left: 16,
+          padding: 12,
+          background: "white",
+          borderRadius: 8,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        }}
+      >
+        <div>
+          <b>Học sinh:</b>{" "}
+          {selectedStudent?.fullName ||
+            selectedStudent?.id}
+        </div>
+        <div>
+          <b>Tuyến:</b> {trip?.route_name || trip?.route_id || "Không có"}
+        </div>
+        <div>
+          <b>Trạng thái chuyến:</b> {trip?.status || "N/A"}
+        </div>
+        {busPosition && (
+          <div>
+            <b>Vị trí cập nhật lúc:</b>{" "}
+            {new Date(busPosition.timestamp).toLocaleTimeString()}
+          </div>
+        )}
+        {!trip && (
+          <div>Hôm nay chưa có chuyến nào cho học sinh này.</div>
+        )}
+      </div>
     </div>
   );
-}
+};
+
+export default ParentTracking;

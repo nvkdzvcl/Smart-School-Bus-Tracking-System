@@ -15,13 +15,14 @@ export class TripController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @Get('current/students')
-  @ApiOperation({ summary: 'Lấy danh sách học sinh của chuyến đi đang chạy (Active)' })
+  @ApiOperation({
+    summary: 'Lấy danh sách học sinh của chuyến đi đang chạy (Active)',
+  })
   async getCurrentTripStudents(@Req() req: any) {
     // Gọi hàm bên Service (đảm bảo bạn đã thêm hàm này bên trip.service.ts rồi nhé)
     return this.tripService.getStudentsInCurrentTrip(req.user.id);
   }
   // 👆👆👆 HẾT PHẦN THÊM MỚI 👆👆👆
-
 
   @ApiTags('Trips (Driver)')
   @ApiBearerAuth()
@@ -55,5 +56,18 @@ export class TripController {
     @Query('to') to: string,
   ) {
     return this.tripService.getStudentSchedule(studentId, from, to);
+  }
+
+  /**
+   * GET /trips/:tripId/locations?limit=1
+   * Trả về danh sách vị trí (mới nhất trước)
+   * Dùng cho Parent-App tracking
+   */
+  @Get(':tripId/locations')
+  async getTripLocations(
+    @Param('tripId') tripId: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.tripService.getTripLocations(tripId, Number(limit) || 1);
   }
 }

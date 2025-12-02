@@ -1,3 +1,4 @@
+import { Student } from 'src/student/student.entity';
 import { Trip } from 'src/trip/trip.entity';
 import {
   Entity,
@@ -27,4 +28,8 @@ export class TripStudent {
   @ManyToOne(() => Trip, (trip) => trip.tripStudents)
   @JoinColumn({ name: 'trip_id' })
   trip: Trip;
+
+  @ManyToOne(() => Student)
+  @JoinColumn({ name: 'student_id' })
+  student: Student;
 }

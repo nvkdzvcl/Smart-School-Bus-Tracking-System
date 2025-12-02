@@ -8,6 +8,7 @@ import { Route } from '../route/route.entity';
 import { Report } from '../reports/entities/report.entity';
 import { TripStudent } from './trip-student.entity';
 import { TripStatus } from './trip.enums';
+import { BusLocation } from 'src/bus-location/entities/bus-location.entity';
 
 export interface TripHistoryBE {
   id: string;
@@ -41,6 +42,8 @@ export class TripService {
     private readonly tripStudentRepository: Repository<TripStudent>,
     @InjectRepository(Route)
     private readonly routeRepository: Repository<Route>,
+    @InjectRepository(BusLocation)
+    private readonly busLocationRepository: Repository<BusLocation>,
   ) {}
 
   async getHistoryListByUser(user: any): Promise<TripHistoryBE[]> {
@@ -266,4 +269,26 @@ return students
         imageUrl: ts.student.imageUrl || null,
       }));
   }
+
+    /**
+   * Lấy danh sách vị trí của 1 trip, sort mới nhất trước
+   * Dùng cho: GET /trips/:tripId/locations?limit=1
+   */
+  async getTripLocations(tripId: string, limit = 1) {
+    const take = Number(limit);
+    const safeTake = !isNaN(take) && take > 0 ? take : 1;
+
+    const locations = await this.busLocationRepository.find({
+      where: { tripId },
+      order: { timestamp: 'DESC' },
+      take: safeTake,
+    });
+
+    return locations.map((loc) => ({
+      latitude: Number(loc.latitude),
+      longitude: Number(loc.longitude),
+      timestamp: loc.timestamp,
+    }));
+  }
+
 }

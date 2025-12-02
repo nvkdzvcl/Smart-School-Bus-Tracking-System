@@ -99,6 +99,7 @@ export default function HomePage() {
         const res = await getNotificationsByUserId(user.id);
         const students = await getMyChildrenToday(user.id);
         setNotifications(res.data);
+        console.log("student: ", students.data)
         setStudents(transformStudentData(students.data));
       } catch (error) {
         console.error(error);

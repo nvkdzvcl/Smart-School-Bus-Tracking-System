@@ -45,6 +45,8 @@ export default function ProfilePage() {
     (s) => s.id === selectedStudentId
   );
 
+  console.log("profile: ", profile);
+
   // Khi selectedStudent thay đổi thì gọi API lấy stop
   useEffect(() => {
     const fetchStops = async () => {

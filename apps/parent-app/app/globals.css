@@ -148,6 +148,13 @@
 /* PHẦN CÒN LẠI HOÀN TOÀN CHÍNH XÁC */
 @custom-variant dark (&:is(.dark *));
 
+@import "leaflet/dist/leaflet.css";
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
 @layer base {
   :root {
     --background: oklch(0.99 0.005 240);
@@ -283,3 +290,4 @@
     @apply bg-background text-foreground via-background;
   }
 }
+

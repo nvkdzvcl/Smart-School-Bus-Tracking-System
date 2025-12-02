@@ -1,24 +1,52 @@
-import React, { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { Button } from "../../../components/ui/Button.tsx"
-import { Input } from "../../../components/ui/Input.tsx"
-import { Label } from "../../../components/ui/Label.tsx"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/Card.tsx"
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../../../components/ui/Button.tsx";
+import { Input } from "../../../components/ui/Input.tsx";
+import { Label } from "../../../components/ui/Label.tsx";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../../components/ui/Card.tsx";
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/Tabs"
-import { Bus, Lock, Text } from "lucide-react"
+import { Bus, Lock, Text } from "lucide-react";
 
 export default function LoginForm() {
-  const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      navigate("/")
-    }, 1000)
-  }
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    const phone = (document.getElementById("phone") as HTMLInputElement).value;
+    const password = (
+      document.getElementById("password-phone") as HTMLInputElement
+    ).value;
+
+    try {
+      const res = await fetch("http://localhost:3000/auth/login-parent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }), // gửi phone + password
+      });
+
+      if (!res.ok) throw new Error("Login failed");
+
+      const data = await res.json();
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.parent));
+
+      navigate("/");
+    } catch (err) {
+      console.error(err);
+      alert("Sai số điện thoại hoặc mật khẩu");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Card className="w-full max-w-md shadow-xl">
@@ -28,7 +56,9 @@ export default function LoginForm() {
         </div>
         <div>
           <CardTitle className="text-2xl font-bold">SSB Parent 1.0</CardTitle>
-          <CardDescription className="text-base mt-2">Track your child's school bus safely</CardDescription>
+          <CardDescription className="text-base mt-2">
+            Track your child's school bus safely
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
@@ -38,45 +68,50 @@ export default function LoginForm() {
             {/* <TabsTrigger value="email">Email</TabsTrigger> }
           </TabsList> */}
 
-          {/* <TabsContent value="phone"> */}
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="mshs" className="text-base">
-                  Student ID
-                </Label>
-                <div className="relative">
-                  <Text className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="mshs"
-                    type="text"
-                    placeholder="3123560000"
-                    className="pl-10 h-12 text-base"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password-phone" className="text-base">
-                  Password
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    id="password-phone"
-                    type="password"
-                    placeholder="Enter your password"
-                    className="pl-10 h-12 text-base"
-                    required
-                  />
-                </div>
-              </div>
-              <Button type="submit" className="w-full h-12 text-base" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-          {/* </TabsContent> */}
+        {/* <TabsContent value="phone"> */}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="text-base">
+              Phone Number
+            </Label>
+            <div className="relative">
+              <Text className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="phone"
+                type="text"
+                placeholder="0901234567"
+                className="pl-10 h-12 text-base"
+                required
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password-phone" className="text-base">
+              Password
+            </Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                id="password-phone"
+                type="password"
+                placeholder="Enter your password"
+                className="pl-10 h-12 text-base"
+                required
+              />
+            </div>
+          </div>
+          <Button
+            type="submit"
+            className="w-full h-12 text-base"
+            disabled={isLoading}
+          >
+            {isLoading ? "Signing in..." : "Sign In"}
+          </Button>
+        </form>
 
-          {/* <TabsContent value="email">
+        {/* </TabsContent> */}
+
+        {/* <TabsContent value="email">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-base">
@@ -127,5 +162,5 @@ export default function LoginForm() {
         </div> */}
       </CardContent>
     </Card>
-  )
+  );
 }
