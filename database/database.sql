@@ -829,7 +829,7 @@ BEGIN
 
   -- 2. HÔM NAY (TODAY) - Sáng xong, Chiều chưa
   INSERT INTO "Trips"(route_id, bus_id, driver_id, trip_date, session, type, status, actual_start_time, actual_end_time)
-  VALUES (v_route_today_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'completed', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
+  VALUES (v_route_today_id, v_bus_1_id, v_driver_1_id, CURRENT_DATE, 'morning', 'pickup', 'scheduled', (CURRENT_DATE + interval '6 hours 30 minutes'), (CURRENT_DATE + interval '11 hours 59 minutes'))
   RETURNING id INTO v_trip_pickup_morning;
   v_current_day_student_ids := ensure_day_students(v_parent_zero_id, CURRENT_DATE, v_route_today_id);
   v_idx := 0;
@@ -839,7 +839,7 @@ BEGIN
     VALUES (
       v_trip_pickup_morning,
       v_new_student_id,
-      'attended',
+      'pending',
       (CURRENT_DATE + interval '6 hours 50 minutes') + ((v_idx - 1) * interval '5 minutes')
     );
   END LOOP;
