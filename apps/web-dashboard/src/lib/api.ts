@@ -245,10 +245,37 @@ export const deleteStudent = async (id: string) => {
 }
 
 // Helpers (giả sử backend có endpoints; nếu không có /users?role=parent sẽ lọc sau)
-export const getParents = async (): Promise<{ id: string; fullName: string; phone: string }[]> => {
+export const getParents = async (): Promise<{ id: string; fullName: string; phone: string; email?: string; address?: string }[]> => {
     const res = await fetch(`${API_BASE}/users`, { headers: { ...authHeaders() } })
     const users = await handleResponse<any[]>(res, 'Failed to fetch users')
-    return users.filter(u => u.role === 'parent').map(u => ({ id: u.id, fullName: u.fullName, phone: u.phone }))
+    return users
+        .filter(u => u.role === 'parent')
+        .map(u => ({ id: u.id, fullName: u.fullName, phone: u.phone, email: u.email, address: u.address }))
+}
+
+export const createParent = async (data: { fullName: string; phone: string; email?: string; address?: string; status?: 'active' | 'inactive' }) => {
+    // Assume dashboard-api supports creating user with role parent
+    const body = { ...data, role: 'parent' }
+    const res = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(body)
+    })
+    return handleResponse<any>(res, 'Failed to create parent')
+}
+
+export const updateParent = async (id: string, data: { fullName?: string; phone?: string; email?: string; address?: string; status?: 'active' | 'inactive' }) => {
+    const res = await fetch(`${API_BASE}/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+    })
+    return handleResponse<any>(res, 'Failed to update parent')
+}
+
+export const deleteParent = async (id: string): Promise<void> => {
+    const res = await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE', headers: { ...authHeaders() } })
+    await handleResponse(res, 'Failed to delete parent')
 }
 
 export const getRoutes = async (): Promise<{ id: string; name: string }[]> => {

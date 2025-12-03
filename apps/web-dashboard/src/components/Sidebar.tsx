@@ -9,7 +9,8 @@ import {
   Calendar,
   MessageCircle,
   AlertTriangle,
-  LogOut
+  LogOut,
+  User as UserIcon
 } from 'lucide-react'
 import { logout } from '../lib/auth'
 
@@ -34,6 +35,11 @@ const menuItems = [
     path: '/students',
     icon: GraduationCap,
     label: 'Quản lý Học sinh'
+  },
+  {
+    path: '/parents',
+    icon: UserIcon,
+    label: 'Quản lý Phụ huynh'
   },
   {
     path: '/routes',

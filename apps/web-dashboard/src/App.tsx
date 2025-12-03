@@ -11,6 +11,7 @@ import Messages from './pages/Messages'
 import Login from './pages/Login'
 import { RequireAuth } from './lib/RequireAuth'
 import Alerts from './pages/Alerts'
+import ParentManagement from './pages/ParentManagement'
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/buses" element={<BusManagement />} />
           <Route path="/drivers" element={<DriverManagement />} />
           <Route path="/students" element={<StudentManagement />} />
+          <Route path="/parents" element={<ParentManagement />} />
           <Route path="/routes" element={<RouteManagement />} />
           <Route path="/tracking" element={<RealTimeTracking />} />
           <Route path="/schedules" element={<ScheduleManagement />} />

@@ -83,6 +83,42 @@ export class UsersService {
         return { deleted: true }
     }
 
+    async createParent(body: { fullName: string; phone: string; email?: string; address?: string; status?: 'active' | 'inactive' }) {
+        const existing = await this.repo.findOne({ where: { phone: body.phone } })
+        if (existing) throw new BadRequestException('Số điện thoại đã tồn tại')
+
+        const passwordHash = await bcrypt.hash(body.phone || 'changeme', 10)
+        const parent = this.repo.create({
+            fullName: body.fullName,
+            phone: body.phone,
+            email: body.email,
+            // address field không có trong entity Users, nên bỏ qua
+            role: UserRole.PARENT,
+            status: (body.status as any) || 'active',
+            passwordHash
+        })
+        const saved = await this.repo.save(parent)
+        return this.stripPassword(saved)
+    }
+
+    async updateParent(id: string, body: { fullName?: string; phone?: string; email?: string; address?: string; status?: 'active' | 'inactive' }) {
+        const parent = await this.repo.findOne({ where: { id, role: UserRole.PARENT } })
+        if (!parent) throw new NotFoundException('Không tìm thấy phụ huynh')
+        if (body.fullName !== undefined) parent.fullName = body.fullName
+        if (body.phone !== undefined) parent.phone = body.phone
+        if (body.email !== undefined) parent.email = body.email
+        if (body.status !== undefined) parent.status = body.status as any
+        const saved = await this.repo.save(parent)
+        return this.stripPassword(saved)
+    }
+
+    async deleteParent(id: string) {
+        const parent = await this.repo.findOne({ where: { id, role: UserRole.PARENT } })
+        if (!parent) throw new NotFoundException('Không tìm thấy phụ huynh')
+        await this.repo.remove(parent)
+        return { deleted: true }
+    }
+
     private stripPassword(u: User) {
         const { passwordHash, ...rest } = u
         return rest
