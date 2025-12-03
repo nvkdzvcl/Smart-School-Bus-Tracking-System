@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import {
   Plus, Edit, Trash2, Search, MapPin, Users,
-  GraduationCap, ArrowRight, ChevronLeft, ChevronRight // Thêm icon điều hướng
+  GraduationCap, ArrowRight, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight // Thêm icon điều hướng
 } from 'lucide-react'
 import { getRoutes, getStudents, getStops, createRoute, updateRoute, deleteRoute } from '../lib/api'
 
@@ -346,6 +346,14 @@ export default function RouteManagement() {
           <div className="text-gray-600">Hiển thị <b>{paginatedRoutes.length}</b> / <b>{filteredRoutes.length}</b> tuyến</div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setPage(1)}
+              disabled={page <= 1}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+              title="Trang đầu"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page <= 1}
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
@@ -359,6 +367,14 @@ export default function RouteManagement() {
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
             >
               Sau <ChevronRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPage(maxPage)}
+              disabled={page >= maxPage}
+              className="inline-flex h-9 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-700 disabled:opacity-50 hover:bg-gray-50 shadow-sm"
+              title="Trang cuối"
+            >
+              <ChevronsRight className="h-4 w-4" />
             </button>
           </div>
         </div>
