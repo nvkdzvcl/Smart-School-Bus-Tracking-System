@@ -590,16 +590,16 @@ BEGIN
   VALUES ('Phụ huynh Tuyến -1', '0961000005', 'parent_day_minus1@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
   RETURNING id INTO v_parent_minus1_id;
   INSERT INTO "Users"(full_name, phone, email, password_hash, role)
-  VALUES ('Phụ huynh Tuyến 0', '0961000006', 'parent_day_0@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  VALUES ('Phụ huynh 02', '0961000006', 'parent_day_0@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
   RETURNING id INTO v_parent_zero_id;
   INSERT INTO "Users"(full_name, phone, email, password_hash, role)
-  VALUES ('Phụ huynh Tuyến +1', '0961000007', 'parent_day_plus1@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  VALUES ('Phụ huynh 03', '0961000007', 'parent_day_plus1@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
   RETURNING id INTO v_parent_plus1_id;
   INSERT INTO "Users"(full_name, phone, email, password_hash, role)
-  VALUES ('Phụ huynh Tuyến +2', '0961000008', 'parent_day_plus2@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  VALUES ('Phụ huynh 04', '0961000008', 'parent_day_plus2@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
   RETURNING id INTO v_parent_plus2_id;
   INSERT INTO "Users"(full_name, phone, email, password_hash, role)
-  VALUES ('Phụ huynh Tuyến +3', '0961000009', 'parent_day_plus3@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
+  VALUES ('Phụ huynh 05', '0961000009', 'parent_day_plus3@ssb.com', '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent')
   RETURNING id INTO v_parent_plus3_id;
 
   v_parent_ids := ARRAY[
@@ -1588,7 +1588,7 @@ BEGIN
     VALUES (v_full_name, v_phone, v_email, '$2b$10$dwiWofbHqGIITaPzXxhLQOA/I6mwmG4.6mtvWhetHs3VvcxPhscRO', 'parent');
   END LOOP;
 
-  ---------------------------------------------------------
+---------------------------------------------------------
   -- 6. TẠO STUDENTS
   ---------------------------------------------------------
   RAISE NOTICE '--> 6/7: Đang tạo % học sinh...', CONST_STUDENT_COUNT;
@@ -1598,7 +1598,16 @@ BEGIN
     v_random_ten := arr_ten[1 + floor(random() * array_length(arr_ten, 1))];
     v_full_name  := v_random_ho || ' ' || v_random_dem || ' ' || v_random_ten;
 
-    SELECT id INTO v_parent_id FROM "Users" WHERE role = 'parent' OFFSET floor(random() * CONST_PARENT_COUNT) LIMIT 1;
+    -- --- SỬA TẠI ĐÂY ---
+    -- Chọn random phụ huynh nhưng LOẠI TRỪ số điện thoại 0922222222
+    SELECT id INTO v_parent_id 
+    FROM "Users" 
+    WHERE role = 'parent' 
+      AND phone <> '0922222222' 
+    OFFSET floor(random() * (CONST_PARENT_COUNT - 1)) -- Trừ 1 vì đã loại bớt 1 người
+    LIMIT 1;
+    -- -------------------
+
     SELECT id INTO v_route_id FROM "Routes" OFFSET floor(random() * CONST_ROUTE_COUNT) LIMIT 1;
     
     WITH route_points AS (SELECT stop_id FROM "Route_Stops" WHERE route_id = v_route_id ORDER BY stop_order)
