@@ -16,7 +16,7 @@ async function bootstrap() {
 
   const webOrigin = process.env.APP_WEB_ORIGIN || 'http://localhost:5173';
   app.enableCors({
-    origin: [webOrigin, 'http://localhost:5173', 'https://localhost:5173'],
+    origin: [webOrigin, 'http://localhost:5174'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
